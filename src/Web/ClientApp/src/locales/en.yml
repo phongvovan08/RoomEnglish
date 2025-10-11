@@ -1,0 +1,4 @@
+app:
+  title: 'Vue3 Clean Architecture Template'
+messages:
+  error: Error
