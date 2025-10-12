@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './styles/cyborg-gaming.css'
 import { addDependencies } from './plugins'
 import { createApp } from 'vue'
 

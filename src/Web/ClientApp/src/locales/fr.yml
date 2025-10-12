@@ -1,2 +1,51 @@
 app:
-  title: 'Vue3 Clean Architecture Modèle'
+  title: 'RoomEnglish - Learning Management System'
+  
+messages:
+  error: Error
+  
+menu:
+  dashboard: Dashboard
+  todoLists: Todo Lists
+  todoItems: Todo Items
+  weatherForecasts: Weather Forecasts
+  posts: Posts
+  viewAll: View All
+  create: Create New
+  profile: Profile
+  settings: Settings
+  logout: Logout
+  changeLanguage: Change Language
+
+common:
+  loading: Loading...
+  retry: Retry
+  viewDetails: View Details
+  cancel: Cancel
+  create: Create
+  creating: Creating...
+  
+dashboard:
+  welcome: Welcome to your dashboard
+  quickActions: Quick Actions
+  createTodoList: Create Todo List
+  createTodoItem: Create Todo Item
+  viewWeather: View Weather
+  viewPosts: View Posts
+  currentTemp: Current Temp
+  
+todoLists:
+  items: items
+  empty:
+    title: No todo lists found
+    description: Get started by creating your first todo list
+  createFirst: Create Your First Todo List
+  create:
+    title: Create New Todo List
+  edit:
+    title: Edit Todo List
+  view:
+    title: Todo List Details
+  form:
+    title: Title
+    titlePlaceholder: Enter todo list title

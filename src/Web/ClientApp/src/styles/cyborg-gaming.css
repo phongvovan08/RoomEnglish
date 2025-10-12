@@ -1,0 +1,501 @@
+/* Cyborg Gaming Vue Styles - Adapted from templatemo_579_cyborg_gaming */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900");
+
+/* CSS Variables for Cyborg Theme */
+:root {
+  /* Primary Colors */
+  --primary-bg: #1e1e1e;
+  --secondary-bg: #27292a;
+  --card-bg: #27292a;
+  --accent-pink: #ec6090;
+  --accent-purple: #8552f4;
+  --text-primary: #fff;
+  --text-secondary: #ccc;
+  --text-muted: #999;
+  --border-color: #3a3a3a;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(105deg, #ec6090 0%, #f99 100%);
+  --gradient-secondary: linear-gradient(105deg, #8552f4 0%, #ec6090 100%);
+  
+  /* Shadows */
+  --shadow-card: 0px 0px 15px rgba(0,0,0,0.1);
+  --shadow-hover: 0px 0px 25px rgba(236, 96, 144, 0.15);
+  
+  /* Border Radius */
+  --radius-sm: 10px;
+  --radius-md: 23px;
+  --radius-lg: 35px;
+  
+  /* Transitions */
+  --transition-normal: 0.3s ease;
+  --transition-fast: 0.2s ease;
+}
+
+/* Global Reset */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  background-color: var(--primary-bg);
+  color: var(--text-primary);
+  font-size: 16px;
+  -ms-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: var(--transition-normal);
+}
+
+a:hover {
+  color: var(--accent-pink);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-pink);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f99;
+}
+
+/* Cyborg Utility Classes */
+.cyborg-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.cyborg-card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 30px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
+
+.cyborg-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-5px);
+}
+
+.cyborg-btn {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  padding: 12px 30px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+}
+
+.cyborg-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 10px 25px rgba(236, 96, 144, 0.3);
+  color: white;
+}
+
+.cyborg-btn-secondary {
+  background: transparent;
+  border: 2px solid var(--accent-pink);
+  color: var(--accent-pink);
+}
+
+.cyborg-btn-secondary:hover {
+  background: var(--accent-pink);
+  color: white;
+}
+
+.cyborg-input {
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 15px 20px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  width: 100%;
+  transition: var(--transition-normal);
+}
+
+.cyborg-input:focus {
+  border-color: var(--accent-pink);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(236, 96, 144, 0.1);
+}
+
+.cyborg-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Section Styling */
+.cyborg-section {
+  padding: 80px 0;
+}
+
+.section-heading {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-heading h6 {
+  font-size: 15px;
+  color: var(--accent-pink);
+  font-weight: 400;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.section-heading h4 {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 45px;
+  margin-bottom: 0;
+}
+
+.section-heading h4 em {
+  font-style: normal;
+  color: var(--accent-pink);
+}
+
+/* Grid Systems */
+.cyborg-grid {
+  display: grid;
+  gap: 30px;
+}
+
+.cyborg-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.cyborg-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.cyborg-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Game Item Card */
+.game-item {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
+
+.game-item:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-hover);
+}
+
+.game-item .thumb {
+  position: relative;
+  overflow: hidden;
+}
+
+.game-item .thumb img {
+  width: 100%;
+  transition: var(--transition-normal);
+}
+
+.game-item:hover .thumb img {
+  transform: scale(1.1);
+}
+
+.game-item .down-content {
+  padding: 30px;
+}
+
+.game-item .down-content h4 {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+.game-item .down-content span {
+  color: var(--accent-pink);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.game-item .down-content ul {
+  margin: 20px 0;
+}
+
+.game-item .down-content ul li {
+  display: inline-block;
+  margin-right: 15px;
+  font-size: 14px;
+}
+
+.game-item .down-content ul li span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Feature Box */
+.feature-box {
+  text-align: center;
+  padding: 40px 30px;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  transition: var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
+
+.feature-box:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-hover);
+}
+
+.feature-box .icon {
+  width: 100px;
+  height: 100px;
+  background: var(--gradient-secondary);
+  border-radius: 50%;
+  margin: 0 auto 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: white;
+}
+
+.feature-box h4 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.feature-box p {
+  color: var(--text-secondary);
+  line-height: 28px;
+}
+
+/* Profile Stats */
+.profile-stats {
+  display: flex;
+  gap: 30px;
+  margin: 30px 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-item .value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent-pink);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.stat-item .label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Gaming Library Item */
+.gaming-library-item {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: 30px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  transition: var(--transition-normal);
+}
+
+.gaming-library-item:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+.gaming-library-item .left-image {
+  flex: 0 0 120px;
+  margin-right: 30px;
+}
+
+.gaming-library-item .left-image img {
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.gaming-library-item .right-content {
+  flex: 1;
+}
+
+.gaming-library-item h4 {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.gaming-library-item span {
+  color: var(--accent-pink);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.gaming-library-item .download {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cyborg-container {
+    padding: 0 20px;
+  }
+  
+  .cyborg-section {
+    padding: 60px 0;
+  }
+  
+  .section-heading h4 {
+    font-size: 28px;
+    line-height: 36px;
+  }
+  
+  .cyborg-grid-2,
+  .cyborg-grid-3,
+  .cyborg-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-stats {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .gaming-library-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .gaming-library-item .left-image {
+    flex: none;
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+/* Loading Animation */
+.cyborg-loader {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(236, 96, 144, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--accent-pink);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Hover Effects */
+.hover-glow:hover {
+  box-shadow: 0 0 30px rgba(236, 96, 144, 0.3);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-slide:hover {
+  transform: translateY(-5px);
+}
