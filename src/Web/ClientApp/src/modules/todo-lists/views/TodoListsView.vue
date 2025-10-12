@@ -42,13 +42,13 @@
               <h3 class="text-lg font-semibold text-gray-900 truncate">{{ todoList.title }}</h3>
               <div class="flex space-x-2">
                 <router-link
-                  :to="`${Routes.TodoLists.children.Edit.path.replace(':id', todoList.id.toString())}`"
+                  :to="`${Routes.TodoLists.children.Edit.path.replace(':id', todoList.id?.toString() || '')}`"
                   class="text-blue-600 hover:text-blue-800"
                 >
                   <Icon icon="mdi:pencil" class="w-5 h-5" />
                 </router-link>
                 <button
-                  @click="deleteTodoList(todoList.id)"
+                  @click="handleDeleteTodoList(todoList.id!)"
                   class="text-red-600 hover:text-red-800"
                 >
                   <Icon icon="mdi:delete" class="w-5 h-5" />
@@ -67,7 +67,7 @@
             </div>
             
             <router-link
-              :to="`${Routes.TodoLists.children.View.path.replace(':id', todoList.id.toString())}`"
+              :to="`${Routes.TodoLists.children.View.path.replace(':id', todoList.id?.toString() || '')}`"
               class="block mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               {{ $t('common.viewDetails') }}
@@ -95,77 +95,27 @@
 
 <script setup lang="ts">
 import { Routes } from '@/router/constants'
+import { useTodoLists } from '@/composables/useTodoLists'
 
-// Types
-interface TodoList {
-  id: number
-  title: string
-  colour?: string
-  items?: TodoItem[]
-}
-
-interface TodoItem {
-  id: number
-  title: string
-  done: boolean
-}
-
-// Reactive data
-const todoLists = ref<TodoList[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+// Use TodoLists composable
+const { 
+  todoLists, 
+  loading, 
+  error, 
+  loadTodoLists, 
+  deleteTodoList: deleteTodoListAPI 
+} = useTodoLists()
 
 // Methods
-const loadTodoLists = async () => {
-  try {
-    loading.value = true
-    error.value = null
-    
-    // TODO: Replace with actual API call
-    // const response = await fetch('/api/TodoLists')
-    // if (!response.ok) throw new Error('Failed to fetch todo lists')
-    // const data = await response.json()
-    // todoLists.value = data.lists || []
-    
-    // Mock data for now
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    todoLists.value = [
-      {
-        id: 1,
-        title: 'Personal Tasks',
-        colour: 'Blue',
-        items: [{ id: 1, title: 'Sample task', done: false }]
-      },
-      {
-        id: 2,
-        title: 'Work Projects',
-        colour: 'Green',
-        items: []
-      }
-    ]
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'An error occurred'
-  } finally {
-    loading.value = false
-  }
-}
-
-const deleteTodoList = async (id: number) => {
+const handleDeleteTodoList = async (id: number) => {
   if (!confirm('Are you sure you want to delete this todo list?')) return
-  
-  try {
-    // TODO: Replace with actual API call
-    // await fetch(`/api/TodoLists/${id}`, { method: 'DELETE' })
-    todoLists.value = todoLists.value.filter(list => list.id !== id)
-  } catch (err) {
-    console.error('Error deleting todo list:', err)
-  }
+  await deleteTodoListAPI(id)
 }
 
 const getColorClass = (colour?: string) => {
   const colorMap: Record<string, string> = {
     'Blue': 'bg-blue-100 text-blue-800',
-    'Green': 'bg-green-100 text-green-800',
+    'Green': 'bg-green-100 text-green-800', 
     'Red': 'bg-red-100 text-red-800',
     'Yellow': 'bg-yellow-100 text-yellow-800',
     'Purple': 'bg-purple-100 text-purple-800',

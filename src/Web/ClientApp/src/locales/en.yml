@@ -82,3 +82,5 @@ todoLists:
   form:
     title: Title
     titlePlaceholder: Enter todo list title
+    colour: Color
+    colourPlaceholder: Choose a color
