@@ -1,3 +1,4 @@
+using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Application.Common.Models;
 using System.Text.Json;
 
@@ -8,27 +9,27 @@ public record GetDefaultTokenCommand : IRequest<string>;
 public class GetDefaultTokenCommandHandler : IRequestHandler<GetDefaultTokenCommand, string>
 {
     private readonly HttpClient _httpClient;
-    private const string DefaultEmail = "administrator@localhost";
-    private const string DefaultPassword = "Administrator1!";
+    private readonly IAuthenticationConfiguration _authConfig;
 
-    public GetDefaultTokenCommandHandler(HttpClient httpClient)
+    public GetDefaultTokenCommandHandler(HttpClient httpClient, IAuthenticationConfiguration authConfig)
     {
         _httpClient = httpClient;
+        _authConfig = authConfig;
     }
 
     public async Task<string> Handle(GetDefaultTokenCommand request, CancellationToken cancellationToken)
     {
-        // Create login request với tài khoản mặc định
+        // Create login request với tài khoản mặc định từ configuration
         var loginRequest = new
         {
-            email = DefaultEmail,
-            password = DefaultPassword,
+            email = _authConfig.DefaultEmail,
+            password = _authConfig.DefaultPassword,
             twoFactorCode = (string?)null,
             twoFactorRecoveryCode = (string?)null
         };
 
-        // Construct base URL - this will need to be configured properly
-        var baseUrl = "https://localhost:5001"; // This should come from configuration
+        // Get base URL from configuration
+        var baseUrl = _authConfig.BaseUrl;
 
         // Call login endpoint
         var loginJson = JsonSerializer.Serialize(loginRequest);

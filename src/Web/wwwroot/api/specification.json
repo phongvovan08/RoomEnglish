@@ -6,51 +6,6 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/Authentication/GetToken": {
-      "post": {
-        "tags": [
-          "Authentication",
-          "Authentication"
-        ],
-        "summary": "Lấy token xác thực",
-        "description": "Tự động đăng nhập và trả về access token để sử dụng cho các API calls",
-        "operationId": "GetToken",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetTokenCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/Authentication/GetDefaultToken": {
       "post": {
         "tags": [
@@ -854,25 +809,6 @@
   },
   "components": {
     "schemas": {
-      "TokenResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "refreshToken": {
-            "type": "string"
-          },
-          "tokenType": {
-            "type": "string"
-          },
-          "expiresIn": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "ProblemDetails": {
         "type": "object",
         "additionalProperties": {
@@ -899,18 +835,6 @@
           "instance": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "GetTokenCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
           }
         }
       },

@@ -2,6 +2,7 @@
 using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Infrastructure.Data;
 using RoomEnglish.Web.Services;
+using RoomEnglish.Web.Configuration;
 using Microsoft.AspNetCore.Mvc;
 
 using NSwag;
@@ -16,9 +17,15 @@ public static class DependencyInjection
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
         builder.Services.AddScoped<IUser, CurrentUser>();
+        builder.Services.AddScoped<IAuthenticationConfiguration, AuthenticationConfiguration>();
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHttpClient();
+        
+        // Configure authentication settings
+        builder.Services.Configure<AuthenticationSettings>(
+            builder.Configuration.GetSection(AuthenticationSettings.SectionName));
+        
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 

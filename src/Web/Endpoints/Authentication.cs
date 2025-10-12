@@ -12,13 +12,13 @@ public sealed class Authentication : EndpointGroupBase
     {
         group.WithTags("Authentication");
 
-        group.MapPost("GetToken", GetToken)
-            .WithName("GetToken")
-            .WithSummary("Lấy token xác thực")
-            .WithDescription("Tự động đăng nhập và trả về access token để sử dụng cho các API calls")
-            .Produces<TokenResponse>(200)
-            .ProducesProblem(400)
-            .WithOpenApi();
+        //group.MapPost("GetToken", GetToken)
+        //    .WithName("GetToken")
+        //    .WithSummary("Lấy token xác thực")
+        //    .WithDescription("Tự động đăng nhập và trả về access token để sử dụng cho các API calls")
+        //    .Produces<TokenResponse>(200)
+        //    .ProducesProblem(400)
+        //    .WithOpenApi();
 
         group.MapPost("GetDefaultToken", GetDefaultToken)
             .WithName("GetDefaultToken")
@@ -28,17 +28,17 @@ public sealed class Authentication : EndpointGroupBase
             .ProducesProblem(400)
             .WithOpenApi();
     }
-
-    public async Task<Ok<TokenResponse>> GetToken(ISender sender, GetTokenCommand command)
-    {
-        var result = await sender.Send(command);
-        return TypedResults.Ok(result);
-    }
-
     public async Task<IResult> GetDefaultToken(ISender sender)
     {
         var command = new GetDefaultTokenCommand();
         var result = await sender.Send(command);
         return Results.Content(result, "text/plain", System.Text.Encoding.UTF8);
     }
+    //public async Task<Ok<TokenResponse>> GetToken(ISender sender, GetTokenCommand command)
+    //{
+    //    var result = await sender.Send(command);
+    //    return TypedResults.Ok(result);
+    //}
+
+    
 }

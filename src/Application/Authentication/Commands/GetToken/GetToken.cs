@@ -1,3 +1,4 @@
+using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Application.Common.Models;
 using System.Text.Json;
 
@@ -12,10 +13,12 @@ public record GetTokenCommand : IRequest<TokenResponse>
 public class GetTokenCommandHandler : IRequestHandler<GetTokenCommand, TokenResponse>
 {
     private readonly HttpClient _httpClient;
+    private readonly IAuthenticationConfiguration _authConfig;
 
-    public GetTokenCommandHandler(HttpClient httpClient)
+    public GetTokenCommandHandler(HttpClient httpClient, IAuthenticationConfiguration authConfig)
     {
         _httpClient = httpClient;
+        _authConfig = authConfig;
     }
 
     public async Task<TokenResponse> Handle(GetTokenCommand request, CancellationToken cancellationToken)
@@ -29,8 +32,8 @@ public class GetTokenCommandHandler : IRequestHandler<GetTokenCommand, TokenResp
             twoFactorRecoveryCode = (string?)null
         };
         
-        // Construct base URL - this will need to be configured properly
-        var baseUrl = "https://localhost:5001"; // This should come from configuration
+        // Get base URL from configuration
+        var baseUrl = _authConfig.BaseUrl;
         
         // Call login endpoint
         var loginJson = JsonSerializer.Serialize(loginRequest);
