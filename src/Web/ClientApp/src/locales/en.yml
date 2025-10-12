@@ -5,6 +5,7 @@ messages:
   error: Error
   
 menu:
+  home: Home
   dashboard: Dashboard
   todoLists: Todo Lists
   todoItems: Todo Items
@@ -16,6 +17,7 @@ menu:
   settings: Settings
   logout: Logout
   changeLanguage: Change Language
+  search: Search
 
 common:
   loading: Loading...

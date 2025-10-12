@@ -55,6 +55,24 @@ const router = createRouter({
       component: () => import("../modules/todo-items/views/TodoItemsView.vue"),
       meta: { requiresAuth: true },
     },
+    {
+      path: Routes.TodoItems.children.Create.path,
+      name: Routes.TodoItems.children.Create.name,
+      component: () => import("../modules/todo-items/views/CreateTodoItemView.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.TodoItems.children.Edit.path,
+      name: Routes.TodoItems.children.Edit.name,
+      component: () => import("../modules/todo-items/views/EditTodoItemView.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.TodoItems.children.View.path,
+      name: Routes.TodoItems.children.View.name,
+      component: () => import("../modules/todo-items/views/ViewTodoItemView.vue"),
+      meta: { requiresAuth: true },
+    },
     
     // Weather Forecasts route
     {

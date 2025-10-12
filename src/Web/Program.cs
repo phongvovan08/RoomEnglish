@@ -25,6 +25,9 @@ app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+//// Enable CORS
+//app.UseCors("AllowVueApp");
+
 app.UseSwaggerUi(settings =>
 {
     settings.Path = "/api";

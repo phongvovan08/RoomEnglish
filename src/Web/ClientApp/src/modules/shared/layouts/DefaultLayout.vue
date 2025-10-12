@@ -4,11 +4,13 @@
     <main class="main-content">
       <slot></slot>
     </main>
+    <NotificationToast />
   </div>
 </template>
 
 <script setup lang="ts">
 import CyborgMenu from '../components/CyborgMenu.vue'
+import NotificationToast from '@/components/ui/NotificationToast.vue'
 </script>
 
 <style scoped>

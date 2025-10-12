@@ -5,17 +5,19 @@ messages:
   error: Error
   
 menu:
-  dashboard: Dashboard
-  todoLists: Todo Lists
-  todoItems: Todo Items
-  weatherForecasts: Weather Forecasts
-  posts: Posts
-  viewAll: View All
-  create: Create New
-  profile: Profile
-  settings: Settings
-  logout: Logout
-  changeLanguage: Change Language
+  home: Accueil
+  dashboard: Tableau de Bord
+  todoLists: Listes de Tâches
+  todoItems: Éléments de Tâches
+  weatherForecasts: Prévisions Météo
+  posts: Articles
+  viewAll: Voir Tout
+  create: Créer Nouveau
+  profile: Profil
+  settings: Paramètres
+  logout: Déconnexion
+  changeLanguage: Changer de Langue
+  search: Rechercher
 
 common:
   loading: Loading...

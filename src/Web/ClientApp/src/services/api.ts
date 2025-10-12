@@ -71,7 +71,33 @@ class ApiService {
       const response = await fetch(url, config)
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        // Handle specific HTTP status codes
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        
+        if (response.status === 401) {
+          errorMessage = 'Authentication required. Please login first.'
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied. You don\'t have permission to perform this action.'
+        } else if (response.status === 404) {
+          errorMessage = 'The requested resource was not found.'
+        } else if (response.status === 500) {
+          errorMessage = 'Internal server error. Please try again later.'
+        }
+        
+        // Try to get detailed error from response body
+        try {
+          const errorBody = await response.text()
+          if (errorBody) {
+            const parsedError = JSON.parse(errorBody)
+            if (parsedError.title || parsedError.detail) {
+              errorMessage = `${parsedError.title || 'Error'}: ${parsedError.detail || errorMessage}`
+            }
+          }
+        } catch {
+          // Ignore JSON parse errors, use default message
+        }
+        
+        throw new Error(errorMessage)
       }
       
       // Handle empty responses
@@ -161,12 +187,37 @@ export class TodoItemsService {
     return apiService.get(`${API_ENDPOINTS.TODO_ITEMS.GET_WITH_PAGINATION}?${params}`)
   }
 
-  static async create(listId: number, title: string) {
-    return apiService.post(API_ENDPOINTS.TODO_ITEMS.CREATE, { listId, title })
+  static async getById(id: number) {
+    return apiService.get(API_ENDPOINTS.TODO_ITEMS.GET_BY_ID(id))
   }
 
-  static async update(id: number, title: string, done: boolean) {
-    return apiService.put(API_ENDPOINTS.TODO_ITEMS.UPDATE(id), { id, title, done })
+  static async create(command: {
+    listId: number
+    title: string
+    note?: string
+    priority?: number
+    reminder?: string
+  }) {
+    return apiService.post(API_ENDPOINTS.TODO_ITEMS.CREATE, command)
+  }
+
+  static async update(id: number, command: {
+    id: number
+    title: string
+    note?: string
+    priority?: number
+    reminder?: string
+    done: boolean
+  }) {
+    return apiService.put(API_ENDPOINTS.TODO_ITEMS.UPDATE(id), command)
+  }
+
+  static async updateDetails(id: number, title: string, note?: string, priority?: number) {
+    return apiService.put(API_ENDPOINTS.TODO_ITEMS.UPDATE_DETAILS(id), {
+      title,
+      note,
+      priority
+    })
   }
 
   static async delete(id: number) {
