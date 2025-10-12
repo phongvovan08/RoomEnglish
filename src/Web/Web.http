@@ -27,6 +27,26 @@ Content-Type: application/json
 
 ###
 
+# POST Authentication GetToken (Auto Login with credentials)
+POST {{Web_HostAddress}}/api/Authentication/GetToken
+Content-Type: application/json
+
+// GetTokenCommand
+{
+  "email": "{{Email}}",
+  "password": "{{Password}}"
+}
+
+###
+
+# POST Authentication GetDefaultToken (Auto Login with default admin account)
+POST {{Web_HostAddress}}/api/Authentication/GetDefaultToken
+Content-Type: application/json
+
+// GetDefaultTokenCommand - No body required
+
+###
+
 # POST Users Refresh
 POST {{Web_HostAddress}}/api/Users/Refresh
 Authorization: Bearer {{BearerToken}}
