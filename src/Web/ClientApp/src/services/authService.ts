@@ -21,11 +21,14 @@ export interface UserInfo {
   isEmailConfirmed: boolean
 }
 
+// Import app configuration
+import appConfig from '@/config/app.config'
+
 export class AuthService {
-  private static readonly BASE_URL = 'https://localhost:5001/api/Users'
+  private static readonly BASE_URL = appConfig.apiBaseUrl
 
   static async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await fetch(`${this.BASE_URL}/login`, {
+    const response = await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.login}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +45,7 @@ export class AuthService {
   }
 
   static async register(userData: RegisterRequest): Promise<void> {
-    const response = await fetch(`${this.BASE_URL}/register`, {
+    const response = await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.register}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,7 +65,7 @@ export class AuthService {
       throw new Error('No access token found')
     }
 
-    const response = await fetch(`${this.BASE_URL}/manage/info`, {
+    const response = await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.userInfo}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -83,7 +86,7 @@ export class AuthService {
       throw new Error('No refresh token found')
     }
 
-    const response = await fetch(`${this.BASE_URL}/refresh`, {
+    const response = await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.refresh}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,7 +107,7 @@ export class AuthService {
     
     // Optionally call logout endpoint if available
     try {
-      await fetch(`${this.BASE_URL}/Users/logout`, {
+      await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.logout}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.getToken()}`,
@@ -118,31 +121,31 @@ export class AuthService {
 
   // Token management
   static saveTokens(authResponse: AuthResponse): void {
-    localStorage.setItem('access_token', authResponse.accessToken)
-    localStorage.setItem('refresh_token', authResponse.refreshToken)
-    localStorage.setItem('token_expires_at', 
+    localStorage.setItem(appConfig.auth.tokenKey, authResponse.accessToken)
+    localStorage.setItem(appConfig.auth.refreshTokenKey, authResponse.refreshToken)
+    localStorage.setItem(appConfig.auth.tokenExpiryKey, 
       (Date.now() + authResponse.expiresIn * 1000).toString()
     )
   }
 
   static getToken(): string | null {
-    return localStorage.getItem('access_token')
+    return localStorage.getItem(appConfig.auth.tokenKey)
   }
 
   static getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token')
+    return localStorage.getItem(appConfig.auth.refreshTokenKey)
   }
 
   static isTokenExpired(): boolean {
-    const expiresAt = localStorage.getItem('token_expires_at')
+    const expiresAt = localStorage.getItem(appConfig.auth.tokenExpiryKey)
     if (!expiresAt) return true
     return Date.now() > parseInt(expiresAt)
   }
 
   static clearTokens(): void {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token') 
-    localStorage.removeItem('token_expires_at')
+    localStorage.removeItem(appConfig.auth.tokenKey)
+    localStorage.removeItem(appConfig.auth.refreshTokenKey) 
+    localStorage.removeItem(appConfig.auth.tokenExpiryKey)
   }
 
   static isAuthenticated(): boolean {

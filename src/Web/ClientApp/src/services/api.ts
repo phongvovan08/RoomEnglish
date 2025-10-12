@@ -1,5 +1,8 @@
+// Import app configuration
+import appConfig from '@/config/app.config'
+
 // API Base URL mapping from backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001/api'
+const API_BASE_URL = `${appConfig.apiBaseUrl}/api`
 
 // API Endpoints mapping to backend controllers
 export const API_ENDPOINTS = {
