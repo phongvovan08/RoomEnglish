@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import { TodoListsService } from '@/services/todoService'
 import type { TodoList, CreateTodoListRequest, UpdateTodoListRequest, PriorityLevel } from '@/services/todoService'
 import { useNotifications } from './useNotifications'
-import { ApiHealthService } from '@/services/apiHealthService'
 
 export function useTodoLists() {
   const { addNotification } = useNotifications()
@@ -13,20 +12,23 @@ export function useTodoLists() {
   const loading = ref(false)
   const error = ref<string | null>(null)
   
-  // Enhanced error handling with API health check
-  const handleApiError = async (err: unknown, operation: string): Promise<string> => {
+  // Enhanced error handling 
+  const handleApiError = (err: unknown, operation: string): string => {
     let errorMessage = `Failed to ${operation}`
     
-    // Use ApiHealthService for better error messages
     if (err instanceof Error) {
-      errorMessage = ApiHealthService.getErrorMessage(err)
-      
-      // If it's a network error, also check API health
       if (err.message.includes('Failed to fetch')) {
-        const healthCheck = await ApiHealthService.checkApiHealth()
-        if (!healthCheck.isHealthy) {
-          errorMessage = healthCheck.message
-        }
+        errorMessage = 'Cannot connect to API server. Please check if backend is running on https://localhost:5001'
+      } else if (err.message.includes('401')) {
+        errorMessage = 'Authentication failed. Please login again.'
+      } else if (err.message.includes('403')) {
+        errorMessage = 'Access denied. You do not have permission for this action.'
+      } else if (err.message.includes('404')) {
+        errorMessage = 'API endpoint not found. The backend may be misconfigured.'
+      } else if (err.message.includes('500')) {
+        errorMessage = 'Internal server error. Please check the backend logs.'
+      } else {
+        errorMessage = err.message
       }
     }
     
@@ -49,7 +51,7 @@ export function useTodoLists() {
         message: `Loaded ${todoLists.value.length} todo lists`,
       })
     } catch (err) {
-      const errorMessage = await handleApiError(err, 'load todo lists')
+      const errorMessage = handleApiError(err, 'load todo lists')
       
       error.value = errorMessage
       addNotification({
