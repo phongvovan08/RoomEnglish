@@ -135,10 +135,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { TodoItemsService, TodoListsService } from '@/services/api'
+import { useNotifications } from '@/composables/useNotifications'
 import type { TodoItemDto, TodoListBriefDto, PriorityLevel } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
+const { error: showError } = useNotifications()
+
 const loading = ref(true)
 
 const todoItem = ref<TodoItemDto | null>(null)
@@ -152,6 +155,7 @@ const loadTodoItem = async () => {
     todoItem.value = response
   } catch (error) {
     console.error('Failed to load todo item:', error)
+    showError('Load Failed 🚫', 'Failed to load todo item details. Please try again.')
     todoItem.value = null
   } finally {
     loading.value = false

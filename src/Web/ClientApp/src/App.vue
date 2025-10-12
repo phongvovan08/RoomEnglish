@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import DefaultLayout from "./modules/shared/layouts/DefaultLayout.vue";
 import { useHead } from "@unhead/vue";
-import Toast from './modules/shared/components/toast';
+import NotificationToast from '@/components/ui/NotificationToast.vue'
 
 const { t } = useI18n();
 
@@ -13,6 +13,6 @@ useHead({
 <template>
   <DefaultLayout>
     <RouterView />
-    <Toast />
+    <NotificationToast />
   </DefaultLayout>
 </template>

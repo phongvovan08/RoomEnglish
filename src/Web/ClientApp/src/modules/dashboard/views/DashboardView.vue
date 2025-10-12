@@ -6,6 +6,10 @@
         <h6>Welcome To</h6>
         <h4><em>Room</em>English Dashboard</h4>
         <p>{{ $t('dashboard.welcome') }}</p>
+        
+        <!-- Test Toast Button -->
+        <TestToast />
+        
         <div class="main-button">
           <router-link :to="Routes.TodoLists.children.Create.path" class="cyborg-btn">
             <Icon icon="mdi:plus-circle" class="w-5 h-5 mr-2" />
@@ -155,6 +159,7 @@
 
 <script setup lang="ts">
 import { Routes } from '@/router/constants'
+import TestToast from '@/components/TestToast.vue'
 
 // Mock data
 const stats = reactive({

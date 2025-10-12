@@ -148,10 +148,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { TodoItemsService, TodoListsService } from '@/services/api'
+import { useNotifications } from '@/composables/useNotifications'
 import type { TodoItemDto, TodoListBriefDto, PriorityLevel } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
+const { success, error: showError } = useNotifications()
+
 const loading = ref(true)
 const updating = ref(false)
 
@@ -189,6 +192,7 @@ const loadTodoItem = async () => {
     }
   } catch (error) {
     console.error('Failed to load todo item:', error)
+    showError('Load Failed 🚫', 'Failed to load todo item. Please try again.')
     todoItem.value = null
   } finally {
     loading.value = false
@@ -201,6 +205,7 @@ const loadTodoLists = async () => {
     todoLists.value = response
   } catch (error) {
     console.error('Failed to load todo lists:', error)
+    showError('Load Failed 🚫', 'Failed to load todo lists.')
     todoLists.value = []
   }
 }
@@ -220,11 +225,12 @@ const updateTodoItem = async () => {
     
     await TodoItemsService.update(todoItem.value!.id, command)
     
+    success('Todo Updated! ✏️', `"${form.title}" has been successfully updated`)
     // Navigate back to todo items list
     router.push({ name: Routes.TodoItems.name })
   } catch (error) {
     console.error('Failed to update todo item:', error)
-    alert('Failed to update todo item. Please try again.')
+    showError('Update Failed ❌', 'Failed to update todo item. Please try again.')
   } finally {
     updating.value = false
   }

@@ -7,6 +7,7 @@
           :key="notification.id"
           class="notification"
           :class="`notification-${notification.type}`"
+          :style="{ '--duration': `${notification.duration || 5000}ms` }"
         >
           <div class="notification-content">
             <div class="notification-icon">
@@ -66,10 +67,43 @@ const getNotificationIcon = (type: string) => {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(231, 94, 141, 0.1);
   overflow: hidden;
   pointer-events: auto;
   backdrop-filter: blur(10px);
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+  animation: progressBar var(--duration, 5000ms) linear forwards;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes progressBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
 }
 
 .notification-success {
