@@ -18,6 +18,16 @@ export interface TodoItem {
   done: boolean
 }
 
+export interface PriorityLevel {
+  id: number
+  title: string
+}
+
+export interface TodoListsResponse {
+  lists: TodoList[]
+  priorityLevels: PriorityLevel[]
+}
+
 export interface PaginatedTodoItems {
   items: TodoItem[]
   pageNumber: number
@@ -41,57 +51,92 @@ export interface UpdateTodoListRequest {
 export class TodoListsService {
   private static readonly BASE_URL = `${appConfig.apiBaseUrl}/api/TodoLists`
 
-  // Get all TodoLists
-  static async getAllTodoLists(): Promise<TodoList[]> {
-    const response = await fetch(this.BASE_URL, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`,
-        'Content-Type': 'application/json',
-      },
-    })
+  // Get all TodoLists with priority levels
+  static async getAllTodoListsWithData(): Promise<TodoListsResponse> {
+    try {
+      const response = await fetch(this.BASE_URL, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch TodoLists: ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Cannot connect to API server. Please check if backend is running.')
+      }
+      throw error
     }
+  }
 
-    return response.json()
+  // Get all TodoLists (backward compatibility)
+  static async getAllTodoLists(): Promise<TodoList[]> {
+    const data = await this.getAllTodoListsWithData()
+    return data.lists || []
+  }
+
+  // Get priority levels
+  static async getPriorityLevels(): Promise<PriorityLevel[]> {
+    const data = await this.getAllTodoListsWithData()
+    return data.priorityLevels || []
   }
 
   // Get TodoList by ID
   static async getTodoListById(id: number): Promise<TodoList> {
-    const response = await fetch(`${this.BASE_URL}/${id}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    try {
+      const response = await fetch(`${this.BASE_URL}/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch TodoList: ${response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Cannot connect to API server.')
+      }
+      throw error
     }
-
-    return response.json()
   }
 
   // Create new TodoList
   static async createTodoList(todoList: CreateTodoListRequest): Promise<TodoList> {
-    const response = await fetch(this.BASE_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(todoList),
-    })
+    try {
+      const response = await fetch(this.BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(todoList),
+      })
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || 'Failed to create TodoList')
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to create TodoList'}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error: Cannot connect to API server.')
+      }
+      throw error
     }
-
-    return response.json()
   }
 
   // Update TodoList

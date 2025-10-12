@@ -1,15 +1,37 @@
 import { ref } from 'vue'
 import { TodoListsService } from '@/services/todoService'
-import type { TodoList, CreateTodoListRequest, UpdateTodoListRequest } from '@/services/todoService'
+import type { TodoList, CreateTodoListRequest, UpdateTodoListRequest, PriorityLevel } from '@/services/todoService'
 import { useNotifications } from './useNotifications'
+import { ApiHealthService } from '@/services/apiHealthService'
 
 export function useTodoLists() {
   const { addNotification } = useNotifications()
   
   // Reactive state
   const todoLists = ref<TodoList[]>([])
+  const priorityLevels = ref<PriorityLevel[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  
+  // Enhanced error handling with API health check
+  const handleApiError = async (err: unknown, operation: string): Promise<string> => {
+    let errorMessage = `Failed to ${operation}`
+    
+    // Use ApiHealthService for better error messages
+    if (err instanceof Error) {
+      errorMessage = ApiHealthService.getErrorMessage(err)
+      
+      // If it's a network error, also check API health
+      if (err.message.includes('Failed to fetch')) {
+        const healthCheck = await ApiHealthService.checkApiHealth()
+        if (!healthCheck.isHealthy) {
+          errorMessage = healthCheck.message
+        }
+      }
+    }
+    
+    return errorMessage
+  }
 
   // Load all TodoLists
   const loadTodoLists = async (): Promise<void> => {
@@ -17,18 +39,24 @@ export function useTodoLists() {
     error.value = null
     
     try {
-      todoLists.value = await TodoListsService.getAllTodoLists()
+      const data = await TodoListsService.getAllTodoListsWithData()
+      todoLists.value = data.lists || []
+      priorityLevels.value = data.priorityLevels || []
+      
       addNotification({
         type: 'success',
         title: 'Success',
         message: `Loaded ${todoLists.value.length} todo lists`,
       })
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load todo lists'
+      const errorMessage = await handleApiError(err, 'load todo lists')
+      
+      error.value = errorMessage
       addNotification({
         type: 'error',
-        title: 'Error',
-        message: error.value,
+        title: 'API Connection Error',
+        message: errorMessage,
+        duration: 10000 // Show longer for errors
       })
       console.error('Load TodoLists error:', err)
     } finally {
@@ -45,11 +73,26 @@ export function useTodoLists() {
       const todoList = await TodoListsService.getTodoListById(id)
       return todoList
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load todo list'
+      let errorMessage = 'Failed to load todo list'
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to server. Please check backend connection.'
+        } else if (err.message.includes('401')) {
+          errorMessage = 'Authentication required. Please login.'
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Todo list not found or API endpoint unavailable.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
+      error.value = errorMessage
       addNotification({
         type: 'error',
-        title: 'Error',
-        message: error.value,
+        title: 'API Error',
+        message: errorMessage,
+        duration: 8000
       })
       console.error('Get TodoList error:', err)
       return null
@@ -77,11 +120,28 @@ export function useTodoLists() {
       
       return true
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to create todo list'
+      let errorMessage = 'Failed to create todo list'
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'Cannot connect to server. Backend may be offline.'
+        } else if (err.message.includes('401')) {
+          errorMessage = 'Authentication expired. Please login again.'
+        } else if (err.message.includes('400')) {
+          errorMessage = 'Invalid todo list data. Please check your input.'
+        } else if (err.message.includes('409')) {
+          errorMessage = 'Todo list with this name already exists.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
+      error.value = errorMessage
       addNotification({
         type: 'error',
-        title: 'Error',
-        message: error.value,
+        title: 'Create Failed',
+        message: errorMessage,
+        duration: 8000
       })
       console.error('Create TodoList error:', err)
       return false
@@ -167,6 +227,7 @@ export function useTodoLists() {
   return {
     // State
     todoLists: readonly(todoLists),
+    priorityLevels: readonly(priorityLevels),
     loading: readonly(loading),
     error: readonly(error),
     
