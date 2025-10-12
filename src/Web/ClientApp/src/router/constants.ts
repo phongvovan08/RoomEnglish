@@ -10,9 +10,23 @@ export const Routes = {
   },
   
   // Authentication routes
-  Login: {
-    name: "Login",
-    path: "/login",
+  Auth: {
+    name: "Auth",
+    path: "/auth",
+    children: {
+      Login: {
+        name: "Login",
+        path: "/auth/login",
+      },
+      Register: {
+        name: "Register",
+        path: "/auth/register",
+      },
+      ForgotPassword: {
+        name: "ForgotPassword",
+        path: "/auth/forgot-password",
+      },
+    },
   },
   
   // Dashboard routes

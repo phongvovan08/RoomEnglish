@@ -19,6 +19,37 @@ menu:
   changeLanguage: Change Language
   search: Search
 
+auth:
+  login: Login
+  register: Register
+  email: Email
+  password: Password
+  confirmPassword: Confirm Password
+  firstName: First Name
+  lastName: Last Name
+  fullName: Full Name
+  loginButton: Sign In
+  registerButton: Create Account
+  loginToAccount: Login to your account
+  createAccount: Create your account
+  alreadyHaveAccount: Already have an account?
+  dontHaveAccount: Don't have an account?
+  loginSuccess: Login successful
+  registerSuccess: Registration successful
+  logoutSuccess: Logout successful
+  invalidCredentials: Invalid email or password
+  emailRequired: Email is required
+  passwordRequired: Password is required
+  passwordMinLength: Password must be at least 6 characters
+  confirmPasswordRequired: Confirm password is required
+  passwordsMustMatch: Passwords must match
+  firstNameRequired: First name is required
+  lastNameRequired: Last name is required
+  termsAcceptance: I accept the terms and conditions
+  termsRequired: You must accept the terms and conditions
+  forgotPassword: Forgot password?
+  rememberMe: Remember me
+
 common:
   loading: Loading...
   retry: Retry

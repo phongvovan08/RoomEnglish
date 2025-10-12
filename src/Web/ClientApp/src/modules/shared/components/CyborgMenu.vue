@@ -53,10 +53,22 @@
             </div>
           </li>
           
-          <!-- User Profile -->
-          <li class="profile-menu">
+          <!-- Authentication Section -->
+          <li class="auth-section" v-if="!isAuthenticated">
+            <router-link :to="Routes.Auth.children.Login.path" class="nav-link login-btn">
+              <Icon icon="mdi:login" class="w-5 h-5 mr-2" />
+              {{ $t('auth.login') }}
+            </router-link>
+            <router-link :to="Routes.Auth.children.Register.path" class="nav-link register-btn">
+              <Icon icon="mdi:account-plus" class="w-5 h-5 mr-2" />
+              {{ $t('auth.register') }}
+            </router-link>
+          </li>
+          
+          <!-- User Profile (when authenticated) -->
+          <li class="profile-menu" v-else>
             <button @click="toggleUserMenu" class="profile-btn">
-              {{ $t('menu.profile') }}
+              <span class="user-name">{{ user?.email || $t('menu.profile') }}</span>
               <div class="profile-avatar-placeholder"></div>
             </button>
             
@@ -75,7 +87,7 @@
                 {{ $t('menu.changeLanguage') }}
               </button>
               <hr class="dropdown-divider">
-              <button @click="logout" class="dropdown-link logout-btn">
+              <button @click="handleLogout" class="dropdown-link logout-btn">
                 <Icon icon="mdi:logout" class="w-4 h-4 mr-2" />
                 {{ $t('menu.logout') }}
               </button>
@@ -140,22 +152,41 @@
       
       <!-- Mobile User Actions -->
       <div class="mobile-user-section">
-        <router-link :to="Routes.Users.children.Profile.path" class="mobile-link" @click="closeMobileMenu">
-          <Icon icon="mdi:account" class="w-5 h-5 mr-3" />
-          {{ $t('menu.profile') }}
-        </router-link>
-        <router-link :to="Routes.Users.children.Settings.path" class="mobile-link" @click="closeMobileMenu">
-          <Icon icon="mdi:cog" class="w-5 h-5 mr-3" />
-          {{ $t('menu.settings') }}
-        </router-link>
-        <button @click="toggleLanguage" class="mobile-link">
-          <Icon icon="mdi:translate" class="w-5 h-5 mr-3" />
-          {{ $t('menu.changeLanguage') }}
-        </button>
-        <button @click="logout" class="mobile-link logout-btn">
-          <Icon icon="mdi:logout" class="w-5 h-5 mr-3" />
-          {{ $t('menu.logout') }}
-        </button>
+        <!-- Auth buttons when not authenticated -->
+        <div v-if="!isAuthenticated" class="mobile-auth">
+          <router-link :to="Routes.Auth.children.Login.path" class="mobile-link login-btn" @click="closeMobileMenu">
+            <Icon icon="mdi:login" class="w-5 h-5 mr-3" />
+            {{ $t('auth.login') }}
+          </router-link>
+          <router-link :to="Routes.Auth.children.Register.path" class="mobile-link register-btn" @click="closeMobileMenu">
+            <Icon icon="mdi:account-plus" class="w-5 h-5 mr-3" />
+            {{ $t('auth.register') }}
+          </router-link>
+        </div>
+        
+        <!-- User menu when authenticated -->
+        <div v-else class="mobile-user">
+          <div class="mobile-user-info">
+            <Icon icon="mdi:account-circle" class="w-6 h-6 mr-2" />
+            <span>{{ user?.email || $t('menu.profile') }}</span>
+          </div>
+          <router-link :to="Routes.Users.children.Profile.path" class="mobile-link" @click="closeMobileMenu">
+            <Icon icon="mdi:account" class="w-5 h-5 mr-3" />
+            {{ $t('menu.profile') }}
+          </router-link>
+          <router-link :to="Routes.Users.children.Settings.path" class="mobile-link" @click="closeMobileMenu">
+            <Icon icon="mdi:cog" class="w-5 h-5 mr-3" />
+            {{ $t('menu.settings') }}
+          </router-link>
+          <button @click="toggleLanguage" class="mobile-link">
+            <Icon icon="mdi:translate" class="w-5 h-5 mr-3" />
+            {{ $t('menu.changeLanguage') }}
+          </button>
+          <button @click="handleLogout" class="mobile-link logout-btn">
+            <Icon icon="mdi:logout" class="w-5 h-5 mr-3" />
+            {{ $t('menu.logout') }}
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -164,6 +195,7 @@
 <script setup lang="ts">
 import { Routes } from '@/router/constants'
 import { loadLanguageAsync } from '@/plugins/ui/i18n'
+import { useAuth } from '@/composables/useAuth'
 
 // Reactive data
 const searchQuery = ref('')
@@ -175,6 +207,9 @@ const isMobile = ref(false)
 
 const { locale } = useI18n()
 const route = useRoute()
+
+// Authentication
+const { isAuthenticated, user, logout: authLogout } = useAuth()
 
 // Menu configuration
 const menuItems = computed(() => [
@@ -298,10 +333,14 @@ const toggleLanguage = () => {
   closeUserMenu()
 }
 
-const logout = () => {
-  console.log('Logout clicked')
-  closeUserMenu()
-  closeMobileMenu()
+const handleLogout = async () => {
+  try {
+    await authLogout()
+    closeUserMenu()
+    closeMobileMenu()
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
 }
 
 // Handle responsive behavior
@@ -726,5 +765,67 @@ watch(() => route.path, () => {
 .dropdown-menu,
 .user-dropdown {
   animation: fadeIn 0.3s ease;
+}
+
+/* Authentication Section */
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.login-btn {
+  background: transparent !important;
+  border: 1px solid var(--accent-color);
+  border-radius: 20px;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  background: var(--accent-color) !important;
+  color: var(--primary-bg) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(236, 96, 144, 0.3);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, var(--accent-color), var(--secondary-accent)) !important;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(236, 96, 144, 0.4);
+  background: linear-gradient(135deg, #f06292, var(--secondary-accent)) !important;
+}
+
+/* Mobile auth styles */
+.mobile-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  background: rgba(236, 96, 144, 0.1);
+  border-radius: 10px;
+  margin-bottom: 15px;
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--accent-color);
 }
 </style>

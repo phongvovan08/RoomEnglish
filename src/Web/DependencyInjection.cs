@@ -31,22 +31,26 @@ public static class DependencyInjection
 
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
-        //// Add CORS
-        //builder.Services.AddCors(options =>
-        //{
-        //    options.AddPolicy("AllowVueApp", policy =>
-        //    {
-        //        policy.WithOrigins(
-        //            "http://localhost:3000",
-        //            "http://localhost:3001", 
-        //            "https://localhost:3000",
-        //            "https://localhost:3001"
-        //        )
-        //        .AllowAnyMethod()
-        //        .AllowAnyHeader()
-        //        .AllowCredentials();
-        //    });
-        //});
+        // Add CORS
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowVueApp", policy =>
+            {
+                policy.WithOrigins(
+                    "http://localhost:3000",
+                    "http://localhost:3001", 
+                    "http://localhost:3002",
+                    "http://localhost:3003",
+                    "https://localhost:3000",
+                    "https://localhost:3001",
+                    "https://localhost:3002",
+                    "https://localhost:3003"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+            });
+        });
 
 
         // Customise default API behaviour

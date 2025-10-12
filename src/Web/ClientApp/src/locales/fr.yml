@@ -19,6 +19,37 @@ menu:
   changeLanguage: Changer de Langue
   search: Rechercher
 
+auth:
+  login: Connexion
+  register: Inscription
+  email: Email
+  password: Mot de passe
+  confirmPassword: Confirmer le mot de passe
+  firstName: Prénom
+  lastName: Nom
+  fullName: Nom complet
+  loginButton: Se connecter
+  registerButton: Créer un compte
+  loginToAccount: Connectez-vous à votre compte
+  createAccount: Créez votre compte
+  alreadyHaveAccount: Vous avez déjà un compte?
+  dontHaveAccount: Vous n'avez pas de compte?
+  loginSuccess: Connexion réussie
+  registerSuccess: Inscription réussie
+  logoutSuccess: Déconnexion réussie
+  invalidCredentials: Email ou mot de passe invalide
+  emailRequired: L'email est requis
+  passwordRequired: Le mot de passe est requis
+  passwordMinLength: Le mot de passe doit contenir au moins 6 caractères
+  confirmPasswordRequired: Confirmer le mot de passe est requis
+  passwordsMustMatch: Les mots de passe doivent correspondre
+  firstNameRequired: Le prénom est requis
+  lastNameRequired: Le nom est requis
+  termsAcceptance: J'accepte les termes et conditions
+  termsRequired: Vous devez accepter les termes et conditions
+  forgotPassword: Mot de passe oublié?
+  rememberMe: Se souvenir de moi
+
 common:
   loading: Loading...
   retry: Retry

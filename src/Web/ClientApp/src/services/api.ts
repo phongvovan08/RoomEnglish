@@ -56,7 +56,7 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`
     
     // Get token from localStorage or other auth mechanism
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem('access_token')
     
     const config: RequestInit = {
       headers: {

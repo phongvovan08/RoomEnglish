@@ -19,6 +19,20 @@ const router = createRouter({
         public: true,
       },
     },
+    // Authentication routes
+    {
+      path: Routes.Auth.children.Login.path,
+      name: Routes.Auth.children.Login.name,
+      component: () => import("../modules/auth/views/LoginView.vue"),
+      meta: { public: true, guest: true },
+    },
+    {
+      path: Routes.Auth.children.Register.path,
+      name: Routes.Auth.children.Register.name,
+      component: () => import("../modules/auth/views/RegisterView.vue"),
+      meta: { public: true, guest: true },
+    },
+    
     // Dashboard routes
     ...dashboardRoutes,
     
@@ -101,7 +115,36 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach(async (to) => {
+// Import auth composable
+import { useAuth } from '@/composables/useAuth'
+
+router.beforeEach(async (to, from) => {
+  const { isAuthenticated, initAuth, checkAuthStatus } = useAuth()
+
+  // Initialize auth if not already done
+  await initAuth()
+
+  // Check if route requires authentication
+  if (to.meta.requiresAuth) {
+    // Check authentication status
+    const isValidAuth = await checkAuthStatus()
+    
+    if (!isValidAuth) {
+      // Redirect to login with return URL
+      return {
+        name: Routes.Auth.children.Login.name,
+        query: { redirect: to.fullPath }
+      }
+    }
+  }
+
+  // Check if route is for guests only (login, register)
+  if (to.meta.guest && isAuthenticated.value) {
+    // Redirect authenticated users to dashboard
+    return { name: Routes.Dashboard.name }
+  }
+
+  // Legacy MSAL support if enabled
   if (import.meta.env.VITE_USE_MSAL_CLIENT) {
     if (!to.meta.public) {
       try {
