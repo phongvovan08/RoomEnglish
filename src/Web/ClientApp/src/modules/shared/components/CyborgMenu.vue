@@ -365,11 +365,24 @@ onMounted(() => {
   // Close menus when clicking outside
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement
+    
+    // Close user menu if clicking outside
     if (!target.closest('.profile-menu')) {
       userMenuOpen.value = false
     }
+    
+    // Close mobile menu if clicking outside
     if (!target.closest('.menu-trigger') && !target.closest('.mobile-nav')) {
       mobileMenuOpen.value = false
+    }
+    
+    // Close dropdown menus if clicking outside
+    const navItem = target.closest('.nav-menu li')
+    if (!navItem) {
+      // Clicked outside all nav items, close all dropdowns
+      Object.keys(dropdownOpen.value).forEach(key => {
+        dropdownOpen.value[key] = false
+      })
     }
   })
 })
