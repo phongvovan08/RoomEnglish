@@ -209,7 +209,7 @@ const { locale } = useI18n()
 const route = useRoute()
 
 // Authentication
-const { isAuthenticated, user, logout: authLogout } = useAuth()
+const { isAuthenticated, user, logout: authLogout, initAuth } = useAuth()
 
 // Menu configuration
 const menuItems = computed(() => [
@@ -329,10 +329,20 @@ const handleScroll = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
   window.addEventListener('scroll', handleScroll)
+  
+  // Initialize authentication state
+  await initAuth()
+  
+  // Debug logging for authentication state
+  console.log('CyborgMenu - Auth State:', {
+    isAuthenticated: isAuthenticated.value,
+    user: user.value,
+    hasToken: !!localStorage.getItem('access_token')
+  })
   
   // Close menus when clicking outside
   document.addEventListener('click', (e) => {
@@ -368,6 +378,15 @@ onUnmounted(() => {
 watch(() => route.path, () => {
   closeMobileMenu()
 })
+
+// Watch authentication state changes
+watch(isAuthenticated, (newValue, oldValue) => {
+  console.log('CyborgMenu - Auth state changed:', {
+    from: oldValue,
+    to: newValue,
+    user: user.value
+  })
+}, { immediate: true })
 </script>
 
 <style scoped>
