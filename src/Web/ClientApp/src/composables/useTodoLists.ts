@@ -72,8 +72,22 @@ export function useTodoLists() {
     error.value = null
     
     try {
-      const todoList = await TodoListsService.getTodoListById(id)
-      return todoList
+      // First check if we already have the data in cache
+      const cachedList = todoLists.value.find(list => list.id === id)
+      if (cachedList) {
+        loading.value = false
+        return cachedList
+      }
+      
+      // If not cached, load all todo lists and find the one we need
+      await loadTodoLists()
+      const foundList = todoLists.value.find(list => list.id === id)
+      
+      if (!foundList) {
+        throw new Error('Todo list not found')
+      }
+      
+      return foundList
     } catch (err) {
       let errorMessage = 'Failed to load todo list'
       
@@ -82,8 +96,8 @@ export function useTodoLists() {
           errorMessage = 'Cannot connect to server. Please check backend connection.'
         } else if (err.message.includes('401')) {
           errorMessage = 'Authentication required. Please login.'
-        } else if (err.message.includes('404')) {
-          errorMessage = 'Todo list not found or API endpoint unavailable.'
+        } else if (err.message.includes('404') || err.message.includes('not found')) {
+          errorMessage = 'Todo list not found.'
         } else {
           errorMessage = err.message
         }

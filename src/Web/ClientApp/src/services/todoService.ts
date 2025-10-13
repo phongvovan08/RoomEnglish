@@ -88,30 +88,7 @@ export class TodoListsService {
     return data.priorityLevels || []
   }
 
-  // Get TodoList by ID
-  static async getTodoListById(id: number): Promise<TodoList> {
-    try {
-      const response = await fetch(`${this.BASE_URL}/${id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
-      })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`)
-      }
-
-      return response.json()
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        throw new Error('Network error: Cannot connect to API server.')
-      }
-      throw error
-    }
-  }
 
   // Create new TodoList
   static async createTodoList(todoList: CreateTodoListRequest): Promise<TodoList> {
