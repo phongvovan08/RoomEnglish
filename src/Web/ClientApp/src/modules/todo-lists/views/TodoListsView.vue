@@ -67,7 +67,11 @@
             </div>
             
             <router-link
-              :to="`${Routes.TodoLists.children.View.path.replace(':id', todoList.id?.toString() || '')}`"
+              :to="{
+                name: Routes.TodoItems.children.ByList.name,
+                params: { listId: todoList.id?.toString() || '' },
+                query: { title: todoList.title }
+              }"
               class="block mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
               {{ $t('common.viewDetails') }}

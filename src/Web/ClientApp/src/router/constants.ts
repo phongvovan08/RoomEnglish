@@ -68,6 +68,10 @@ export const Routes = {
         name: "TodoItemsList",
         path: "/todo-items",
       },
+      ByList: {
+        name: "TodoItemsByList",
+        path: "/todo-lists/:listId/items",
+      },
       Create: {
         name: "CreateTodoItem",
         path: "/todo-items/create",

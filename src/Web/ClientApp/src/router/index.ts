@@ -70,6 +70,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: Routes.TodoItems.children.ByList.path,
+      name: Routes.TodoItems.children.ByList.name,
+      component: () => import("../views/TodoItemsView.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
       path: Routes.TodoItems.children.Create.path,
       name: Routes.TodoItems.children.Create.name,
       component: () => import("../modules/todo-items/views/CreateTodoItemView.vue"),
