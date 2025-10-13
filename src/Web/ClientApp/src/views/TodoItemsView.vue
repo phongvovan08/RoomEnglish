@@ -199,6 +199,39 @@
         </form>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <div v-if="showDeleteDialog" class="dialog-overlay" @click.self="showDeleteDialog = false">
+      <div class="dialog-content gaming-card">
+        <div class="text-center">
+          <Icon icon="mdi:alert-circle" class="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 class="text-xl font-bold text-white mb-2">Delete Todo Item</h3>
+          <p class="text-gray-400 mb-6">
+            Are you sure you want to delete "{{ deletingItem?.title }}"? 
+            <br>
+            <span class="text-red-400 font-medium">This action cannot be undone.</span>
+          </p>
+          <div class="flex justify-center space-x-4">
+            <button
+              @click="showDeleteDialog = false"
+              class="gaming-btn-secondary"
+              :disabled="isDeleting"
+            >
+              Cancel
+            </button>
+            <button
+              @click="handleDeleteItem"
+              class="gaming-btn-danger"
+              :disabled="isDeleting"
+            >
+              <Icon v-if="isDeleting" icon="mdi:loading" class="w-4 h-4 mr-2 animate-spin" />
+              <Icon v-else icon="mdi:delete" class="w-4 h-4 mr-2" />
+              Delete Item
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -237,8 +270,14 @@ const todoListTitle = computed(() => route.query.title as string || 'Todo Items'
 // Dialog states
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
+const showDeleteDialog = ref(false)
 const editingItem = ref<TodoItemBriefDto | null>(null)
+const deletingItem = ref<TodoItemBriefDto | null>(null)
 const isSaving = ref(false)
+const isDeleting = ref(false)
+
+// Dropdown menu state
+const activeItemMenu = ref<number | null>(null)
 
 // Form data
 const itemForm = reactive({
@@ -256,6 +295,19 @@ onMounted(async () => {
   } else {
     error('Invalid todo list ID')
   }
+  
+  // Close dropdown menu when clicking outside
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement
+    if (!target.closest('.relative')) {
+      closeItemMenu()
+    }
+  })
+})
+
+// Clean up event listener
+onUnmounted(() => {
+  document.removeEventListener('click', closeItemMenu)
 })
 
 // Item actions
@@ -264,6 +316,7 @@ const handleToggleItem = async (item: TodoItemBriefDto) => {
 }
 
 const editItem = (item: TodoItemBriefDto) => {
+  closeItemMenu()
   editingItem.value = item
   itemForm.title = item.title
   showEditDialog.value = true
@@ -298,16 +351,42 @@ const handleSaveItem = async () => {
   }
 }
 
-const confirmDeleteItem = async (item: TodoItemBriefDto) => {
-  if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
-    await deleteTodoItem(item.id, listId.value)
+// Dropdown menu functions
+const toggleItemMenu = (itemId: number) => {
+  activeItemMenu.value = activeItemMenu.value === itemId ? null : itemId
+}
+
+const closeItemMenu = () => {
+  activeItemMenu.value = null
+}
+
+const confirmDeleteItem = (item: TodoItemBriefDto) => {
+  closeItemMenu()
+  deletingItem.value = item
+  showDeleteDialog.value = true
+}
+
+const handleDeleteItem = async () => {
+  if (!deletingItem.value) return
+
+  try {
+    isDeleting.value = true
+    await deleteTodoItem(deletingItem.value.id, listId.value)
+    showDeleteDialog.value = false
+    deletingItem.value = null
+  } catch (error) {
+    console.error('Failed to delete item:', error)
+  } finally {
+    isDeleting.value = false
   }
 }
 
 const closeDialogs = () => {
   showCreateDialog.value = false
   showEditDialog.value = false
+  showDeleteDialog.value = false
   editingItem.value = null
+  deletingItem.value = null
   itemForm.title = ''
 }
 </script>
@@ -554,6 +633,34 @@ const closeDialogs = () => {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* Gaming Buttons */
+.gaming-btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  padding: 0.875rem 2rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gaming-btn-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+.gaming-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive design */
