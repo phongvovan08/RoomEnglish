@@ -788,9 +788,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
 
 .login-btn:hover {
   background: var(--accent-color) !important;
-  color: var(--primary-bg) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(236, 96, 144, 0.3);
+  box-shadow: 0 4px 15px rgba(236, 96, 144, 0.4);
 }
 
 .register-btn {
