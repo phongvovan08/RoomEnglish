@@ -221,13 +221,6 @@ const menuItems = computed(() => [
     hasChildren: false,
   },
   {
-    name: 'dashboard',
-    label: 'menu.dashboard',
-    path: Routes.Dashboard.path,
-    icon: 'mdi:view-dashboard',
-    hasChildren: false,
-  },
-  {
     name: 'todoLists',
     label: 'menu.todoLists',
     path: Routes.TodoLists.path,
@@ -244,27 +237,6 @@ const menuItems = computed(() => [
         name: 'createTodoList',
         label: 'menu.create',
         path: Routes.TodoLists.children.Create.path,
-        icon: 'mdi:plus-circle',
-      },
-    ],
-  },
-  {
-    name: 'todoItems',
-    label: 'menu.todoItems',
-    path: Routes.TodoItems.path,
-    icon: 'mdi:checkbox-marked-circle',
-    hasChildren: true,
-    children: [
-      {
-        name: 'todoItemsList',
-        label: 'menu.viewAll',
-        path: Routes.TodoItems.children.List.path,
-        icon: 'mdi:view-list',
-      },
-      {
-        name: 'createTodoItem',
-        label: 'menu.create',
-        path: Routes.TodoItems.children.Create.path,
         icon: 'mdi:plus-circle',
       },
     ],
