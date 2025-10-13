@@ -83,35 +83,19 @@
                 <span class="text-sm text-gray-400">
                   ID: {{ item.id }}
                 </span>
-                <div class="relative">
+                <div class="flex space-x-2">
                   <button
-                    @click="toggleItemMenu(item.id)"
-                    class="action-btn text-gray-400 hover:text-white"
+                    @click="editItem(item)"
+                    class="action-btn text-blue-400 hover:text-blue-300"
                   >
-                    <Icon icon="mdi:dots-vertical" class="w-5 h-5" />
+                    <Icon icon="mdi:pencil" class="w-4 h-4" />
                   </button>
-                  
-                  <!-- Dropdown Menu -->
-                  <div 
-                    v-if="activeItemMenu === item.id" 
-                    class="item-dropdown-menu"
-                    @click.stop
+                  <button
+                    @click="confirmDeleteItem(item)"
+                    class="action-btn text-red-400 hover:text-red-300"
                   >
-                    <button
-                      @click="editItem(item)"
-                      class="dropdown-item text-blue-400 hover:text-blue-300"
-                    >
-                      <Icon icon="mdi:pencil" class="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      @click="confirmDeleteItem(item)"
-                      class="dropdown-item text-red-400 hover:text-red-300"
-                    >
-                      <Icon icon="mdi:delete" class="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
+                    <Icon icon="mdi:delete" class="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -256,9 +240,6 @@ const showEditDialog = ref(false)
 const editingItem = ref<TodoItemBriefDto | null>(null)
 const isSaving = ref(false)
 
-// Dropdown menu state
-const activeItemMenu = ref<number | null>(null)
-
 // Form data
 const itemForm = reactive({
   title: ''
@@ -275,19 +256,6 @@ onMounted(async () => {
   } else {
     error('Invalid todo list ID')
   }
-  
-  // Close dropdown menu when clicking outside
-  document.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement
-    if (!target.closest('.relative')) {
-      closeItemMenu()
-    }
-  })
-})
-
-// Clean up event listener
-onUnmounted(() => {
-  document.removeEventListener('click', closeItemMenu)
 })
 
 // Item actions
@@ -296,7 +264,6 @@ const handleToggleItem = async (item: TodoItemBriefDto) => {
 }
 
 const editItem = (item: TodoItemBriefDto) => {
-  closeItemMenu()
   editingItem.value = item
   itemForm.title = item.title
   showEditDialog.value = true
@@ -331,17 +298,7 @@ const handleSaveItem = async () => {
   }
 }
 
-// Dropdown menu functions
-const toggleItemMenu = (itemId: number) => {
-  activeItemMenu.value = activeItemMenu.value === itemId ? null : itemId
-}
-
-const closeItemMenu = () => {
-  activeItemMenu.value = null
-}
-
 const confirmDeleteItem = async (item: TodoItemBriefDto) => {
-  closeItemMenu()
   if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
     await deleteTodoItem(item.id, listId.value)
   }
@@ -545,52 +502,6 @@ const closeDialogs = () => {
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.1);
-}
-
-/* Item Dropdown Menu */
-.item-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(231, 94, 141, 0.3);
-  border-radius: 8px;
-  padding: 0.5rem;
-  min-width: 120px;
-  z-index: 50;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  animation: dropdownSlideIn 0.2s ease;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: none;
-  border: none;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-  background: rgba(231, 94, 141, 0.1);
-}
-
-@keyframes dropdownSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .loading-spinner {
