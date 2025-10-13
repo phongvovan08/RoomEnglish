@@ -1,15 +1,12 @@
 import type { App } from 'vue'
-import { useAuth } from '@/composables/useAuth'
+import { AuthService } from '@/services/authService'
 
 export default {
   install(app: App) {
     // Initialize authentication when the app starts
-    app.config.globalProperties.$auth = useAuth()
+    // Note: useAuth should only be called within component setup functions
     
-    // Initialize auth state
-    const { initAuth } = useAuth()
-    initAuth().catch(error => {
-      console.warn('Failed to initialize auth on app start:', error)
-    })
+    // Initialize auth state using service directly
+    AuthService.isAuthenticated() // This will validate tokens
   }
 }

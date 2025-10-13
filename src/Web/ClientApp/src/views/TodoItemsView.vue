@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useTodoItems } from '@/composables/useTodoItems'
@@ -297,17 +297,19 @@ onMounted(async () => {
   }
   
   // Close dropdown menu when clicking outside
-  document.addEventListener('click', (event) => {
+  const handleClickOutside = (event: Event) => {
     const target = event.target as HTMLElement
     if (!target.closest('.relative')) {
       closeItemMenu()
     }
+  }
+  
+  document.addEventListener('click', handleClickOutside)
+  
+  // Clean up event listener
+  onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
   })
-})
-
-// Clean up event listener
-onUnmounted(() => {
-  document.removeEventListener('click', closeItemMenu)
 })
 
 // Item actions

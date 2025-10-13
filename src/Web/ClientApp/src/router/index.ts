@@ -121,21 +121,15 @@ const router = createRouter({
   ],
 });
 
-// Import auth composable
-import { useAuth } from '@/composables/useAuth'
+// Import auth service directly instead of composable
+import { AuthService } from '@/services/authService'
 
 router.beforeEach(async (to, from) => {
-  const { isAuthenticated, initAuth, checkAuthStatus } = useAuth()
-
-  // Initialize auth if not already done
-  await initAuth()
 
   // Check if route requires authentication
   if (to.meta.requiresAuth) {
-    // Check authentication status
-    const isValidAuth = await checkAuthStatus()
-    
-    if (!isValidAuth) {
+    // Check authentication status using service directly
+    if (!AuthService.isAuthenticated()) {
       // Redirect to login with return URL
       return {
         name: Routes.Auth.children.Login.name,
@@ -145,7 +139,7 @@ router.beforeEach(async (to, from) => {
   }
 
   // Check if route is for guests only (login, register)
-  if (to.meta.guest && isAuthenticated.value) {
+  if (to.meta.guest && AuthService.isAuthenticated()) {
     // Redirect authenticated users to dashboard
     return { name: Routes.Dashboard.name }
   }
