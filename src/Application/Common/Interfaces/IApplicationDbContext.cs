@@ -8,5 +8,18 @@ public interface IApplicationDbContext
 
     DbSet<TodoItem> TodoItems { get; }
 
+    // Vocabulary Learning System
+    DbSet<VocabularyCategory> VocabularyCategories { get; }
+    
+    DbSet<VocabularyWord> VocabularyWords { get; }
+    
+    DbSet<VocabularyExample> VocabularyExamples { get; }
+    
+    DbSet<UserWordProgress> UserWordProgress { get; }
+    
+    DbSet<DictationResult> DictationResults { get; }
+    
+    DbSet<LearningSession> LearningSessions { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

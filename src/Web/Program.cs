@@ -13,7 +13,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-   // await app.InitialiseDatabaseAsync();
+    await app.InitialiseDatabaseAsync();  // Disabled to avoid database conflicts
 }
 else
 {

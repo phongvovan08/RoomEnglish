@@ -15,6 +15,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
 
+    // Vocabulary Learning System
+    public DbSet<VocabularyCategory> VocabularyCategories => Set<VocabularyCategory>();
+    
+    public DbSet<VocabularyWord> VocabularyWords => Set<VocabularyWord>();
+    
+    public DbSet<VocabularyExample> VocabularyExamples => Set<VocabularyExample>();
+    
+    public DbSet<UserWordProgress> UserWordProgress => Set<UserWordProgress>();
+    
+    public DbSet<DictationResult> DictationResults => Set<DictationResult>();
+    
+    public DbSet<LearningSession> LearningSessions => Set<LearningSession>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

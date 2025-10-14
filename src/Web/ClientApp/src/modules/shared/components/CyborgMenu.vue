@@ -221,6 +221,33 @@ const menuItems = computed(() => [
     hasChildren: false,
   },
   {
+    name: 'vocabulary',
+    label: 'Vocabulary Learning',
+    path: Routes.Vocabulary.children.Learning.path,
+    icon: 'mdi:book-alphabet',
+    hasChildren: true,
+    children: [
+      {
+        name: 'vocabularyLearning',
+        label: 'Learning Center',
+        path: Routes.Vocabulary.children.Learning.path,
+        icon: 'mdi:school',
+      },
+      {
+        name: 'vocabularyCategories',
+        label: 'Categories',
+        path: Routes.Vocabulary.children.Categories.path,
+        icon: 'mdi:folder-multiple',
+      },
+      {
+        name: 'vocabularyProgress',
+        label: 'My Progress',
+        path: Routes.Vocabulary.children.Progress.path,
+        icon: 'mdi:chart-line',
+      },
+    ],
+  },
+  {
     name: 'todoLists',
     label: 'menu.todoLists',
     path: Routes.TodoLists.path,
@@ -246,13 +273,6 @@ const menuItems = computed(() => [
     label: 'menu.weatherForecasts',
     path: Routes.WeatherForecasts.path,
     icon: 'mdi:weather-cloudy',
-    hasChildren: false,
-  },
-  {
-    name: 'posts',
-    label: 'menu.posts',
-    path: Routes.Posts.path,
-    icon: 'mdi:post',
     hasChildren: false,
   },
 ])

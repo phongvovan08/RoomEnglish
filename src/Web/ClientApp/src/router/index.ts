@@ -116,6 +116,14 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     
+    // Vocabulary Learning routes
+    {
+      path: Routes.Vocabulary.children.Learning.path,
+      name: Routes.Vocabulary.children.Learning.name,
+      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue"),
+      meta: { requiresAuth: true },
+    },
+    
     // Legacy posts routes
     ...postsRoutes,
   ],

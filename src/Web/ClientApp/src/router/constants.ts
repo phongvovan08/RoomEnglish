@@ -109,6 +109,38 @@ export const Routes = {
     },
   },
   
+  // Vocabulary Learning System (mapping to backend /api/Vocabulary)
+  Vocabulary: {
+    name: "Vocabulary",
+    path: "/vocabulary",
+    children: {
+      Learning: {
+        name: "VocabularyLearning",
+        path: "/vocabulary/learning",
+      },
+      Categories: {
+        name: "VocabularyCategories", 
+        path: "/vocabulary/categories",
+      },
+      Words: {
+        name: "VocabularyWords",
+        path: "/vocabulary/words",
+      },
+      Practice: {
+        name: "VocabularyPractice",
+        path: "/vocabulary/practice",
+      },
+      Dictation: {
+        name: "VocabularyDictation",
+        path: "/vocabulary/dictation",
+      },
+      Progress: {
+        name: "VocabularyProgress",
+        path: "/vocabulary/progress",
+      },
+    },
+  },
+  
   // Legacy Posts (keeping existing)
   Posts: {
     name: "Posts",

@@ -778,6 +778,302 @@
         ]
       }
     },
+    "/api/VocabularyEndpoints/categories": {
+      "get": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "GetApiVocabularyEndpointsCategories",
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/VocabularyEndpoints/words": {
+      "get": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "GetApiVocabularyEndpointsWords",
+        "parameters": [
+          {
+            "name": "CategoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "DifficultyLevel",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "SearchTerm",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 4
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 5
+          },
+          {
+            "name": "IncludeInactive",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 6
+          },
+          {
+            "name": "IncludeExamples",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 7
+          },
+          {
+            "name": "IncludeUserProgress",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 8
+          },
+          {
+            "name": "UserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 9
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/VocabularyEndpoints/words/{id}": {
+      "get": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "GetApiVocabularyEndpointsWords2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "User-Id",
+            "x-originalName": "userId",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/VocabularyEndpoints/sessions/start": {
+      "post": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "PostApiVocabularyEndpointsSessionsStart",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLearningSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/VocabularyEndpoints/sessions/{id}/complete": {
+      "put": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "PutApiVocabularyEndpointsSessionsComplete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteLearningSessionRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/VocabularyEndpoints/dictation/submit": {
+      "post": {
+        "tags": [
+          "VocabularyEndpoints"
+        ],
+        "operationId": "PostApiVocabularyEndpointsDictationSubmit",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDictationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecasts": {
       "get": {
         "tags": [
@@ -1259,6 +1555,55 @@
           "oldPassword": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "StartLearningSessionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionType": {
+            "type": "string"
+          },
+          "maxWords": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "CompleteLearningSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "correctAnswers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SubmitDictationCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "exampleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userInput": {
+            "type": "string"
+          },
+          "timeTakenSeconds": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
