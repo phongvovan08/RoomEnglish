@@ -778,12 +778,12 @@
         ]
       }
     },
-    "/api/VocabularyEndpoints/categories": {
+    "/api/Vocabulary/categories": {
       "get": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "GetApiVocabularyEndpointsCategories",
+        "operationId": "GetApiVocabularyCategories",
         "parameters": [
           {
             "name": "PageNumber",
@@ -819,20 +819,15 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
-    "/api/VocabularyEndpoints/words": {
+    "/api/Vocabulary/words": {
       "get": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "GetApiVocabularyEndpointsWords",
+        "operationId": "GetApiVocabularyWords",
         "parameters": [
           {
             "name": "CategoryId",
@@ -924,20 +919,15 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
-    "/api/VocabularyEndpoints/words/{id}": {
+    "/api/Vocabulary/words/{id}": {
       "get": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "GetApiVocabularyEndpointsWords2",
+        "operationId": "GetApiVocabularyWords2",
         "parameters": [
           {
             "name": "id",
@@ -964,20 +954,15 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
-    "/api/VocabularyEndpoints/sessions/start": {
+    "/api/Vocabulary/sessions/start": {
       "post": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "PostApiVocabularyEndpointsSessionsStart",
+        "operationId": "PostApiVocabularySessionsStart",
         "requestBody": {
           "x-name": "command",
           "content": {
@@ -994,20 +979,15 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
-    "/api/VocabularyEndpoints/sessions/{id}/complete": {
+    "/api/Vocabulary/sessions/{id}/complete": {
       "put": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "PutApiVocabularyEndpointsSessionsComplete",
+        "operationId": "PutApiVocabularySessionsComplete",
         "parameters": [
           {
             "name": "id",
@@ -1036,20 +1016,15 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
-    "/api/VocabularyEndpoints/dictation/submit": {
+    "/api/Vocabulary/dictation/submit": {
       "post": {
         "tags": [
-          "VocabularyEndpoints"
+          "Vocabulary"
         ],
-        "operationId": "PostApiVocabularyEndpointsDictationSubmit",
+        "operationId": "PostApiVocabularyDictationSubmit",
         "requestBody": {
           "x-name": "command",
           "content": {
@@ -1066,12 +1041,7 @@
           "200": {
             "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
+        }
       }
     },
     "/api/WeatherForecasts": {

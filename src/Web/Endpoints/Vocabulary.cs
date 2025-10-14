@@ -12,7 +12,7 @@ using RoomEnglish.Web.Infrastructure;
 
 namespace RoomEnglish.Web.Endpoints;
 
-public class VocabularyEndpoints : EndpointGroupBase
+public class Vocabulary : EndpointGroupBase
 {
     public override void Map(RouteGroupBuilder group)
     {
