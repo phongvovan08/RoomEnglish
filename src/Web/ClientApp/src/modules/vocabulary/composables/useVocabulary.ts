@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import appConfig from '@/config/app.config'
 import type { 
   VocabularyCategory, 
   VocabularyWord, 
@@ -11,6 +12,11 @@ import type {
 } from '../types/vocabulary.types'
 
 const API_BASE = '/api/vocabulary'
+
+// Helper method to get auth token
+const getAuthToken = (): string | null => {
+  return localStorage.getItem(appConfig.auth.tokenKey)
+}
 
 export const useVocabulary = () => {
   const categories = ref<VocabularyCategory[]>([])
@@ -36,13 +42,13 @@ export const useVocabulary = () => {
       error.value = null
 
       const params = new URLSearchParams()
-      if (query.pageNumber) params.append('pageNumber', query.pageNumber.toString())
-      if (query.pageSize) params.append('pageSize', query.pageSize.toString())
-      if (query.includeInactive) params.append('includeInactive', query.includeInactive.toString())
+      params.append('PageNumber', (query.pageNumber || 1).toString())
+      params.append('PageSize', (query.pageSize || 10).toString())
+      params.append('IncludeInactive', (query.includeInactive || false).toString())
 
       const response = await fetch(`${API_BASE}/categories?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       })
@@ -67,19 +73,22 @@ export const useVocabulary = () => {
       isLoading.value = true
       error.value = null
 
+      const token = getAuthToken()
+      console.log('GetWords - Token value:', token)
+
       const params = new URLSearchParams()
-      if (query.categoryId) params.append('categoryId', query.categoryId.toString())
-      if (query.difficultyLevel) params.append('difficultyLevel', query.difficultyLevel.toString())
-      if (query.searchTerm) params.append('searchTerm', query.searchTerm)
-      if (query.pageNumber) params.append('pageNumber', query.pageNumber.toString())
-      if (query.pageSize) params.append('pageSize', query.pageSize.toString())
-      if (query.includeInactive) params.append('includeInactive', query.includeInactive.toString())
-      if (query.includeExamples) params.append('includeExamples', query.includeExamples.toString())
-      if (query.includeUserProgress) params.append('includeUserProgress', query.includeUserProgress.toString())
+      if (query.categoryId) params.append('CategoryId', query.categoryId.toString())
+      if (query.difficultyLevel) params.append('DifficultyLevel', query.difficultyLevel.toString())
+      if (query.searchTerm) params.append('SearchTerm', query.searchTerm)
+      params.append('PageNumber', (query.pageNumber || 1).toString())
+      params.append('PageSize', (query.pageSize || 10).toString())
+      params.append('IncludeInactive', (query.includeInactive || false).toString())
+      params.append('IncludeExamples', (query.includeExamples || false).toString())
+      params.append('IncludeUserProgress', (query.includeUserProgress || false).toString())
 
       const response = await fetch(`${API_BASE}/words?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       })
@@ -106,7 +115,7 @@ export const useVocabulary = () => {
 
       const response = await fetch(`${API_BASE}/words/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         }
       })
@@ -134,7 +143,7 @@ export const useVocabulary = () => {
       const response = await fetch(`${API_BASE}/sessions/start`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(command)
@@ -163,7 +172,7 @@ export const useVocabulary = () => {
       const response = await fetch(`${API_BASE}/sessions/${command.sessionId}/complete`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
