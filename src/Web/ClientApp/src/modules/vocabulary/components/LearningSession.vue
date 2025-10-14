@@ -26,7 +26,7 @@
       </div>
 
       <div class="session-controls">
-        <select v-model="sessionType" class="session-type-select" @change="changeSessionType">
+        <select :value="sessionType" class="session-type-select" @change="changeSessionType">
           <option value="vocabulary">📚 Vocabulary</option>
           <option value="dictation">🎤 Dictation</option>
           <option value="mixed">🎯 Mixed</option>
@@ -145,6 +145,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   complete: [result: LearningSession]
   back: []
+  'update:sessionType': [value: 'vocabulary' | 'dictation' | 'mixed']
 }>()
 
 const {
@@ -306,10 +307,16 @@ const completeSession = async () => {
   }
 }
 
-const changeSessionType = () => {
-  currentSessionType.value = props.sessionType
+const changeSessionType = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  const newType = target.value as 'vocabulary' | 'dictation' | 'mixed'
+  
+  emit('update:sessionType', newType)
+  
+  // Update local state
+  currentSessionType.value = newType
   // Reset current mode for mixed sessions
-  if (currentSessionType.value === 'mixed') {
+  if (newType === 'mixed') {
     currentMode.value = 'vocabulary'
   }
 }

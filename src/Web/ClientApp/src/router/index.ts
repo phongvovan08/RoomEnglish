@@ -120,7 +120,10 @@ const router = createRouter({
     {
       path: Routes.Vocabulary.children.Learning.path,
       name: Routes.Vocabulary.children.Learning.name,
-      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue"),
+      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
+        console.error('Failed to load VocabularyLearningView:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
       meta: { requiresAuth: true },
     },
     

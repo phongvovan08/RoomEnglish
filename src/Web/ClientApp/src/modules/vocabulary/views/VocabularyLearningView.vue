@@ -55,9 +55,9 @@
 
     <!-- Learning Session -->
     <div class="learning-session" v-if="selectedCategory && !isCompleted">
-      <LearningSession 
+      <LearningSessionComponent 
         :category="selectedCategory"
-        :session-type="sessionType"
+        v-model:session-type="sessionType"
         @complete="handleSessionComplete"
         @back="goBack"
       />
@@ -78,7 +78,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useVocabulary } from '../composables/useVocabulary'
 import type { VocabularyCategory, LearningSession } from '../types/vocabulary.types'
-import LearningSession from '../components/LearningSession.vue'
+import LearningSessionComponent from '../components/LearningSession.vue'
 import SessionResult from '../components/SessionResult.vue'
 
 const { 
