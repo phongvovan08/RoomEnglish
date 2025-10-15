@@ -1,12 +1,12 @@
 import { ref, readonly } from 'vue'
 
 export const useSpeechSynthesis = () => {
-  const isPlaying = ref(false)
   const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
+  const playingInstances = ref(new Set<string>())
 
-  const speak = async (text: string, lang: string = 'en-US') => {
-    if (!isSupported.value || isPlaying.value) {
-      return Promise.reject('Speech synthesis not supported or already playing')
+  const speak = async (text: string, instanceId: string, lang: string = 'en-US') => {
+    if (!isSupported.value || playingInstances.value.has(instanceId)) {
+      return Promise.reject('Speech synthesis not supported or instance already playing')
     }
 
     return new Promise<void>((resolve, reject) => {
@@ -32,32 +32,40 @@ export const useSpeechSynthesis = () => {
         }
 
         utterance.onstart = () => {
-          isPlaying.value = true
+          playingInstances.value.add(instanceId)
         }
 
         utterance.onend = () => {
-          isPlaying.value = false
+          playingInstances.value.delete(instanceId)
           resolve()
         }
 
         utterance.onerror = (event) => {
-          isPlaying.value = false
+          playingInstances.value.delete(instanceId)
           reject(event.error)
         }
 
         window.speechSynthesis.speak(utterance)
       } catch (error) {
-        isPlaying.value = false
+        playingInstances.value.delete(instanceId)
         reject(error)
       }
     })
   }
 
-  const stop = () => {
+  const stop = (instanceId?: string) => {
     if (isSupported.value) {
       window.speechSynthesis.cancel()
-      isPlaying.value = false
+      if (instanceId) {
+        playingInstances.value.delete(instanceId)
+      } else {
+        playingInstances.value.clear()
+      }
     }
+  }
+
+  const isPlaying = (instanceId: string) => {
+    return playingInstances.value.has(instanceId)
   }
 
   // Load voices (needed for some browsers)
@@ -75,7 +83,7 @@ export const useSpeechSynthesis = () => {
   }
 
   return {
-    isPlaying: readonly(isPlaying),
+    isPlaying,
     isSupported: readonly(isSupported),
     speak,
     stop,

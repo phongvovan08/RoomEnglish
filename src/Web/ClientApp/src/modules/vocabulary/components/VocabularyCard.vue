@@ -14,15 +14,12 @@
         </div>
         
         <!-- Audio Button -->
-        <button 
-          v-if="isSpeechSupported" 
-          @click="playAudio"
-          :disabled="isPlayingAudio"
-          class="audio-btn"
-        >
-          <i class="mdi" :class="isPlayingAudio ? 'mdi-volume-high' : 'mdi-volume-high'"></i>
-          {{ isPlayingAudio ? 'Playing...' : 'Listen' }}
-        </button>
+        <SpeechButton
+          :text="word.word"
+          :instance-id="WORD_AUDIO_ID"
+          :show-text="true"
+          button-class="audio-btn large"
+        />
       </div>
 
       <!-- Definition Section -->
@@ -38,20 +35,17 @@
         <h3>Examples</h3>
         <div class="examples-list">
           <div 
-            v-for="example in word.examples" 
+            v-for="(example, index) in word.examples" 
             :key="example.id"
             class="example-item"
           >
             <div class="example-sentence">
               <span class="sentence">{{ example.sentence }}</span>
-              <button 
-                v-if="isSpeechSupported"
-                @click="playExampleAudio(example.sentence)"
-                :disabled="isPlayingAudio"
-                class="example-audio-btn"
-              >
-                <i class="mdi mdi-play"></i>
-              </button>
+              <SpeechButton
+                :text="example.sentence"
+                :instance-id="getExampleAudioId(index)"
+                button-class="example-audio-btn"
+              />
             </div>
             <div class="example-translation">{{ example.translation }}</div>
           </div>
@@ -165,7 +159,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, readonly } from 'vue'
-import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
+import SpeechButton from '@/components/SpeechButton.vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
@@ -192,8 +186,9 @@ const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
 const answerOptions = ref<AnswerOption[]>([])
 
-// Speech synthesis
-const { speak, isPlaying: isPlayingAudio, isSupported: isSpeechSupported } = useSpeechSynthesis()
+// Instance IDs for different audio sources
+const WORD_AUDIO_ID = 'word-audio'
+const getExampleAudioId = (index: number) => `example-audio-${index}`
 
 // Generate answer options
 const generateAnswerOptions = () => {
@@ -244,25 +239,7 @@ const getHintText = (): string => {
   return hints[Math.floor(Math.random() * hints.length)]
 }
 
-const playAudio = async () => {
-  if (isPlayingAudio.value) return
-  
-  try {
-    await speak(props.word.word, 'en-US')
-  } catch (error) {
-    console.error('Failed to play audio:', error)
-  }
-}
 
-const playExampleAudio = async (text: string) => {
-  if (isPlayingAudio.value) return
-  
-  try {
-    await speak(text, 'en-US')
-  } catch (error) {
-    console.error('Failed to play example audio:', error)
-  }
-}
 
 onMounted(() => {
   generateAnswerOptions()
@@ -354,6 +331,7 @@ onMounted(() => {
 .audio-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  animation: pulse 1.5s infinite;
 }
 
 .definition-section {
@@ -429,9 +407,20 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.example-audio-btn:hover {
+.example-audio-btn:hover:not(:disabled) {
   background: rgba(231, 94, 141, 0.5);
   transform: scale(1.1);
+}
+
+.example-audio-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 }
 
 .example-translation {
