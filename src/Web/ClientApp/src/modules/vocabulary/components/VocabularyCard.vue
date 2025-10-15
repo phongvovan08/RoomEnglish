@@ -166,10 +166,12 @@
 
     <!-- Speech Settings Panel -->
     <div v-if="showSpeechSettings" class="settings-overlay" @click="showSpeechSettings = false">
-      <SpeechSettingsPanel 
-        :show-panel="showSpeechSettings"
-        @close="showSpeechSettings = false"
-      />
+      <div @click.stop>
+        <SpeechSettingsPanel 
+          :show-panel="showSpeechSettings"
+          @close="showSpeechSettings = false"
+        />
+      </div>
     </div>
   </div>
 </template>

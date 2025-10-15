@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+ import { ref, readonly } from 'vue'
 
 // Global speech settings store
 const speechRate = ref(0.8)
