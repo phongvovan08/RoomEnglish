@@ -131,19 +131,19 @@ export const useSpeechSynthesis = () => {
         utterance.pitch = options.pitch || 1.0
         utterance.volume = options.volume || 1.0
 
-        // Sử dụng voiceIndex từ options (đã được tính cho Web Speech API)
+        // Use voiceIndex from options (calculated for Web Speech API)
         if (options.voiceIndex !== undefined && webSpeechVoices.value[options.voiceIndex]) {
           const selectedVoice = webSpeechVoices.value[options.voiceIndex]
           utterance.voice = selectedVoice
-          console.log(`Web Speech API: Sử dụng giọng ${selectedVoice.name} (${selectedVoice.lang})`)
+          console.log(`Web Speech API: Using voice ${selectedVoice.name} (${selectedVoice.lang})`)
         } else {
-          // Fallback: tìm giọng tiếng Anh đầu tiên
+          // Fallback: find first English voice
           const fallbackVoice = webSpeechVoices.value.find(voice => 
             voice.lang.startsWith('en') && voice.localService
           ) || webSpeechVoices.value.find(voice => voice.lang.startsWith('en'))
           if (fallbackVoice) {
             utterance.voice = fallbackVoice
-            console.log(`Web Speech API fallback: Sử dụng giọng ${fallbackVoice.name} (${fallbackVoice.lang})`)
+            console.log(`Web Speech API fallback: Using voice ${fallbackVoice.name} (${fallbackVoice.lang})`)
           }
         }
 

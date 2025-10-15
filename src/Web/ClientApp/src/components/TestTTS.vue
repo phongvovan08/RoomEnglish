@@ -27,7 +27,7 @@
         </button>
       </div>
       <div class="api-key-note">
-        💡 Nhập API key của OpenAI để sử dụng ChatGPT TTS. Key sẽ được lưu trong localStorage.
+        💡 Enter OpenAI API key to use ChatGPT TTS. Key will be saved in localStorage.
       </div>
     </div>
     

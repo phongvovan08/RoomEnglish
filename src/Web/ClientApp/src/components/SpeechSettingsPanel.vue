@@ -31,7 +31,7 @@
         </button>
       </div>
       <div class="api-key-note">
-        💡 Cần API key để sử dụng ChatGPT TTS
+        💡 API key required to use ChatGPT TTS
       </div>
     </div>
 
@@ -55,7 +55,7 @@
     </div>
 
     <!-- Voice Selection -->
-    <div class="setting-group" v-if="englishVoices.length > 0">
+    <div class="setting-group" v-if="shouldShowVoiceSelection">
       <label class="setting-label">Voice:</label>
       <select :value="currentVoiceIndex" @change="updateVoice" class="voice-select">
         <option 
@@ -66,6 +66,13 @@
           {{ voice.name }} ({{ voice.lang }})
         </option>
       </select>
+    </div>
+
+    <!-- Message when OpenAI voices are hidden due to missing API key -->
+    <div v-if="currentTTSProvider === 'openai' && openaiApiKey.trim().length === 0" class="setting-group">
+      <div class="api-key-warning">
+        ⚠️ Enter API key to view OpenAI voice list
+      </div>
     </div>
 
     <!-- Pitch Control -->
@@ -121,6 +128,7 @@ const {
   selectedVoiceIndex,
   selectedTTSProvider,
   getEnglishVoices,
+  getVoicesByProvider,
   getCurrentOptions,
   setSpeechRate,
   setSpeechPitch,
@@ -141,8 +149,25 @@ const currentRate = computed(() => speechRate.value)
 const currentPitch = computed(() => speechPitch.value)
 const currentVoiceIndex = computed(() => selectedVoiceIndex.value)
 const currentTTSProvider = computed(() => selectedTTSProvider.value)
-const englishVoices = computed(() => getEnglishVoices())
+const englishVoices = computed(() => {
+  // Only show voices for current provider
+  return getVoicesByProvider(currentTTSProvider.value)
+})
 const isTesting = computed(() => isPlaying('speech-test'))
+
+// Computed to check whether voice selection should be displayed
+const shouldShowVoiceSelection = computed(() => {
+  const voices = englishVoices.value
+  if (voices.length === 0) return false
+  
+  // If provider is OpenAI, check if API key exists
+  if (currentTTSProvider.value === 'openai') {
+    return openaiApiKey.value.trim().length > 0
+  }
+  
+  // If Web Speech API, always show
+  return true
+})
 
 // Methods
 const updateRate = (event: Event) => {
@@ -435,6 +460,16 @@ onMounted(async () => {
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }
   100% { transform: scale(1); }
+}
+
+.api-key-warning {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #856404;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
 .api-key-note {

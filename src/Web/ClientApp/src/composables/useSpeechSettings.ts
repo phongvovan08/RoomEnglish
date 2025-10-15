@@ -36,7 +36,7 @@ export const useSpeechSettings = () => {
     const selectedVoice = allVoices[selectedVoiceIndex.value]
     const provider = selectedVoice?.provider || selectedTTSProvider.value
     
-    // Tính voice index cho provider cụ thể
+    // Calculate voice index for specific provider
     let providerVoiceIndex = 0
     if (provider === 'webspeech' && selectedVoice) {
       const webSpeechVoices = allVoices.filter(v => v.provider === 'webspeech')
