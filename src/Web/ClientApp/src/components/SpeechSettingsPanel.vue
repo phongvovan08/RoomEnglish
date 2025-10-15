@@ -7,6 +7,34 @@
       </button>
     </div>
 
+    <!-- TTS Provider Selection -->
+    <div class="setting-group">
+      <label class="setting-label">TTS Provider:</label>
+      <select :value="currentTTSProvider" @change="updateTTSProvider" class="provider-select">
+        <option value="openai">OpenAI TTS (ChatGPT) 🤖</option>
+        <option value="webspeech">Web Speech API 🗣️</option>
+      </select>
+    </div>
+
+    <!-- OpenAI API Key -->
+    <div v-if="currentTTSProvider === 'openai'" class="setting-group api-key-group">
+      <label class="setting-label">OpenAI API Key:</label>
+      <div class="api-key-input">
+        <input 
+          v-model="openaiApiKey" 
+          type="password"
+          placeholder="sk-..."
+          class="api-key-field"
+        />
+        <button @click="saveApiKey" class="save-key-btn" :class="{ success: apiKeySaved }">
+          <Icon :icon="apiKeySaved ? 'mdi:check' : 'mdi:content-save'" />
+        </button>
+      </div>
+      <div class="api-key-note">
+        💡 Cần API key để sử dụng ChatGPT TTS
+      </div>
+    </div>
+
     <!-- Speed Control -->
     <div class="setting-group">
       <label class="setting-label">Speed: {{ currentRate }}x</label>
@@ -91,21 +119,28 @@ const {
   speechRate,
   speechPitch,
   selectedVoiceIndex,
+  selectedTTSProvider,
   getEnglishVoices,
   getCurrentOptions,
   setSpeechRate,
   setSpeechPitch,
   setSelectedVoiceIndex,
+  setTTSProvider,
   initializeDefaultVoice,
   loadSettings
 } = useSpeechSettings()
 
 const { speak, isPlaying } = useSpeechSynthesis()
 
+// API Key management
+const openaiApiKey = ref(localStorage.getItem('openai_api_key') || '')
+const apiKeySaved = ref(false)
+
 // Computed values
 const currentRate = computed(() => speechRate.value)
 const currentPitch = computed(() => speechPitch.value)
 const currentVoiceIndex = computed(() => selectedVoiceIndex.value)
+const currentTTSProvider = computed(() => selectedTTSProvider.value)
 const englishVoices = computed(() => getEnglishVoices())
 const isTesting = computed(() => isPlaying('speech-test'))
 
@@ -140,6 +175,22 @@ const resetToDefault = () => {
   setSpeechRate(0.8)
   setSpeechPitch(1.0)
   setSelectedVoiceIndex(0)
+}
+
+// TTS Provider methods
+const updateTTSProvider = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  const provider = target.value as 'openai' | 'webspeech'
+  setTTSProvider(provider)
+}
+
+// API Key methods
+const saveApiKey = () => {
+  localStorage.setItem('openai_api_key', openaiApiKey.value)
+  apiKeySaved.value = true
+  setTimeout(() => {
+    apiKeySaved.value = false
+  }, 2000)
 }
 
 onMounted(async () => {
@@ -310,5 +361,86 @@ onMounted(async () => {
 @keyframes pulse {
   0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
+}
+
+/* Provider Selection */
+.provider-select {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 1rem;
+}
+
+.provider-select option {
+  background: #1a1a1a;
+  color: white;
+}
+
+/* API Key Section */
+.api-key-group {
+  background: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.3);
+  border-radius: 15px;
+  padding: 1rem;
+}
+
+.api-key-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.api-key-field {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.api-key-field::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.save-key-btn {
+  background: rgba(40, 167, 69, 0.8);
+  border: 1px solid rgba(40, 167, 69, 0.5);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  transition: all 0.3s ease;
+}
+
+.save-key-btn:hover {
+  background: rgba(40, 167, 69, 1);
+  transform: scale(1.05);
+}
+
+.save-key-btn.success {
+  background: rgba(40, 167, 69, 1);
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.api-key-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  text-align: center;
 }
 </style>

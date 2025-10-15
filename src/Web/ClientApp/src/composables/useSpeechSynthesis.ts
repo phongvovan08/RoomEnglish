@@ -1,8 +1,12 @@
 import { ref, readonly } from 'vue'
+import { OpenAITTS } from '@lobehub/tts'
 
 export const useSpeechSynthesis = () => {
   const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
   const playingInstances = ref(new Set<string>())
+  const audioInstances = ref(new Map<string, HTMLAudioElement>())
+  const currentTTSProvider = ref<'openai' | 'webspeech'>('webspeech') // Default to Web Speech API
+  const webSpeechVoices = ref<SpeechSynthesisVoice[]>([])
 
   interface SpeechOptions {
     lang?: string
@@ -10,54 +14,144 @@ export const useSpeechSynthesis = () => {
     pitch?: number
     volume?: number
     voiceIndex?: number
+    provider?: 'openai' | 'webspeech'
   }
 
-  const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
-    if (!isSupported.value || playingInstances.value.has(instanceId)) {
-      return Promise.reject('Speech synthesis not supported or instance already playing')
+  // OpenAI TTS voices
+  const openaiVoices = [
+    { name: 'OpenAI - Alloy', voiceName: 'alloy', lang: 'en-US', provider: 'openai' as const },
+    { name: 'OpenAI - Echo', voiceName: 'echo', lang: 'en-US', provider: 'openai' as const },
+    { name: 'OpenAI - Fable', voiceName: 'fable', lang: 'en-US', provider: 'openai' as const },
+    { name: 'OpenAI - Nova', voiceName: 'nova', lang: 'en-US', provider: 'openai' as const },
+    { name: 'OpenAI - Onyx', voiceName: 'onyx', lang: 'en-US', provider: 'openai' as const },
+    { name: 'OpenAI - Shimmer', voiceName: 'shimmer', lang: 'en-US', provider: 'openai' as const },
+  ]
+
+  // Load Web Speech API voices
+  const loadWebSpeechVoices = () => {
+    return new Promise<SpeechSynthesisVoice[]>((resolve) => {
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length) {
+        const englishVoices = voices.filter(voice => 
+          voice.lang.toLowerCase().startsWith('en')
+        )
+        webSpeechVoices.value = englishVoices
+        resolve(englishVoices)
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+          const newVoices = window.speechSynthesis.getVoices()
+          const englishVoices = newVoices.filter(voice => 
+            voice.lang.toLowerCase().startsWith('en')
+          )
+          webSpeechVoices.value = englishVoices
+          resolve(englishVoices)
+        }
+      }
+    })
+  }
+
+  // Convert Web Speech voices to our format
+  const getWebSpeechVoicesFormatted = () => {
+    return webSpeechVoices.value.map(voice => ({
+      name: `${voice.name} (${voice.lang})`,
+      voiceName: voice.name,
+      lang: voice.lang,
+      provider: 'webspeech' as const,
+      originalVoice: voice
+    }))
+  }
+
+  // Combined voice list (OpenAI + Web Speech API)
+  const getAllVoices = () => {
+    return [...openaiVoices, ...getWebSpeechVoicesFormatted()]
+  }
+
+  // OpenAI TTS
+  const speakWithOpenAI = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
+    console.log('🤖 OpenAI TTS: Starting synthesis...')
+    const allVoices = getAllVoices()
+    const selectedVoice = allVoices[options.voiceIndex || 0]
+    
+    if (selectedVoice.provider !== 'openai') {
+      console.error('❌ Invalid voice for OpenAI:', selectedVoice)
+      return Promise.reject('Invalid voice for OpenAI')
     }
 
+    // Get API key from environment or settings
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key')
+    console.log('🔑 API Key found:', apiKey ? `${apiKey.substring(0, 10)}...` : 'No key')
+    
+    if (!apiKey) {
+      throw new Error('OpenAI API key not found. Please add VITE_OPENAI_API_KEY to environment or set it in settings.')
+    }
+
+    console.log('📝 Text to synthesize:', text.substring(0, 50) + '...')
+    console.log('🎵 Voice:', selectedVoice.voiceName)
+
+    const tts = new OpenAITTS({ OPENAI_API_KEY: apiKey })
+    
+    const payload = {
+      input: text,
+      options: {
+        model: 'tts-1', // or 'tts-1-hd' for higher quality
+        voice: selectedVoice.voiceName as any
+      }
+    }
+
+    console.log('📤 Sending request to OpenAI:', payload)
+
+    try {
+      const response = await tts.create(payload)
+      console.log('📥 Response status:', response.status, response.statusText)
+      
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer()
+        console.log('✅ OpenAI TTS success! Audio buffer size:', arrayBuffer.byteLength)
+        return arrayBuffer
+      } else {
+        const errorText = await response.text()
+        console.error('❌ OpenAI TTS failed:', response.status, errorText)
+        throw new Error(`OpenAI TTS failed: ${response.status} - ${errorText}`)
+      }
+    } catch (error) {
+      console.error('❌ OpenAI TTS error:', error)
+      throw error
+    }
+  }
+
+  // Web Speech API fallback
+  const speakWithWebAPI = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
     return new Promise<void>((resolve, reject) => {
       try {
-        // Cancel any ongoing speech
         window.speechSynthesis.cancel()
 
         const utterance = new SpeechSynthesisUtterance(text)
-        
-        // Set voice properties with defaults
         utterance.lang = options.lang || 'en-US'
-        utterance.rate = options.rate || 0.8 // Slightly slower for learning
+        utterance.rate = options.rate || 0.8
         utterance.pitch = options.pitch || 1.0
         utterance.volume = options.volume || 1.0
 
-        // Get available voices
-        const voices = window.speechSynthesis.getVoices()
-        
-        // Select voice based on options
-        let selectedVoice: SpeechSynthesisVoice | undefined
-        
-        if (options.voiceIndex !== undefined && voices[options.voiceIndex]) {
-          selectedVoice = voices[options.voiceIndex]
-        } else {
-          // Try to use a native English voice as fallback
-          selectedVoice = voices.find(voice => 
-            voice.lang.startsWith('en') && voice.localService
-          )
-        }
-        
-        if (selectedVoice) {
+        // Sử dụng voiceIndex từ options (đã được tính cho Web Speech API)
+        if (options.voiceIndex !== undefined && webSpeechVoices.value[options.voiceIndex]) {
+          const selectedVoice = webSpeechVoices.value[options.voiceIndex]
           utterance.voice = selectedVoice
+          console.log(`Web Speech API: Sử dụng giọng ${selectedVoice.name} (${selectedVoice.lang})`)
+        } else {
+          // Fallback: tìm giọng tiếng Anh đầu tiên
+          const fallbackVoice = webSpeechVoices.value.find(voice => 
+            voice.lang.startsWith('en') && voice.localService
+          ) || webSpeechVoices.value.find(voice => voice.lang.startsWith('en'))
+          if (fallbackVoice) {
+            utterance.voice = fallbackVoice
+            console.log(`Web Speech API fallback: Sử dụng giọng ${fallbackVoice.name} (${fallbackVoice.lang})`)
+          }
         }
 
-        utterance.onstart = () => {
-          playingInstances.value.add(instanceId)
-        }
-
+        utterance.onstart = () => playingInstances.value.add(instanceId)
         utterance.onend = () => {
           playingInstances.value.delete(instanceId)
           resolve()
         }
-
         utterance.onerror = (event) => {
           playingInstances.value.delete(instanceId)
           reject(event.error)
@@ -71,14 +165,96 @@ export const useSpeechSynthesis = () => {
     })
   }
 
-  const stop = (instanceId?: string) => {
-    if (isSupported.value) {
-      window.speechSynthesis.cancel()
-      if (instanceId) {
-        playingInstances.value.delete(instanceId)
+  // Main speak function with provider selection
+  const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
+    if (playingInstances.value.has(instanceId)) {
+      return Promise.reject('Instance already playing')
+    }
+
+    // Ensure voices are loaded
+    await loadWebSpeechVoices()
+    
+    const allVoices = getAllVoices()
+    const selectedVoice = allVoices[options.voiceIndex || 0]
+    const provider = options.provider || selectedVoice?.provider || currentTTSProvider.value
+
+    try {
+      stop(instanceId) // Stop any existing audio
+      playingInstances.value.add(instanceId)
+
+      // Route to appropriate TTS provider
+      if (provider === 'openai') {
+        try {
+          const audioBuffer = await speakWithOpenAI(text, instanceId, options)
+          
+          // Play audio from buffer
+          const blob = new Blob([audioBuffer], { type: 'audio/mp3' })
+          const audioUrl = URL.createObjectURL(blob)
+          const audio = new Audio(audioUrl)
+          
+          audioInstances.value.set(instanceId, audio)
+          audio.volume = options.volume || 1.0
+
+          return new Promise<void>((resolve, reject) => {
+            audio.onended = () => {
+              playingInstances.value.delete(instanceId)
+              audioInstances.value.delete(instanceId)
+              URL.revokeObjectURL(audioUrl)
+              resolve()
+            }
+
+            audio.onerror = (event) => {
+              playingInstances.value.delete(instanceId)
+              audioInstances.value.delete(instanceId)
+              URL.revokeObjectURL(audioUrl)
+              reject(event)
+            }
+
+            audio.play().catch((error) => {
+              playingInstances.value.delete(instanceId)
+              audioInstances.value.delete(instanceId)
+              URL.revokeObjectURL(audioUrl)
+              reject(error)
+            })
+          })
+        } catch (error) {
+          console.warn('OpenAI TTS failed, falling back to Web Speech API:', error)
+          playingInstances.value.delete(instanceId)
+          return speakWithWebAPI(text, instanceId, options)
+        }
       } else {
-        playingInstances.value.clear()
+        // Use Web Speech API
+        return speakWithWebAPI(text, instanceId, options)
       }
+
+    } catch (error) {
+      playingInstances.value.delete(instanceId)
+      throw error
+    }
+  }
+
+  const stop = (instanceId?: string) => {
+    // Stop Web Speech API
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+    
+    if (instanceId) {
+      const audio = audioInstances.value.get(instanceId)
+      if (audio) {
+        audio.pause()
+        audio.currentTime = 0
+        audioInstances.value.delete(instanceId)
+      }
+      playingInstances.value.delete(instanceId)
+    } else {
+      // Stop all instances
+      audioInstances.value.forEach((audio) => {
+        audio.pause()
+        audio.currentTime = 0
+      })
+      audioInstances.value.clear()
+      playingInstances.value.clear()
     }
   }
 
@@ -86,18 +262,29 @@ export const useSpeechSynthesis = () => {
     return playingInstances.value.has(instanceId)
   }
 
-  // Load voices (needed for some browsers)
+  // Set TTS provider
+  const setTTSProvider = (provider: 'openai' | 'webspeech') => {
+    currentTTSProvider.value = provider
+    console.info(`Switched to ${provider} TTS`)
+  }
+
+  // Load voices (compatibility)
   const loadVoices = () => {
-    return new Promise<SpeechSynthesisVoice[]>((resolve) => {
-      const voices = window.speechSynthesis.getVoices()
-      if (voices.length) {
-        resolve(voices)
-      } else {
-        window.speechSynthesis.onvoiceschanged = () => {
-          resolve(window.speechSynthesis.getVoices())
-        }
-      }
+    return loadWebSpeechVoices().then(() => {
+      const allVoices = getAllVoices()
+      return allVoices.map((voice, index) => ({
+        name: voice.name,
+        lang: voice.lang,
+        localService: voice.provider === 'webspeech',
+        default: index === 0,
+        voiceURI: voice.voiceName
+      }) as any)
     })
+  }
+
+  // Initialize voices on load
+  const initializeVoices = async () => {
+    await loadWebSpeechVoices()
   }
 
   return {
@@ -105,6 +292,13 @@ export const useSpeechSynthesis = () => {
     isSupported: readonly(isSupported),
     speak,
     stop,
-    loadVoices
+    loadVoices,
+    getAllVoices,
+    loadWebSpeechVoices,
+    initializeVoices,
+    currentTTSProvider: readonly(currentTTSProvider),
+    setTTSProvider,
+    webSpeechVoices: readonly(webSpeechVoices),
+    openaiVoices: readonly(openaiVoices)
   }
 }

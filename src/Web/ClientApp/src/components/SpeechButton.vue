@@ -37,7 +37,7 @@ const handlePlay = async () => {
   if (isPlaying.value) return
   
   try {
-    await speak(props.text, props.instanceId, props.lang)
+    await speak(props.text, props.instanceId, { lang: props.lang })
   } catch (error) {
     console.error('Failed to play audio:', error)
   }

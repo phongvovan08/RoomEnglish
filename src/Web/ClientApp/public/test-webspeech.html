@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Web Speech API</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>🗣️ Testing Web Speech API (Fallback)</h1>
+    <p>Test giọng đọc của trình duyệt khi OpenAI API không khả dụng</p>
+    
+    <div>
+        <label>Chọn giọng: </label>
+        <select id="voiceSelect">
+            <option>Loading voices...</option>
+        </select>
+    </div>
+    <br/>
+    
+    <div>
+        <input type="text" id="textInput" value="Hello! This is a test of Web Speech API from RoomEnglish application." style="width: 100%; padding: 8px; margin: 8px 0;">
+    </div>
+    
+    <div>
+        <label>Rate: </label>
+        <input type="range" id="rateSlider" min="0.1" max="2" step="0.1" value="0.8">
+        <span id="rateValue">0.8</span>
+    </div>
+    
+    <div>
+        <label>Pitch: </label>
+        <input type="range" id="pitchSlider" min="0.1" max="2" step="0.1" value="1.0">
+        <span id="pitchValue">1.0</span>
+    </div>
+    <br/>
+    
+    <button onclick="testSpeak()" id="speakBtn">🔊 Speak</button>
+    <button onclick="stopSpeak()" id="stopBtn">⏹️ Stop</button>
+    
+    <div id="status" style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 4px;">
+        🔄 Initializing voices...
+    </div>
+    
+    <script>
+        let voices = [];
+        let currentUtterance = null;
+        
+        // Load voices
+        function loadVoices() {
+            voices = speechSynthesis.getVoices();
+            const englishVoices = voices.filter(voice => 
+                voice.lang.toLowerCase().startsWith('en')
+            );
+            
+            console.log('🎵 Found voices:', englishVoices.length);
+            englishVoices.forEach((voice, i) => {
+                console.log(`${i}: ${voice.name} (${voice.lang}) - ${voice.localService ? 'Local' : 'Remote'}`);
+            });
+            
+            const select = document.getElementById('voiceSelect');
+            select.innerHTML = '';
+            
+            if (englishVoices.length === 0) {
+                select.innerHTML = '<option>No English voices found</option>';
+                document.getElementById('status').textContent = '❌ No English voices available';
+                return;
+            }
+            
+            englishVoices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang}) ${voice.localService ? '[Local]' : '[Remote]'}`;
+                select.appendChild(option);
+            });
+            
+            document.getElementById('status').textContent = `✅ Loaded ${englishVoices.length} English voices`;
+        }
+        
+        // Test speak function
+        function testSpeak() {
+            const text = document.getElementById('textInput').value;
+            const voiceIndex = parseInt(document.getElementById('voiceSelect').value);
+            const rate = parseFloat(document.getElementById('rateSlider').value);
+            const pitch = parseFloat(document.getElementById('pitchSlider').value);
+            
+            if (isNaN(voiceIndex)) {
+                document.getElementById('status').textContent = '❌ Please select a voice';
+                return;
+            }
+            
+            // Stop any current speech
+            speechSynthesis.cancel();
+            
+            const englishVoices = voices.filter(voice => 
+                voice.lang.toLowerCase().startsWith('en')
+            );
+            
+            if (!englishVoices[voiceIndex]) {
+                document.getElementById('status').textContent = '❌ Selected voice not found';
+                return;
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = englishVoices[voiceIndex];
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            utterance.volume = 1.0;
+            
+            console.log('🗣️ Speaking with:', {
+                voice: utterance.voice.name,
+                rate: utterance.rate,
+                pitch: utterance.pitch,
+                text: text.substring(0, 50) + '...'
+            });
+            
+            utterance.onstart = () => {
+                console.log('▶️ Started speaking');
+                document.getElementById('status').textContent = `▶️ Speaking with ${utterance.voice.name}...`;
+                document.getElementById('speakBtn').disabled = true;
+            };
+            
+            utterance.onend = () => {
+                console.log('⏹️ Finished speaking');
+                document.getElementById('status').textContent = '⏹️ Speech completed';
+                document.getElementById('speakBtn').disabled = false;
+                currentUtterance = null;
+            };
+            
+            utterance.onerror = (event) => {
+                console.error('❌ Speech error:', event.error);
+                document.getElementById('status').textContent = `❌ Error: ${event.error}`;
+                document.getElementById('speakBtn').disabled = false;
+                currentUtterance = null;
+            };
+            
+            currentUtterance = utterance;
+            speechSynthesis.speak(utterance);
+        }
+        
+        function stopSpeak() {
+            speechSynthesis.cancel();
+            if (currentUtterance) {
+                document.getElementById('status').textContent = '⏹️ Speech stopped';
+                document.getElementById('speakBtn').disabled = false;
+                currentUtterance = null;
+            }
+        }
+        
+        // Update rate/pitch display
+        document.getElementById('rateSlider').addEventListener('input', (e) => {
+            document.getElementById('rateValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('pitchSlider').addEventListener('input', (e) => {
+            document.getElementById('pitchValue').textContent = e.target.value;
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing Web Speech API test...');
+            
+            if (!('speechSynthesis' in window)) {
+                document.getElementById('status').textContent = '❌ Web Speech API not supported';
+                return;
+            }
+            
+            // Load voices
+            loadVoices();
+            
+            // Voices might load asynchronously
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            
+            // Retry loading voices after a short delay
+            setTimeout(() => {
+                if (voices.length === 0) {
+                    console.log('🔄 Retrying voice loading...');
+                    loadVoices();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
