@@ -4,7 +4,15 @@ export const useSpeechSynthesis = () => {
   const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
   const playingInstances = ref(new Set<string>())
 
-  const speak = async (text: string, instanceId: string, lang: string = 'en-US') => {
+  interface SpeechOptions {
+    lang?: string
+    rate?: number
+    pitch?: number
+    volume?: number
+    voiceIndex?: number
+  }
+
+  const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
     if (!isSupported.value || playingInstances.value.has(instanceId)) {
       return Promise.reject('Speech synthesis not supported or instance already playing')
     }
@@ -16,19 +24,29 @@ export const useSpeechSynthesis = () => {
 
         const utterance = new SpeechSynthesisUtterance(text)
         
-        // Set voice properties
-        utterance.lang = lang
-        utterance.rate = 0.8 // Slightly slower for learning
-        utterance.pitch = 1.0
-        utterance.volume = 1.0
+        // Set voice properties with defaults
+        utterance.lang = options.lang || 'en-US'
+        utterance.rate = options.rate || 0.8 // Slightly slower for learning
+        utterance.pitch = options.pitch || 1.0
+        utterance.volume = options.volume || 1.0
 
-        // Try to use a native English voice
+        // Get available voices
         const voices = window.speechSynthesis.getVoices()
-        const englishVoice = voices.find(voice => 
-          voice.lang.startsWith('en') && voice.localService
-        )
-        if (englishVoice) {
-          utterance.voice = englishVoice
+        
+        // Select voice based on options
+        let selectedVoice: SpeechSynthesisVoice | undefined
+        
+        if (options.voiceIndex !== undefined && voices[options.voiceIndex]) {
+          selectedVoice = voices[options.voiceIndex]
+        } else {
+          // Try to use a native English voice as fallback
+          selectedVoice = voices.find(voice => 
+            voice.lang.startsWith('en') && voice.localService
+          )
+        }
+        
+        if (selectedVoice) {
+          utterance.voice = selectedVoice
         }
 
         utterance.onstart = () => {

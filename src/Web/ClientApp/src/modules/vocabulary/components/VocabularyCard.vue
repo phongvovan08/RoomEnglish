@@ -13,13 +13,22 @@
           </div>
         </div>
         
-        <!-- Audio Button -->
-        <SpeechButton
-          :text="word.word"
-          :instance-id="WORD_AUDIO_ID"
-          :show-text="true"
-          button-class="audio-btn large"
-        />
+        <!-- Audio Controls -->
+        <div class="audio-controls">
+          <GlobalSpeechButton
+            :text="word.word"
+            :instance-id="WORD_AUDIO_ID"
+            :show-text="true"
+            button-class="audio-btn large"
+          />
+          <button 
+            @click="showSpeechSettings = true"
+            class="settings-btn"
+            title="Speech Settings"
+          >
+            <Icon icon="mdi:cog" class="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <!-- Definition Section -->
@@ -41,7 +50,7 @@
           >
             <div class="example-sentence">
               <span class="sentence">{{ example.sentence }}</span>
-              <SpeechButton
+              <GlobalSpeechButton
                 :text="example.sentence"
                 :instance-id="getExampleAudioId(index)"
                 button-class="example-audio-btn"
@@ -154,12 +163,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Speech Settings Panel -->
+    <div v-if="showSpeechSettings" class="settings-overlay" @click="showSpeechSettings = false">
+      <SpeechSettingsPanel 
+        :show-panel="showSpeechSettings"
+        @close="showSpeechSettings = false"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, readonly } from 'vue'
-import SpeechButton from '@/components/SpeechButton.vue'
+import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
+import SpeechSettingsPanel from '@/components/SpeechSettingsPanel.vue'
+import { Icon } from '@iconify/vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
@@ -185,8 +204,9 @@ const selectedOption = ref<AnswerOption | null>(null)
 const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
 const answerOptions = ref<AnswerOption[]>([])
+const showSpeechSettings = ref(false)
 
-// Instance IDs for different audio sources
+// Instance IDs for different audio sources  
 const WORD_AUDIO_ID = 'word-audio'
 const getExampleAudioId = (index: number) => `example-audio-${index}`
 
@@ -308,6 +328,14 @@ onMounted(() => {
   display: inline-block;
 }
 
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  margin: 1rem auto 0;
+}
+
 .audio-btn {
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
   color: white;
@@ -318,9 +346,27 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 1rem auto 0;
   transition: all 0.3s ease;
   font-size: 1rem;
+}
+
+.settings-btn {
+  background: rgba(116, 192, 252, 0.3);
+  border: 1px solid rgba(116, 192, 252, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #74c0fc;
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover {
+  background: rgba(116, 192, 252, 0.5);
+  transform: scale(1.1);
 }
 
 .audio-btn:hover:not(:disabled) {
@@ -371,6 +417,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow: visible;
 }
 
 .example-item {
@@ -378,6 +425,8 @@ onMounted(() => {
   border: 1px solid rgba(231, 94, 141, 0.3);
   border-radius: 12px;
   padding: 1rem;
+  position: relative;
+  overflow: visible;
 }
 
 .example-sentence {
@@ -741,5 +790,16 @@ onMounted(() => {
     flex-direction: column;
     gap: 1rem;
   }
+}
+
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1999;
+  backdrop-filter: blur(5px);
 }
 </style>
