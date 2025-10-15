@@ -15,7 +15,7 @@
         
         <!-- Audio Button -->
         <button 
-          v-if="word.audioUrl" 
+          v-if="isSpeechSupported" 
           @click="playAudio"
           :disabled="isPlayingAudio"
           class="audio-btn"
@@ -45,8 +45,9 @@
             <div class="example-sentence">
               <span class="sentence">{{ example.sentence }}</span>
               <button 
-                v-if="example.audioUrl"
-                @click="playExampleAudio(example.audioUrl!)"
+                v-if="isSpeechSupported"
+                @click="playExampleAudio(example.sentence)"
+                :disabled="isPlayingAudio"
                 class="example-audio-btn"
               >
                 <i class="mdi mdi-play"></i>
@@ -163,7 +164,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, readonly } from 'vue'
+import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
@@ -188,8 +190,10 @@ const emit = defineEmits<{
 const selectedOption = ref<AnswerOption | null>(null)
 const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
-const isPlayingAudio = ref(false)
 const answerOptions = ref<AnswerOption[]>([])
+
+// Speech synthesis
+const { speak, isPlaying: isPlayingAudio, isSupported: isSpeechSupported } = useSpeechSynthesis()
 
 // Generate answer options
 const generateAnswerOptions = () => {
@@ -241,24 +245,23 @@ const getHintText = (): string => {
 }
 
 const playAudio = async () => {
-  if (!props.word.audioUrl || isPlayingAudio.value) return
+  if (isPlayingAudio.value) return
   
   try {
-    isPlayingAudio.value = true
-    emit('play-audio', props.word.audioUrl)
-    
-    // Simulate audio duration (in real app, this would be actual audio duration)
-    setTimeout(() => {
-      isPlayingAudio.value = false
-    }, 2000)
+    await speak(props.word.word, 'en-US')
   } catch (error) {
     console.error('Failed to play audio:', error)
-    isPlayingAudio.value = false
   }
 }
 
-const playExampleAudio = async (audioUrl: string) => {
-  emit('play-audio', audioUrl)
+const playExampleAudio = async (text: string) => {
+  if (isPlayingAudio.value) return
+  
+  try {
+    await speak(text, 'en-US')
+  } catch (error) {
+    console.error('Failed to play example audio:', error)
+  }
 }
 
 onMounted(() => {
