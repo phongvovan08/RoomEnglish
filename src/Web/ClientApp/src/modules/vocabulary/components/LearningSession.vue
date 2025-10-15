@@ -134,11 +134,15 @@
       </div>
     </div>
 
-    <!-- Speech Settings Panel -->
-    <SpeechSettingsPanel 
-      :show-panel="showSpeechSettings"
-      @close="showSpeechSettings = false"
-    />
+    <!-- Speech Settings Panel with Overlay -->
+    <div v-if="showSpeechSettings" class="settings-overlay" @click="showSpeechSettings = false">
+      <div @click.stop>
+        <SpeechSettingsPanel 
+          :show-panel="showSpeechSettings"
+          @close="showSpeechSettings = false"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -591,6 +595,21 @@ onUnmounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Settings overlay styles */
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
 }
 
 @media (max-width: 768px) {
