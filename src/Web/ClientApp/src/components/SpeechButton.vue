@@ -6,13 +6,14 @@
     :class="buttonClass"
     :title="isPlaying ? 'Playing...' : 'Click to listen'"
   >
-    <i class="mdi" :class="isPlaying ? 'mdi-volume-variant-off' : 'mdi-volume-high'"></i>
+    <Icon :icon="isPlaying ? 'mdi:volume-variant-off' : 'mdi:volume-high'" class="w-5 h-5" />
     <span v-if="showText">{{ isPlaying ? 'Playing...' : 'Listen' }}</span>
   </button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
 
 interface Props {
@@ -57,6 +58,12 @@ const handlePlay = async () => {
   cursor: pointer;
   color: #e75e8d;
   transition: all 0.3s ease;
+  padding: 0;
+}
+
+.speech-btn :deep(.iconify) {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 .speech-btn:hover:not(:disabled) {
@@ -80,6 +87,11 @@ const handlePlay = async () => {
   height: auto;
   gap: 0.5rem;
   font-size: 1rem;
+}
+
+.speech-btn.large :deep(.iconify) {
+  width: 20px !important;
+  height: 20px !important;
 }
 
 .speech-btn.large:hover:not(:disabled) {
