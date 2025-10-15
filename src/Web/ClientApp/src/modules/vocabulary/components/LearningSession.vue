@@ -31,6 +31,14 @@
           <option value="dictation">🎤 Dictation</option>
           <option value="mixed">🎯 Mixed</option>
         </select>
+        <button 
+          @click="showSpeechSettings = true"
+          class="speech-settings-btn"
+          title="Speech Settings"
+        >
+          <Icon icon="mdi:cog" class="w-4 h-4" />
+          Settings
+        </button>
       </div>
     </div>
 
@@ -125,6 +133,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Speech Settings Panel -->
+    <SpeechSettingsPanel 
+      :show-panel="showSpeechSettings"
+      @close="showSpeechSettings = false"
+    />
   </div>
 </template>
 
@@ -134,6 +148,8 @@ import { useVocabulary } from '../composables/useVocabulary'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
+import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
+import { Icon } from '@iconify/vue'
 
 interface Props {
   category: VocabularyCategory
@@ -169,6 +185,7 @@ const showAnswer = ref(false)
 const isSessionComplete = ref(false)
 const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
+const showSpeechSettings = ref(false)
 
 // Timer
 let timer: number | null = null
@@ -404,6 +421,12 @@ onUnmounted(() => {
   color: #e75e8d;
 }
 
+.session-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .session-type-select {
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -412,6 +435,25 @@ onUnmounted(() => {
   padding: 0.75rem 1rem;
   font-size: 1rem;
   cursor: pointer;
+}
+
+.speech-settings-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.speech-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 .progress-container {

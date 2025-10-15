@@ -21,13 +21,6 @@
             :show-text="true"
             button-class="audio-btn large"
           />
-          <button 
-            @click="showSpeechSettings = true"
-            class="settings-btn"
-            title="Speech Settings"
-          >
-            <Icon icon="mdi:cog" class="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -164,22 +157,13 @@
       </div>
     </div>
 
-    <!-- Speech Settings Panel -->
-    <div v-if="showSpeechSettings" class="settings-overlay" @click="showSpeechSettings = false">
-      <div @click.stop>
-        <SpeechSettingsPanel 
-          :show-panel="showSpeechSettings"
-          @close="showSpeechSettings = false"
-        />
-      </div>
-    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, readonly } from 'vue'
 import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
-import SpeechSettingsPanel from '@/components/SpeechSettingsPanel.vue'
 import { Icon } from '@iconify/vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
@@ -206,7 +190,6 @@ const selectedOption = ref<AnswerOption | null>(null)
 const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
 const answerOptions = ref<AnswerOption[]>([])
-const showSpeechSettings = ref(false)
 
 // Instance IDs for different audio sources  
 const WORD_AUDIO_ID = 'word-audio'

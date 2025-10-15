@@ -819,7 +819,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/Vocabulary/words": {
@@ -919,7 +924,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/Vocabulary/words/{id}": {
@@ -954,7 +964,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/Vocabulary/sessions/start": {
@@ -979,7 +994,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/Vocabulary/sessions/{id}/complete": {
@@ -1016,7 +1036,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/Vocabulary/dictation/submit": {
@@ -1041,7 +1066,12 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
     "/api/WeatherForecasts": {
