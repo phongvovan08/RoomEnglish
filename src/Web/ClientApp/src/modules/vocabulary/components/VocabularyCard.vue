@@ -55,6 +55,10 @@
                     @click.stop
                   />
                 </div>
+                <div v-if="example.grammar" class="example-grammar">
+                  <span class="grammar-label">📚 Grammar:</span>
+                  <span class="grammar-text">{{ example.grammar }}</span>
+                </div>
                 <div class="flip-hint">
                   <i class="mdi mdi-flip-horizontal"></i>
                   <span>Click to see translation</span>
@@ -66,10 +70,6 @@
                 <div class="example-translation-content">
                   <h4>Vietnamese Translation:</h4>
                   <div class="translation-text">{{ example.translation }}</div>
-                </div>
-                <div v-if="example.grammar" class="example-grammar">
-                  <span class="grammar-label">📚 Grammar:</span>
-                  <span class="grammar-text">{{ example.grammar }}</span>
                 </div>
                 <div class="flip-hint">
                   <i class="mdi mdi-flip-horizontal"></i>
