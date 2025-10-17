@@ -56,24 +56,20 @@
                   />
                 </div>
                 <div v-if="example.grammar" class="example-grammar">
-                  <span class="grammar-label">📚 Grammar:</span>
                   <span class="grammar-text">{{ example.grammar }}</span>
                 </div>
                 <div class="flip-hint">
                   <i class="mdi mdi-flip-vertical"></i>
-                  <span>Click to see translation</span>
                 </div>
               </div>
               
               <!-- Back side (Vietnamese) -->
               <div class="flip-card-back">
                 <div class="example-translation-content">
-                  <h4>Vietnamese Translation:</h4>
                   <div class="translation-text">{{ example.translation }}</div>
                 </div>
                 <div class="flip-hint">
-                  <i class="mdi mdi-flip-vertical"></i>
-                  <span>Click to see English</span>
+                  <i class="mdi mdi-flip-horizontal"></i>
                 </div>
               </div>
             </div>
