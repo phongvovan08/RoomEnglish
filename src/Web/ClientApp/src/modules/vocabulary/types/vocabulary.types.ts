@@ -34,6 +34,7 @@ export interface VocabularyExample {
   id: number
   sentence: string
   translation: string
+  grammar?: string
   audioUrl?: string
   difficultyLevel: number
   isActive: boolean

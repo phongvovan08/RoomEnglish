@@ -149,6 +149,11 @@
           <div class="translation-text">{{ example.translation }}</div>
         </div>
 
+        <div class="grammar-section" v-if="example?.grammar">
+          <h4>📚 Grammar:</h4>
+          <div class="grammar-text">{{ example.grammar }}</div>
+        </div>
+
         <div class="performance-stats">
           <div class="stat-item">
             <i class="mdi mdi-clock"></i>
@@ -831,6 +836,25 @@ watchEffect(() => {
   font-size: 1.1rem;
   line-height: 1.5;
   font-style: italic;
+}
+
+.grammar-section {
+  background: rgba(116, 192, 252, 0.1);
+  border: 1px solid rgba(116, 192, 252, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.grammar-section h4 {
+  color: #74c0fc;
+  margin-bottom: 1rem;
+}
+
+.grammar-section .grammar-text {
+  color: white;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .performance-stats {

@@ -96,6 +96,7 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                         Id = e.Id,
                         Sentence = e.Sentence,
                         Translation = e.Translation,
+                        Grammar = e.Grammar,
                         AudioUrl = e.AudioUrl,
                         DifficultyLevel = e.DifficultyLevel,
                         IsActive = e.IsActive,

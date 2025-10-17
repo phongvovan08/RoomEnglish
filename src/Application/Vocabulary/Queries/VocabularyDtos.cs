@@ -48,6 +48,7 @@ public class VocabularyExampleDto : IMapFrom<VocabularyExample>
     public int Id { get; init; }
     public string Sentence { get; init; } = string.Empty;
     public string Translation { get; init; } = string.Empty;
+    public string? Grammar { get; init; } = string.Empty;
     public string? AudioUrl { get; init; }
     public int DifficultyLevel { get; init; }
     public bool IsActive { get; init; }

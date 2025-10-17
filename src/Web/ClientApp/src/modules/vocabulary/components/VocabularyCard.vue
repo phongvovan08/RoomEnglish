@@ -50,6 +50,10 @@
               />
             </div>
             <div class="example-translation">{{ example.translation }}</div>
+            <div v-if="example.grammar" class="example-grammar">
+              <span class="grammar-label">📚 Grammar:</span>
+              <span class="grammar-text">{{ example.grammar }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -461,6 +465,26 @@ onMounted(() => {
   color: #b8b8b8;
   font-size: 0.9rem;
   font-style: italic;
+}
+
+.example-grammar {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(116, 192, 252, 0.1);
+  border-left: 3px solid #74c0fc;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.85rem;
+}
+
+.grammar-label {
+  color: #74c0fc;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.grammar-text {
+  color: #e0e0e0;
+  line-height: 1.4;
 }
 
 .answer-section {

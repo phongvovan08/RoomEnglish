@@ -4,6 +4,7 @@ public class VocabularyExample : BaseAuditableEntity
 {
     public string Sentence { get; set; } = string.Empty;
     public string Translation { get; set; } = string.Empty; // Vietnamese translation
+    public string? Grammar { get; set; } = string.Empty; // Grammar explanation for the example
     public string? AudioUrl { get; set; } // URL to example audio file
     public int DifficultyLevel { get; set; } = 1;
     public bool IsActive { get; set; } = true;
