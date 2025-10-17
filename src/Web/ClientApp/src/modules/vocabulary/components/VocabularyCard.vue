@@ -40,30 +40,42 @@
             v-for="(example, index) in word.examples" 
             :key="example.id"
             class="example-item"
+            :class="{ 'flipped': visibleTranslations[index] }"
+            @click="toggleTranslation(index)"
           >
-            <div class="example-sentence">
-              <span class="sentence">{{ example.sentence }}</span>
-              <GlobalSpeechButton
-                :text="example.sentence"
-                :instance-id="getExampleAudioId(index)"
-                button-class="example-audio-btn"
-              />
-            </div>
-            <div 
-              class="example-translation" 
-              :class="{ 'hidden': !visibleTranslations[index] }"
-              @click="toggleTranslation(index)"
-            >
-              <template v-if="visibleTranslations[index]">
-                {{ example.translation }}
-              </template>
-              <template v-else>
-                <span class="translation-hint">Click to see translation</span>
-              </template>
-            </div>
-            <div v-if="example.grammar" class="example-grammar">
-              <span class="grammar-label">📚 Grammar:</span>
-              <span class="grammar-text">{{ example.grammar }}</span>
+            <div class="flip-card">
+              <!-- Front side (English) -->
+              <div class="flip-card-front">
+                <div class="example-sentence">
+                  <span class="sentence">{{ example.sentence }}</span>
+                  <GlobalSpeechButton
+                    :text="example.sentence"
+                    :instance-id="getExampleAudioId(index)"
+                    button-class="example-audio-btn"
+                    @click.stop
+                  />
+                </div>
+                <div class="flip-hint">
+                  <i class="mdi mdi-flip-horizontal"></i>
+                  <span>Click to see translation</span>
+                </div>
+              </div>
+              
+              <!-- Back side (Vietnamese) -->
+              <div class="flip-card-back">
+                <div class="example-translation-content">
+                  <h4>Vietnamese Translation:</h4>
+                  <div class="translation-text">{{ example.translation }}</div>
+                </div>
+                <div v-if="example.grammar" class="example-grammar">
+                  <span class="grammar-label">📚 Grammar:</span>
+                  <span class="grammar-text">{{ example.grammar }}</span>
+                </div>
+                <div class="flip-hint">
+                  <i class="mdi mdi-flip-horizontal"></i>
+                  <span>Click to see English</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -427,12 +439,61 @@ onMounted(() => {
 }
 
 .example-item {
-  background: rgba(231, 94, 141, 0.1);
-  border: 1px solid rgba(231, 94, 141, 0.3);
+  background: transparent;
+  border: none;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0;
   position: relative;
   overflow: visible;
+  perspective: 1000px;
+  height: 120px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.example-item:hover {
+  transform: translateY(-2px);
+}
+
+.flip-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.example-item.flipped .flip-card {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.flip-card-front {
+  background: linear-gradient(135deg, rgba(231, 94, 141, 0.2), rgba(231, 94, 141, 0.1));
+  border: 1px solid rgba(231, 94, 141, 0.3);
+  color: white;
+}
+
+.flip-card-back {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
+  border: 1px solid rgba(116, 192, 252, 0.3);
+  color: white;
+  transform: rotateY(180deg);
 }
 
 .example-sentence {
@@ -440,12 +501,50 @@ onMounted(() => {
   align-items: center;
   gap: 1rem;
   margin-bottom: 0.5rem;
+  flex: 1;
 }
 
 .sentence {
   color: white;
   font-size: 1rem;
   flex: 1;
+  text-align: left;
+}
+
+.flip-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.flip-hint i {
+  font-size: 1rem;
+}
+
+.example-translation-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.example-translation-content h4 {
+  color: #74c0fc;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.example-translation-content .translation-text {
+  color: white;
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.4;
 }
 
 .example-audio-btn {
@@ -515,22 +614,25 @@ onMounted(() => {
 
 .example-grammar {
   margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(116, 192, 252, 0.1);
-  border-left: 3px solid #74c0fc;
-  border-radius: 0 8px 8px 0;
-  font-size: 0.85rem;
+  padding: 0.5rem;
+  background: rgba(116, 192, 252, 0.15);
+  border-left: 2px solid #74c0fc;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.75rem;
+  text-align: left;
 }
 
 .grammar-label {
   color: #74c0fc;
   font-weight: 600;
-  margin-right: 0.5rem;
+  margin-right: 0.25rem;
+  font-size: 0.7rem;
 }
 
 .grammar-text {
   color: #e0e0e0;
-  line-height: 1.4;
+  line-height: 1.3;
+  font-size: 0.75rem;
 }
 
 .answer-section {

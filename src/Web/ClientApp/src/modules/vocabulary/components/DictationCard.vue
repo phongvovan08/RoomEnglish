@@ -145,18 +145,34 @@
         </div>
 
         <div class="translation-section" v-if="example?.translation">
-          <h4>Translation:</h4>
           <div 
-            class="translation-text" 
-            :class="{ 'hidden': !showTranslation }"
+            class="translation-flip-card"
+            :class="{ 'flipped': showTranslation }"
             @click="toggleTranslation"
           >
-            <template v-if="showTranslation">
-              {{ example.translation }}
-            </template>
-            <template v-else>
-              <span class="translation-hint">Click to see translation</span>
-            </template>
+            <div class="flip-content">
+              <!-- Front side -->
+              <div class="flip-front">
+                <div class="flip-icon">
+                  <i class="mdi mdi-translate"></i>
+                </div>
+                <h4>Click to see Vietnamese translation</h4>
+                <div class="flip-hint">
+                  <i class="mdi mdi-flip-horizontal"></i>
+                  <span>Tap to flip</span>
+                </div>
+              </div>
+              
+              <!-- Back side -->
+              <div class="flip-back">
+                <h4>Vietnamese Translation:</h4>
+                <div class="translation-content">{{ example.translation }}</div>
+                <div class="flip-hint">
+                  <i class="mdi mdi-flip-horizontal"></i>
+                  <span>Tap to flip back</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -836,53 +852,99 @@ watchEffect(() => {
 }
 
 .translation-section {
-  background: rgba(231, 94, 141, 0.1);
-  border: 1px solid rgba(231, 94, 141, 0.3);
-  border-radius: 15px;
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.translation-section h4 {
+.translation-flip-card {
+  perspective: 1000px;
+  height: 150px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.translation-flip-card:hover {
+  transform: translateY(-2px);
+}
+
+.flip-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.translation-flip-card.flipped .flip-content {
+  transform: rotateY(180deg);
+}
+
+.flip-front,
+.flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 15px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.flip-front {
+  background: linear-gradient(135deg, rgba(231, 94, 141, 0.2), rgba(231, 94, 141, 0.1));
+  border: 1px solid rgba(231, 94, 141, 0.3);
+  color: white;
+}
+
+.flip-back {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
+  border: 1px solid rgba(116, 192, 252, 0.3);
+  color: white;
+  transform: rotateY(180deg);
+}
+
+.flip-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #e75e8d;
+}
+
+.flip-front h4 {
   color: #e75e8d;
   margin-bottom: 1rem;
+  font-size: 1.1rem;
 }
 
-.translation-text {
+.flip-back h4 {
+  color: #74c0fc;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.translation-content {
   color: white;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   line-height: 1.5;
   font-style: italic;
-  cursor: pointer;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  transition: all 0.3s ease;
-  min-height: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.flip-hint {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
 }
 
-.translation-text:hover {
-  background: rgba(231, 94, 141, 0.1);
-  border-color: rgba(231, 94, 141, 0.3);
-}
-
-.translation-text.hidden {
-  background: rgba(116, 192, 252, 0.05);
-  border-color: rgba(116, 192, 252, 0.2);
-  color: #74c0fc;
-}
-
-.translation-text.hidden:hover {
-  background: rgba(116, 192, 252, 0.1);
-  border-color: rgba(116, 192, 252, 0.4);
-}
-
-.translation-hint {
-  color: #74c0fc;
-  font-weight: 500;
-  font-size: 0.95rem;
+.flip-hint i {
+  font-size: 1rem;
 }
 
 .grammar-section {
