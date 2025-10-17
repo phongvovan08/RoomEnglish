@@ -255,27 +255,6 @@ const menuItems = computed(() => [
     ],
   },
   {
-    name: 'todoLists',
-    label: 'menu.todoLists',
-    path: Routes.TodoLists.path,
-    icon: 'mdi:format-list-bulleted-square',
-    hasChildren: true,
-    children: [
-      {
-        name: 'todoListsList',
-        label: 'menu.viewAll',
-        path: Routes.TodoLists.children.List.path,
-        icon: 'mdi:view-list',
-      },
-      {
-        name: 'createTodoList',
-        label: 'menu.create',
-        path: Routes.TodoLists.children.Create.path,
-        icon: 'mdi:plus-circle',
-      },
-    ],
-  },
-  {
     name: 'management',
     label: 'Quản lý',
     path: Routes.Management.children.Categories.path,
@@ -289,13 +268,6 @@ const menuItems = computed(() => [
         icon: 'mdi:folder-multiple',
       },
     ],
-  },
-  {
-    name: 'weatherForecasts',
-    label: 'menu.weatherForecasts',
-    path: Routes.WeatherForecasts.path,
-    icon: 'mdi:weather-cloudy',
-    hasChildren: false,
   },
 ])
 
