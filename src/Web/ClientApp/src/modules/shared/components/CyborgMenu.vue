@@ -24,6 +24,7 @@
           </form>
         </div>
         
+        
         <!-- Desktop Navigation -->
         <ul class="nav-menu" v-if="!isMobile">
           <li v-for="item in menuItems" :key="item.name">
@@ -245,6 +246,12 @@ const menuItems = computed(() => [
         path: Routes.Vocabulary.children.Progress.path,
         icon: 'mdi:chart-line',
       },
+      {
+        name: 'vocabularyManagement',
+        label: 'Manage Vocabulary',
+        path: Routes.Vocabulary.children.Management.path,
+        icon: 'mdi:database-cog',
+      },
     ],
   },
   {
@@ -265,6 +272,21 @@ const menuItems = computed(() => [
         label: 'menu.create',
         path: Routes.TodoLists.children.Create.path,
         icon: 'mdi:plus-circle',
+      },
+    ],
+  },
+  {
+    name: 'management',
+    label: 'Quản lý',
+    path: Routes.Management.children.Categories.path,
+    icon: 'mdi:cog',
+    hasChildren: true,
+    children: [
+      {
+        name: 'manageCategories',
+        label: 'Quản lý Danh mục',
+        path: Routes.Management.children.Categories.path,
+        icon: 'mdi:folder-multiple',
       },
     ],
   },
@@ -850,5 +872,82 @@ watch(isAuthenticated, (newValue, oldValue) => {
 .user-name {
   font-weight: 600;
   color: var(--accent-color);
+}
+
+/* Quick Access Styles */
+.quick-access {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 20px;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(236, 96, 144, 0.3);
+}
+
+.quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(236, 96, 144, 0.4);
+  color: white;
+}
+
+.vocabulary-mgmt-btn {
+  background: linear-gradient(135deg, #74c0fc, #339af0);
+  box-shadow: 0 4px 15px rgba(116, 192, 252, 0.3);
+}
+
+.vocabulary-mgmt-btn:hover {
+  box-shadow: 0 6px 25px rgba(116, 192, 252, 0.4);
+}
+
+/* Enhanced Vocabulary Management Menu Item */
+.nav-link[href="/vocabulary/management"],
+.dropdown-link[href="/vocabulary/management"],
+.mobile-link[href="/vocabulary/management"],
+.mobile-sublink[href="/vocabulary/management"] {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.1), rgba(51, 154, 240, 0.1));
+  border-left: 3px solid #74c0fc;
+  font-weight: 600;
+}
+
+.nav-link[href="/vocabulary/management"]:hover,
+.dropdown-link[href="/vocabulary/management"]:hover,
+.mobile-link[href="/vocabulary/management"]:hover,
+.mobile-sublink[href="/vocabulary/management"]:hover {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(51, 154, 240, 0.2));
+  transform: translateX(5px);
+}
+
+/* Mobile Quick Access */
+@media (max-width: 768px) {
+  .mobile-menu {
+    position: relative;
+  }
+  
+  .mobile-menu::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #74c0fc, #339af0);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+  }
 }
 </style>

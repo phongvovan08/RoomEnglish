@@ -135,12 +135,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { TodoItemsService, TodoListsService } from '@/services/api'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import type { TodoItemDto, TodoListBriefDto, PriorityLevel } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
-const { error: showError } = useNotifications()
+const { showError } = useNotifications()
 
 const loading = ref(true)
 

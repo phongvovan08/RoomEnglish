@@ -126,6 +126,44 @@ const router = createRouter({
       }),
       meta: { requiresAuth: true },
     },
+    {
+      path: Routes.Vocabulary.children.Management.path,
+      name: Routes.Vocabulary.children.Management.name,
+      component: () => import("../modules/vocabulary/pages/VocabularyManagement.vue").catch(err => {
+        console.error('Failed to load VocabularyManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+
+    // Management System routes
+    {
+      path: Routes.Management.children.Categories.path,
+      name: Routes.Management.children.Categories.name,
+      component: () => import("../modules/management/pages/CategoriesManagement.vue").catch(err => {
+        console.error('Failed to load CategoriesManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.Management.children.Vocabularies.children.List.path,
+      name: Routes.Management.children.Vocabularies.children.List.name,
+      component: () => import("../modules/management/pages/VocabulariesManagement.vue").catch(err => {
+        console.error('Failed to load VocabulariesManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.Management.children.Examples.children.List.path,
+      name: Routes.Management.children.Examples.children.List.name,
+      component: () => import("../modules/management/pages/ExamplesManagement.vue").catch(err => {
+        console.error('Failed to load ExamplesManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
     
     // Legacy posts routes
     ...postsRoutes,

@@ -1,4 +1,5 @@
 import appConfig from '@/config/app.config'
+import { createAuthHeaders } from '@/utils/auth'
 
 // TodoList interfaces
 export interface TodoList {
@@ -56,10 +57,7 @@ export class TodoListsService {
     try {
       const response = await fetch(this.BASE_URL, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
       })
 
       if (!response.ok) {
@@ -95,10 +93,7 @@ export class TodoListsService {
     try {
       const response = await fetch(this.BASE_URL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(),
         body: JSON.stringify(todoList),
       })
 
@@ -120,10 +115,7 @@ export class TodoListsService {
   static async updateTodoList(todoList: UpdateTodoListRequest): Promise<void> {
     const response = await fetch(`${this.BASE_URL}/${todoList.id}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`,
-        'Content-Type': 'application/json',
-      },
+      headers: createAuthHeaders(),
       body: JSON.stringify(todoList),
     })
 
@@ -137,10 +129,7 @@ export class TodoListsService {
   static async deleteTodoList(id: number): Promise<void> {
     const response = await fetch(`${this.BASE_URL}/${id}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`,
-        'Content-Type': 'application/json',
-      },
+      headers: createAuthHeaders(),
     })
 
     if (!response.ok) {
@@ -149,10 +138,6 @@ export class TodoListsService {
     }
   }
 
-  // Helper method to get auth token
-  private static getAuthToken(): string | null {
-    return localStorage.getItem(appConfig.auth.tokenKey)
-  }
 }
 
 // TodoItems service

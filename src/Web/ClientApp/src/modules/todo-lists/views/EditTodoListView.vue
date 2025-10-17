@@ -197,12 +197,12 @@
 <script setup lang="ts">
 import { Routes } from '@/router/constants'
 import { useTodoLists } from '@/composables/useTodoLists'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import type { TodoListDto, TodoItemDto } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
-const { success: showSuccess, error: showError } = useNotifications()
+const { showSuccess, showError } = useNotifications()
 const { getTodoListById, updateTodoList, deleteTodoList, loading } = useTodoLists()
 
 // Reactive state

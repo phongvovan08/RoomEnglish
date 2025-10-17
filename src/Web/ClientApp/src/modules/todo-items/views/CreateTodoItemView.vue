@@ -115,13 +115,13 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { useTodoItems, useTodoLists } from '@/composables/useTodoApi'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import type { TodoListBriefDto, PriorityLevel } from '@/types/api'
 
 const router = useRouter()
 const { createTodoItem: createItem, loading: creating } = useTodoItems()
 const { getTodoLists, loading: loadingLists } = useTodoLists()
-const { success, error } = useNotifications()
+const { showSuccess, showError } = useNotifications()
 
 const loading = ref(false)
 const todoLists = ref<TodoListBriefDto[]>([])
@@ -151,10 +151,10 @@ const createTodoItem = async () => {
   const success_result = await createItem(command)
   
   if (success_result) {
-    success('Todo Item Created', `"${form.title}" has been created successfully.`)
+    showSuccess('Todo Item Created', `"${form.title}" has been created successfully.`)
     router.push({ name: Routes.TodoItems.name })
   } else {
-    error('Creation Failed', 'Failed to create todo item. Please try again.')
+    showError('Creation Failed', 'Failed to create todo item. Please try again.')
   }
 }
 

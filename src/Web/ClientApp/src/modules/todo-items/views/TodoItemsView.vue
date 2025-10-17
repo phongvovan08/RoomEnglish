@@ -122,10 +122,10 @@ import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { TodoItemsService, TodoListsService } from '@/services/api'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import type { TodoItemDto, PaginatedList, TodoListBriefDto } from '@/types/api'
 
-const { success, error: showError, warning } = useNotifications()
+const { showSuccess, showError, showWarning } = useNotifications()
 
 const loading = ref(true)
 const updating = ref(false)
@@ -192,9 +192,9 @@ const toggleComplete = async (item: TodoItemDto) => {
     })
     
     if (item.done) {
-      success('Task Completed! ✅', `"${item.title}" has been marked as completed`)
+  showSuccess('Task Completed! ✅', `"${item.title}" has been marked as completed`)
     } else {
-      warning('Task Reopened 🔄', `"${item.title}" has been marked as incomplete`)
+  showWarning('Task Reopened 🔄', `"${item.title}" has been marked as incomplete`)
     }
   } catch (error) {
     console.error('Failed to toggle todo item completion:', error)
@@ -212,7 +212,7 @@ const deleteItem = async (item: TodoItemDto) => {
       updating.value = true
       await TodoItemsService.delete(item.id)
       todoItems.value = todoItems.value.filter(i => i.id !== item.id)
-      success('Item Deleted! 🗑️', `"${item.title}" has been successfully deleted`)
+  showSuccess('Item Deleted! 🗑️', `"${item.title}" has been successfully deleted`)
     } catch (error) {
       console.error('Failed to delete todo item:', error)
       showError('Delete Failed ❌', 'Failed to delete todo item. Please try again.')

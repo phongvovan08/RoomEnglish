@@ -109,7 +109,7 @@ export const Routes = {
     },
   },
   
-  // Vocabulary Learning System (mapping to backend /api/Vocabulary)
+  // Vocabulary Learning System (mapping to backend /api/vocabulary-learning, /api/vocabulary-categories, /api/vocabulary-words, /api/vocabulary-examples)
   Vocabulary: {
     name: "Vocabulary",
     path: "/vocabulary",
@@ -137,6 +137,42 @@ export const Routes = {
       Progress: {
         name: "VocabularyProgress",
         path: "/vocabulary/progress",
+      },
+      Management: {
+        name: "VocabularyManagement",
+        path: "/vocabulary/management",
+      },
+    },
+  },
+
+  // Management System - Hierarchical Data Management
+  Management: {
+    name: "Management",
+    path: "/management",
+    children: {
+      Categories: {
+        name: "ManageCategories",
+        path: "/management/categories",
+      },
+      Vocabularies: {
+        name: "ManageVocabularies",
+        path: "/management/vocabularies",
+        children: {
+          List: {
+            name: "VocabulariesList",
+            path: "/management/vocabularies/:categoryId",
+          },
+        },
+      },
+      Examples: {
+        name: "ManageExamples",
+        path: "/management/examples",
+        children: {
+          List: {
+            name: "ExamplesList",
+            path: "/management/examples/:vocabularyId",
+          },
+        },
       },
     },
   },

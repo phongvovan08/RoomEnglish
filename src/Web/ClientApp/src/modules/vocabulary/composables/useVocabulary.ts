@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import appConfig from '@/config/app.config'
+import { createAuthHeaders, getAuthToken } from '@/utils/auth'
 import type { 
   VocabularyCategory, 
   VocabularyWord, 
@@ -11,12 +11,7 @@ import type {
   PaginatedList
 } from '../types/vocabulary.types'
 
-const API_BASE = '/api/vocabulary'
-
-// Helper method to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem(appConfig.auth.tokenKey)
-}
+const API_BASE = '/api/vocabulary-learning'
 
 export const useVocabulary = () => {
   const categories = ref<VocabularyCategory[]>([])
@@ -47,10 +42,7 @@ export const useVocabulary = () => {
       params.append('IncludeInactive', (query.includeInactive || false).toString())
 
       const response = await fetch(`${API_BASE}/categories?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
+        headers: createAuthHeaders()
       })
 
       if (!response.ok) {
@@ -87,10 +79,7 @@ export const useVocabulary = () => {
       params.append('IncludeUserProgress', (query.includeUserProgress || false).toString())
 
       const response = await fetch(`${API_BASE}/words?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
+        headers: createAuthHeaders()
       })
 
       if (!response.ok) {
@@ -114,10 +103,7 @@ export const useVocabulary = () => {
       error.value = null
 
       const response = await fetch(`${API_BASE}/words/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
+        headers: createAuthHeaders()
       })
 
       if (!response.ok) {
@@ -142,10 +128,7 @@ export const useVocabulary = () => {
 
       const response = await fetch(`${API_BASE}/sessions/start`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
+        headers: createAuthHeaders(),
         body: JSON.stringify(command)
       })
 
@@ -171,10 +154,7 @@ export const useVocabulary = () => {
 
       const response = await fetch(`${API_BASE}/sessions/${command.sessionId}/complete`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
+        headers: createAuthHeaders(),
         body: JSON.stringify({
           correctAnswers: command.correctAnswers,
           score: command.score

@@ -221,7 +221,7 @@ const finalScore = computed(() => {
 
 // Methods
 const startTimer = () => {
-  timer = setInterval(() => {
+  timer = window.setInterval(() => {
     elapsedTime.value = Math.floor((Date.now() - startTime.value) / 1000)
   }, 1000)
 }

@@ -1,9 +1,9 @@
 import { ref, readonly } from 'vue'
 import { TodoItemsService, type TodoItemBriefDto, type PaginatedList, type CreateTodoItemRequest, type UpdateTodoItemRequest } from '@/services/todoItemsService'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 
 export function useTodoItems() {
-  const { error: showError, success: showSuccess, info: showInfo } = useNotifications()
+  const { showError, showSuccess, showInfo } = useNotifications()
   
   const todoItems = ref<TodoItemBriefDto[]>([])
   const isLoading = ref(false)

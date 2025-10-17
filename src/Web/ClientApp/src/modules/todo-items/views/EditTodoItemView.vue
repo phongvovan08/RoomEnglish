@@ -148,12 +148,12 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { TodoItemsService, TodoListsService } from '@/services/api'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import type { TodoItemDto, TodoListBriefDto, PriorityLevel } from '@/types/api'
 
 const router = useRouter()
 const route = useRoute()
-const { success, error: showError } = useNotifications()
+const { showSuccess, showError } = useNotifications()
 
 const loading = ref(true)
 const updating = ref(false)
@@ -225,7 +225,7 @@ const updateTodoItem = async () => {
     
     await TodoItemsService.update(todoItem.value!.id, command)
     
-    success('Todo Updated! ✏️', `"${form.title}" has been successfully updated`)
+    showSuccess('Todo Updated! ✏️', `"${form.title}" has been successfully updated`)
     // Navigate back to todo items list
     router.push({ name: Routes.TodoItems.name })
   } catch (error) {

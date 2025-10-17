@@ -240,12 +240,12 @@ import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useTodoItems } from '@/composables/useTodoItems'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 import { Routes } from '@/router/constants'
 import type { TodoItemBriefDto } from '@/services/todoItemsService'
 
 const route = useRoute()
-const { error } = useNotifications()
+const { showError } = useNotifications()
 const {
   todoItems,
   isLoading,
@@ -293,7 +293,7 @@ onMounted(async () => {
   if (listId.value && !isNaN(listId.value)) {
     await loadTodoItems(listId.value)
   } else {
-    error('Invalid todo list ID')
+    showError('Invalid todo list ID')
   }
   
   // Close dropdown menu when clicking outside

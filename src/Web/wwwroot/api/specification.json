@@ -9,7 +9,6 @@
     "/api/Authentication/GetDefaultToken": {
       "post": {
         "tags": [
-          "Authentication",
           "Authentication"
         ],
         "summary": "Lấy token với tài khoản mặc định",
@@ -41,9 +40,6 @@
     },
     "/api/TodoItems": {
       "get": {
-        "tags": [
-          "TodoItems"
-        ],
         "operationId": "GetTodoItemsWithPagination",
         "parameters": [
           {
@@ -96,9 +92,6 @@
         ]
       },
       "post": {
-        "tags": [
-          "TodoItems"
-        ],
         "operationId": "CreateTodoItem",
         "requestBody": {
           "x-name": "command",
@@ -134,9 +127,6 @@
     },
     "/api/TodoItems/{id}": {
       "put": {
-        "tags": [
-          "TodoItems"
-        ],
         "operationId": "UpdateTodoItem",
         "parameters": [
           {
@@ -177,9 +167,6 @@
         ]
       },
       "delete": {
-        "tags": [
-          "TodoItems"
-        ],
         "operationId": "DeleteTodoItem",
         "parameters": [
           {
@@ -207,9 +194,6 @@
     },
     "/api/TodoItems/UpdateDetail/{id}": {
       "put": {
-        "tags": [
-          "TodoItems"
-        ],
         "operationId": "UpdateTodoItemDetail",
         "parameters": [
           {
@@ -252,9 +236,6 @@
     },
     "/api/TodoLists": {
       "get": {
-        "tags": [
-          "TodoLists"
-        ],
         "operationId": "GetTodoLists",
         "responses": {
           "200": {
@@ -275,9 +256,6 @@
         ]
       },
       "post": {
-        "tags": [
-          "TodoLists"
-        ],
         "operationId": "CreateTodoList",
         "requestBody": {
           "x-name": "command",
@@ -313,9 +291,6 @@
     },
     "/api/TodoLists/{id}": {
       "put": {
-        "tags": [
-          "TodoLists"
-        ],
         "operationId": "UpdateTodoList",
         "parameters": [
           {
@@ -356,9 +331,6 @@
         ]
       },
       "delete": {
-        "tags": [
-          "TodoLists"
-        ],
         "operationId": "DeleteTodoList",
         "parameters": [
           {
@@ -778,12 +750,198 @@
         ]
       }
     },
-    "/api/Vocabulary/categories": {
+    "/api/vocabulary-learning/sessions/start": {
+      "post": {
+        "tags": [
+          "Vocabulary Learning & Import/Export"
+        ],
+        "summary": "Start learning session",
+        "description": "Starts a new vocabulary learning session",
+        "operationId": "StartLearningSession",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLearningSessionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-learning/sessions/{id}/complete": {
+      "put": {
+        "tags": [
+          "Vocabulary Learning & Import/Export"
+        ],
+        "summary": "Complete learning session",
+        "description": "Completes an active learning session",
+        "operationId": "CompleteLearningSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteLearningSessionRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-learning/dictation/submit": {
+      "post": {
+        "tags": [
+          "Vocabulary Learning & Import/Export"
+        ],
+        "summary": "Submit dictation",
+        "description": "Submits a dictation result for evaluation",
+        "operationId": "SubmitDictation",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDictationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-learning/upload-excel": {
+      "post": {
+        "tags": [
+          "Vocabulary Learning & Import/Export"
+        ],
+        "summary": "Upload Excel file",
+        "description": "Imports vocabulary data from an Excel file",
+        "operationId": "UploadVocabularyExcel",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-learning/export-excel": {
       "get": {
         "tags": [
-          "Vocabulary"
+          "Vocabulary Learning & Import/Export"
         ],
-        "operationId": "GetApiVocabularyCategories",
+        "summary": "Export to Excel",
+        "description": "Exports vocabulary data to an Excel file",
+        "operationId": "ExportVocabularyExcel",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-learning/template.xlsx": {
+      "get": {
+        "tags": [
+          "Vocabulary Learning & Import/Export"
+        ],
+        "summary": "Download Excel template",
+        "description": "Downloads an Excel template for vocabulary import",
+        "operationId": "GetVocabularyTemplate",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-categories": {
+      "get": {
+        "tags": [
+          "Vocabulary Categories"
+        ],
+        "summary": "Get all vocabulary categories",
+        "description": "Retrieves a paginated list of vocabulary categories",
+        "operationId": "GetVocabularyCategories",
         "parameters": [
           {
             "name": "PageNumber",
@@ -825,14 +983,286 @@
             "JWT": []
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "Vocabulary Categories"
+        ],
+        "summary": "Create new category",
+        "description": "Creates a new vocabulary category",
+        "operationId": "CreateVocabularyCategory",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCategoryRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
-    "/api/Vocabulary/words": {
+    "/api/vocabulary-categories/{id}": {
       "get": {
         "tags": [
-          "Vocabulary"
+          "Vocabulary Categories"
         ],
-        "operationId": "GetApiVocabularyWords",
+        "summary": "Get category by ID",
+        "description": "Retrieves a specific vocabulary category by its ID",
+        "operationId": "GetVocabularyCategoryById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Vocabulary Categories"
+        ],
+        "summary": "Update category",
+        "description": "Updates an existing vocabulary category",
+        "operationId": "UpdateVocabularyCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertCategoryRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Vocabulary Categories"
+        ],
+        "summary": "Delete category",
+        "description": "Soft deletes a vocabulary category",
+        "operationId": "DeleteVocabularyCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-examples": {
+      "get": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Get vocabulary examples",
+        "description": "Retrieves vocabulary examples, optionally filtered by vocabulary word ID",
+        "operationId": "GetVocabularyExamples",
+        "parameters": [
+          {
+            "name": "vocabularyId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Create new example",
+        "description": "Creates a new vocabulary example",
+        "operationId": "CreateVocabularyExample",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertExampleRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-examples/{id}": {
+      "put": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Update example",
+        "description": "Updates an existing vocabulary example",
+        "operationId": "UpdateVocabularyExample",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertExampleRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Delete example",
+        "description": "Soft deletes a vocabulary example",
+        "operationId": "DeleteVocabularyExample",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-words": {
+      "get": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Get vocabulary words",
+        "description": "Retrieves a paginated list of vocabulary words with optional filtering",
+        "operationId": "GetVocabularyWords",
         "parameters": [
           {
             "name": "CategoryId",
@@ -930,14 +1360,46 @@
             "JWT": []
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Create new word",
+        "description": "Creates a new vocabulary word",
+        "operationId": "CreateVocabularyWord",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWordRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
       }
     },
-    "/api/Vocabulary/words/{id}": {
+    "/api/vocabulary-words/{id}": {
       "get": {
         "tags": [
-          "Vocabulary"
+          "Vocabulary Words"
         ],
-        "operationId": "GetApiVocabularyWords2",
+        "summary": "Get word details",
+        "description": "Retrieves detailed information about a specific vocabulary word",
+        "operationId": "GetVocabularyWordDetail",
         "parameters": [
           {
             "name": "id",
@@ -970,44 +1432,14 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Vocabulary/sessions/start": {
-      "post": {
-        "tags": [
-          "Vocabulary"
-        ],
-        "operationId": "PostApiVocabularySessionsStart",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StartLearningSessionCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Vocabulary/sessions/{id}/complete": {
+      },
       "put": {
         "tags": [
-          "Vocabulary"
+          "Vocabulary Words"
         ],
-        "operationId": "PutApiVocabularySessionsComplete",
+        "summary": "Update word",
+        "description": "Updates an existing vocabulary word",
+        "operationId": "UpdateVocabularyWord",
         "parameters": [
           {
             "name": "id",
@@ -1025,7 +1457,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteLearningSessionRequest"
+                "$ref": "#/components/schemas/UpsertWordRequest"
               }
             }
           },
@@ -1042,26 +1474,26 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Vocabulary/dictation/submit": {
-      "post": {
+      },
+      "delete": {
         "tags": [
-          "Vocabulary"
+          "Vocabulary Words"
         ],
-        "operationId": "PostApiVocabularyDictationSubmit",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SubmitDictationCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
+        "summary": "Delete word",
+        "description": "Soft deletes a vocabulary word",
+        "operationId": "DeleteVocabularyWord",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1076,9 +1508,6 @@
     },
     "/api/WeatherForecasts": {
       "get": {
-        "tags": [
-          "WeatherForecasts"
-        ],
         "operationId": "GetWeatherForecasts",
         "responses": {
           "200": {
@@ -1602,6 +2031,59 @@
             "type": "string"
           },
           "timeTakenSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UpsertCategoryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpsertExampleRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sentence": {
+            "type": "string"
+          },
+          "translation": {
+            "type": "string"
+          },
+          "grammar": {
+            "type": "string",
+            "nullable": true
+          },
+          "vocabularyWordId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UpsertWordRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "word": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "pronunciation": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
             "type": "integer",
             "format": "int32"
           }

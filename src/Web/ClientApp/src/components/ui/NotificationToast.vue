@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { useNotifications } from '@/composables/useNotifications'
+import { useNotifications } from '@/utils/notifications'
 
 const { notifications, removeNotification } = useNotifications()
 

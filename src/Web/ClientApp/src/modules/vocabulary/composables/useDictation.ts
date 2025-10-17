@@ -1,11 +1,12 @@
 import { ref, computed, readonly } from 'vue'
+import { createAuthHeaders } from '@/utils/auth'
 import type { 
   DictationResult,
   SubmitDictationCommand,
   VocabularyExample
 } from '../types/vocabulary.types'
 
-const API_BASE = '/api/vocabulary'
+const API_BASE = '/api/vocabulary-learning'
 
 export const useDictation = () => {
   const currentExample = ref<VocabularyExample | null>(null)
@@ -136,10 +137,7 @@ export const useDictation = () => {
 
       const response = await fetch(`${API_BASE}/dictation/submit`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
+        headers: createAuthHeaders(),
         body: JSON.stringify(command)
       })
 

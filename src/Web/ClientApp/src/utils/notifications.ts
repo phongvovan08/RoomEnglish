@@ -71,19 +71,19 @@ export function useNotifications() {
   }
 
   // Convenience methods
-  const success = (title: string, message?: string, duration?: number) => {
+  const showSuccess = (title: string, message?: string, duration?: number) => {
     return addNotification({ type: 'success', title, message, duration })
   }
 
-  const error = (title: string, message?: string, duration?: number) => {
+  const showError = (title: string, message?: string, duration?: number) => {
     return addNotification({ type: 'error', title, message, duration })
   }
 
-  const warning = (title: string, message?: string, duration?: number) => {
+  const showWarning = (title: string, message?: string, duration?: number) => {
     return addNotification({ type: 'warning', title, message, duration })
   }
 
-  const info = (title: string, message?: string, duration?: number) => {
+  const showInfo = (title: string, message?: string, duration?: number) => {
     return addNotification({ type: 'info', title, message, duration })
   }
 
@@ -92,9 +92,9 @@ export function useNotifications() {
     addNotification,
     removeNotification,
     clearAll,
-    success,
-    error,
-    warning,
-    info
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo
   }
 }

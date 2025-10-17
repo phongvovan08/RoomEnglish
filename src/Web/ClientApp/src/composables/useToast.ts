@@ -1,23 +1,28 @@
-import { useNotifications } from './useNotifications'
+import { useNotifications } from '@/utils/notifications'
 
 export function useToast() {
-  const { success, error, warning, info } = useNotifications()
+  const {
+    showSuccess: notifySuccess,
+    showError: notifyError,
+    showWarning: notifyWarning,
+    showInfo: notifyInfo
+  } = useNotifications()
 
   // Gaming-style toast messages with auto-hide (5s)
   const showSuccess = (title: string, message?: string, duration: number = 5000) => {
-    return success(`🎮 ${title}`, message, duration)
+    return notifySuccess(`🎮 ${title}`, message, duration)
   }
 
   const showError = (title: string, message?: string, duration: number = 5000) => {
-    return error(`❌ ${title}`, message, duration)
+    return notifyError(`❌ ${title}`, message, duration)
   }
 
   const showWarning = (title: string, message?: string, duration: number = 5000) => {
-    return warning(`⚠️ ${title}`, message, duration)
+    return notifyWarning(`⚠️ ${title}`, message, duration)
   }
 
   const showInfo = (title: string, message?: string, duration: number = 5000) => {
-    return info(`ℹ️ ${title}`, message, duration)
+    return notifyInfo(`ℹ️ ${title}`, message, duration)
   }
 
   // API specific messages

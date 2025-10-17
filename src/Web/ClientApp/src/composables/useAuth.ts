@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { AuthService, type LoginRequest, type RegisterRequest, type UserInfo } from '@/services/authService'
-import { useNotifications } from './useNotifications'
+import { useNotifications } from '@/utils/notifications'
 
 const user = ref<UserInfo | null>(null)
 const isLoading = ref(false)
@@ -9,7 +9,7 @@ const isInitialized = ref(false)
 
 export function useAuth() {
   const router = useRouter()
-  const { success, error: showError } = useNotifications()
+  const { showSuccess, showError } = useNotifications()
 
   const isAuthenticated = computed(() => !!user.value && AuthService.isAuthenticated())
 
@@ -40,7 +40,7 @@ export function useAuth() {
       const userInfo = await AuthService.getUserInfo()
       user.value = userInfo
 
-      success('Login Successful! 🎮', `Welcome back, ${userInfo.email}!`)
+  showSuccess('Login Successful! 🎮', `Welcome back, ${userInfo.email}!`)
       
       // Redirect to dashboard or intended route
       const redirectTo = router.currentRoute.value.query.redirect as string
@@ -62,7 +62,7 @@ export function useAuth() {
 
       await AuthService.register(userData)
       
-      success('Registration Successful! 🎉', 'Please check your email to confirm your account.')
+  showSuccess('Registration Successful! 🎉', 'Please check your email to confirm your account.')
       
       // Redirect to login page
       router.push('/auth/login')
@@ -83,7 +83,7 @@ export function useAuth() {
       await AuthService.logout()
       user.value = null
       
-      success('Logged Out Successfully! 👋', 'See you next time!')
+  showSuccess('Logged Out Successfully! 👋', 'See you next time!')
       
       // Redirect to login page
       router.push('/auth/login')
