@@ -60,7 +60,7 @@
                   <span class="grammar-text">{{ example.grammar }}</span>
                 </div>
                 <div class="flip-hint">
-                  <i class="mdi mdi-flip-horizontal"></i>
+                  <i class="mdi mdi-flip-vertical"></i>
                   <span>Click to see translation</span>
                 </div>
               </div>
@@ -72,7 +72,7 @@
                   <div class="translation-text">{{ example.translation }}</div>
                 </div>
                 <div class="flip-hint">
-                  <i class="mdi mdi-flip-horizontal"></i>
+                  <i class="mdi mdi-flip-vertical"></i>
                   <span>Click to see English</span>
                 </div>
               </div>
@@ -465,7 +465,7 @@ onMounted(() => {
 }
 
 .example-item.flipped .flip-card {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
 .flip-card-front,
@@ -493,7 +493,7 @@ onMounted(() => {
   background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
   border: 1px solid rgba(116, 192, 252, 0.3);
   color: white;
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
 .example-sentence {
