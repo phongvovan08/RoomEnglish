@@ -146,7 +146,18 @@
 
         <div class="translation-section" v-if="example?.translation">
           <h4>Translation:</h4>
-          <div class="translation-text">{{ example.translation }}</div>
+          <div 
+            class="translation-text" 
+            :class="{ 'hidden': !showTranslation }"
+            @click="toggleTranslation"
+          >
+            <template v-if="showTranslation">
+              {{ example.translation }}
+            </template>
+            <template v-else>
+              <span class="translation-hint">Click to see translation</span>
+            </template>
+          </div>
         </div>
 
         <div class="grammar-section" v-if="example?.grammar">
@@ -245,9 +256,15 @@ const playbackSpeed = ref(1)
 const speechRecognitionSupported = ref(false)
 const startTime = ref<number | null>(null)
 const elapsedTime = ref(0)
+const showTranslation = ref(false)
 
 // Timer
-let timer: number | null = null
+let timer: ReturnType<typeof setInterval> | null = null
+
+// Toggle translation visibility
+const toggleTranslation = () => {
+  showTranslation.value = !showTranslation.value
+}
 
 // Computed properties
 const formattedElapsedTime = computed(() => formatTime(elapsedTime.value))
@@ -836,6 +853,36 @@ watchEffect(() => {
   font-size: 1.1rem;
   line-height: 1.5;
   font-style: italic;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.translation-text:hover {
+  background: rgba(231, 94, 141, 0.1);
+  border-color: rgba(231, 94, 141, 0.3);
+}
+
+.translation-text.hidden {
+  background: rgba(116, 192, 252, 0.05);
+  border-color: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+}
+
+.translation-text.hidden:hover {
+  background: rgba(116, 192, 252, 0.1);
+  border-color: rgba(116, 192, 252, 0.4);
+}
+
+.translation-hint {
+  color: #74c0fc;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .grammar-section {

@@ -49,7 +49,18 @@
                 button-class="example-audio-btn"
               />
             </div>
-            <div class="example-translation">{{ example.translation }}</div>
+            <div 
+              class="example-translation" 
+              :class="{ 'hidden': !visibleTranslations[index] }"
+              @click="toggleTranslation(index)"
+            >
+              <template v-if="visibleTranslations[index]">
+                {{ example.translation }}
+              </template>
+              <template v-else>
+                <span class="translation-hint">Click to see translation</span>
+              </template>
+            </div>
             <div v-if="example.grammar" class="example-grammar">
               <span class="grammar-label">📚 Grammar:</span>
               <span class="grammar-text">{{ example.grammar }}</span>
@@ -194,10 +205,16 @@ const selectedOption = ref<AnswerOption | null>(null)
 const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
 const answerOptions = ref<AnswerOption[]>([])
+const visibleTranslations = ref<Record<number, boolean>>({})
 
 // Instance IDs for different audio sources  
 const WORD_AUDIO_ID = 'word-audio'
 const getExampleAudioId = (index: number) => `example-audio-${index}`
+
+// Toggle translation visibility
+const toggleTranslation = (index: number) => {
+  visibleTranslations.value[index] = !visibleTranslations.value[index]
+}
 
 // Generate answer options
 const generateAnswerOptions = () => {
@@ -465,6 +482,35 @@ onMounted(() => {
   color: #b8b8b8;
   font-size: 0.9rem;
   font-style: italic;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  min-height: 1.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.example-translation:hover {
+  background: rgba(184, 184, 184, 0.1);
+  border-color: rgba(184, 184, 184, 0.3);
+}
+
+.example-translation.hidden {
+  background: rgba(116, 192, 252, 0.05);
+  border-color: rgba(116, 192, 252, 0.2);
+}
+
+.example-translation.hidden:hover {
+  background: rgba(116, 192, 252, 0.1);
+  border-color: rgba(116, 192, 252, 0.4);
+}
+
+.translation-hint {
+  color: #74c0fc;
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .example-grammar {
