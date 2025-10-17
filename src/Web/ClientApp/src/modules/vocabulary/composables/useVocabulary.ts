@@ -11,7 +11,7 @@ import type {
   PaginatedList
 } from '../types/vocabulary.types'
 
-const API_BASE = '/api/vocabulary-learning'
+const API_BASE = '/api'
 
 export const useVocabulary = () => {
   const categories = ref<VocabularyCategory[]>([])
@@ -41,7 +41,7 @@ export const useVocabulary = () => {
       params.append('PageSize', (query.pageSize || 10).toString())
       params.append('IncludeInactive', (query.includeInactive || false).toString())
 
-      const response = await fetch(`${API_BASE}/categories?${params}`, {
+      const response = await fetch(`${API_BASE}/vocabulary-categories?${params}`, {
         headers: createAuthHeaders()
       })
 
@@ -78,7 +78,7 @@ export const useVocabulary = () => {
       params.append('IncludeExamples', (query.includeExamples || false).toString())
       params.append('IncludeUserProgress', (query.includeUserProgress || false).toString())
 
-      const response = await fetch(`${API_BASE}/words?${params}`, {
+      const response = await fetch(`${API_BASE}/vocabulary-words?${params}`, {
         headers: createAuthHeaders()
       })
 
@@ -102,7 +102,7 @@ export const useVocabulary = () => {
       isLoading.value = true
       error.value = null
 
-      const response = await fetch(`${API_BASE}/words/${id}`, {
+      const response = await fetch(`${API_BASE}/vocabulary-words/${id}`, {
         headers: createAuthHeaders()
       })
 
@@ -126,7 +126,7 @@ export const useVocabulary = () => {
       isLoading.value = true
       error.value = null
 
-      const response = await fetch(`${API_BASE}/sessions/start`, {
+      const response = await fetch(`${API_BASE}/vocabulary-learning/sessions/start`, {
         method: 'POST',
         headers: createAuthHeaders(),
         body: JSON.stringify(command)
@@ -152,7 +152,7 @@ export const useVocabulary = () => {
       isLoading.value = true
       error.value = null
 
-      const response = await fetch(`${API_BASE}/sessions/${command.sessionId}/complete`, {
+      const response = await fetch(`${API_BASE}/vocabulary-learning/sessions/${command.sessionId}/complete`, {
         method: 'PUT',
         headers: createAuthHeaders(),
         body: JSON.stringify({

@@ -57,7 +57,7 @@
     <!-- Voice Selection -->
     <div class="setting-group" v-if="shouldShowVoiceSelection">
       <label class="setting-label">Voice:</label>
-      <select :value="currentVoiceIndex" @change="updateVoice" class="voice-select">
+      <select :value="currentProviderVoiceIndex" @change="updateVoice" class="voice-select">
         <option 
           v-for="(voice, index) in englishVoices" 
           :key="index" 
@@ -127,6 +127,7 @@ const {
   speechPitch,
   selectedVoiceIndex,
   selectedTTSProvider,
+  getAvailableVoices,
   getEnglishVoices,
   getVoicesByProvider,
   getCurrentOptions,
@@ -153,6 +154,30 @@ const englishVoices = computed(() => {
   // Only show voices for current provider
   return getVoicesByProvider(currentTTSProvider.value)
 })
+
+// Get the provider-specific voice index for display
+const currentProviderVoiceIndex = computed(() => {
+  const allVoices = getAvailableVoices()
+  const selectedVoice = allVoices[selectedVoiceIndex.value]
+  
+  console.log('Current voice selection:', {
+    globalIndex: selectedVoiceIndex.value,
+    selectedVoice: selectedVoice?.name,
+    provider: currentTTSProvider.value
+  })
+  
+  if (!selectedVoice || selectedVoice.provider !== currentTTSProvider.value) {
+    console.log('Voice provider mismatch, defaulting to 0')
+    return 0 // Default to first voice if current selection doesn't match provider
+  }
+  
+  const providerVoices = englishVoices.value
+  const providerIndex = providerVoices.findIndex(voice => voice.voiceName === selectedVoice.voiceName)
+  
+  console.log('Provider voice index:', providerIndex)
+  return providerIndex >= 0 ? providerIndex : 0
+})
+
 const isTesting = computed(() => isPlaying('speech-test'))
 
 // Computed to check whether voice selection should be displayed
@@ -182,7 +207,23 @@ const updatePitch = (event: Event) => {
 
 const updateVoice = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  setSelectedVoiceIndex(parseInt(target.value))
+  const providerVoiceIndex = parseInt(target.value)
+  
+  // Convert provider-specific index to global index
+  const providerVoices = englishVoices.value
+  const selectedProviderVoice = providerVoices[providerVoiceIndex]
+  
+  if (selectedProviderVoice) {
+    const allVoices = getAvailableVoices()
+    const globalIndex = allVoices.findIndex(voice => 
+      voice.voiceName === selectedProviderVoice.voiceName && 
+      voice.provider === selectedProviderVoice.provider
+    )
+    
+    if (globalIndex >= 0) {
+      setSelectedVoiceIndex(globalIndex)
+    }
+  }
 }
 
 const testSpeech = async () => {
@@ -207,6 +248,21 @@ const updateTTSProvider = (event: Event) => {
   const target = event.target as HTMLSelectElement
   const provider = target.value as 'openai' | 'webspeech'
   setTTSProvider(provider)
+  
+  // Reset to first voice of new provider
+  const providerVoices = getVoicesByProvider(provider)
+  if (providerVoices.length > 0) {
+    const allVoices = getAvailableVoices()
+    const firstProviderVoice = providerVoices[0]
+    const globalIndex = allVoices.findIndex(voice => 
+      voice.voiceName === firstProviderVoice.voiceName && 
+      voice.provider === firstProviderVoice.provider
+    )
+    
+    if (globalIndex >= 0) {
+      setSelectedVoiceIndex(globalIndex)
+    }
+  }
 }
 
 // API Key methods
@@ -219,8 +275,9 @@ const saveApiKey = () => {
 }
 
 onMounted(async () => {
-  loadSettings()
+  // Load voices first, then load settings
   await initializeDefaultVoice()
+  loadSettings()
 })
 </script>
 
