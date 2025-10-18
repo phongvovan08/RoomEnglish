@@ -5,7 +5,7 @@
     :actions="actions"
     :pagination="true"
     :searchable="true"
-    :clickable="true"
+    :clickable="false"
     :page-size="pageSize"
     :search-placeholder="'Tìm kiếm từ vựng...'"
     :empty-state-title="'Chưa có từ vựng nào'"
@@ -21,13 +21,16 @@
   >
     <!-- Custom grid item for vocabulary -->
     <template #grid-item="{ item }">
-      <div class="vocabulary-card" @click="$emit('vocabulary-click', item)">
+      <div class="vocabulary-card" >
         <div class="vocabulary-header">
           <div class="word-info">
             <h3>{{ item.word }}</h3>
             <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
           </div>
           <div class="vocabulary-actions">
+            <button @click.stop="$emit('vocabulary-click', item)" class="action-btn detail">
+              <Icon icon="mdi:eye" class="w-4 h-4" />
+            </button>
             <button @click.stop="$emit('edit-vocabulary', item)" class="action-btn edit">
               <Icon icon="mdi:pencil" class="w-4 h-4" />
             </button>
@@ -175,6 +178,12 @@ const columns = computed<GridColumn[]>(() => [
 // Define actions for table view
 const actions = computed<GridAction[]>(() => [
   {
+    key: 'detail',
+    icon: 'mdi:eye',
+    tooltip: 'Xem chi tiết',
+    variant: 'default'
+  },
+  {
     key: 'edit',
     icon: 'mdi:pencil',
     tooltip: 'Sửa từ vựng',
@@ -194,7 +203,9 @@ const handleRowClick = (vocabulary: Vocabulary) => {
 }
 
 const handleActionClick = (action: string, vocabulary: Vocabulary) => {
-  if (action === 'edit') {
+  if (action === 'detail') {
+    emit('vocabulary-click', vocabulary)
+  } else if (action === 'edit') {
     emit('edit-vocabulary', vocabulary)
   } else if (action === 'delete') {
     emit('delete-vocabulary', vocabulary)
@@ -270,6 +281,11 @@ const formatDate = (date: string | Date): string => {
   cursor: pointer;
   transition: all 0.2s;
   color: #6b7280;
+}
+
+.action-btn.detail:hover {
+  background-color: #f0f9ff;
+  color: #0ea5e9;
 }
 
 .action-btn.edit:hover {
