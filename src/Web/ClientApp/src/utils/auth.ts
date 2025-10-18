@@ -9,25 +9,23 @@ export const getAuthToken = (): string | null => {
 }
 
 /**
- * Create authorization headers with Bearer token
- * @param additionalHeaders - Additional headers to merge (optional)
- * @param contentType - Content type to use, defaults to 'application/json'
- * @returns Headers object with Authorization and Content-Type
- * headers: createAuthHeaders()
-// -> { 'Content-Type': 'application/json', 'Authorization': 'Bearer ...' }
-headers: createAuthHeaders({}, 'multipart/form-data')
-// -> { 'Content-Type': 'multipart/form-data', 'Authorization': 'Bearer ...' }
-headers: createAuthHeaders({ 'Accept': 'application/xml', 'X-Custom': 'value' })
-// -> { 'Content-Type': 'application/json', 'Authorization': 'Bearer ...', 'Accept': 'application/xml', 'X-Custom': 'value' }
-headers: createAuthHeaders({ 'Accept': 'text/plain' }, 'text/plain')
-// -> { 'Content-Type': 'text/plain', 'Authorization': 'Bearer ...', 'Accept': 'text/plain' }
+ * Create authorization headers with Bearer token.
+ * @param additionalHeaders - Optional headers to merge into the result.
+ * @param contentType - Content type to include. Pass `null`/`undefined` to skip.
+ *                      When sending FormData use `'multipart/form-data'` (or omit)
+ *                      so the browser can append the boundary automatically.
+ * @returns Headers object containing Authorization and optional Content-Type.
  */
 export const createAuthHeaders = (
   additionalHeaders?: Record<string, string>,
-  contentType: string = 'application/json'
+  contentType: string | null = 'application/json'
 ): Record<string, string> => {
-  const headers: Record<string, string> = {
-    'Content-Type': contentType
+  const headers: Record<string, string> = {}
+  const normalizedContentType = contentType?.toLowerCase()
+
+  // Skip multipart so the fetch/XHR client can add the boundary automatically.
+  if (contentType && !(normalizedContentType && normalizedContentType.includes('multipart/form-data'))) {
+    headers['Content-Type'] = contentType
   }
   
   const token = getAuthToken()
@@ -38,6 +36,22 @@ export const createAuthHeaders = (
   // Merge additional headers (they can override defaults)
   if (additionalHeaders) {
     Object.assign(headers, additionalHeaders)
+  }
+  
+  return headers
+}
+
+/**
+ * Create headers specifically for file uploads (FormData)
+ * Only includes Authorization header, lets browser handle Content-Type with boundary
+ * @returns Headers object with only Authorization header (if token exists)
+ */
+export const createFileUploadHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {}
+  
+  const token = getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
   
   return headers
@@ -59,7 +73,9 @@ export const getAuthTokenWithFallback = async (): Promise<string | null> => {
       if (tokenResponse.ok) {
         token = await tokenResponse.text()
         // Save token using AuthService method if available
-        localStorage.setItem('access_token', token) // Fallback to direct localStorage
+        if (token) {
+          localStorage.setItem('access_token', token) // Fallback to direct localStorage
+        }
       }
     } catch (error) {
       console.error('Failed to get default token:', error)

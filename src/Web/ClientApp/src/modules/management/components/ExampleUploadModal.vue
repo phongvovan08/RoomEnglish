@@ -110,17 +110,7 @@
           </div>
         </div>
         
-        <div v-if="uploadResults.errors && uploadResults.errors.length > 0" class="error-list">
-          <h4>Các lỗi gặp phải:</h4>
-          <ul>
-            <li v-for="(error, index) in uploadResults.errors.slice(0, 5)" :key="index">
-              {{ error }}
-            </li>
-            <li v-if="uploadResults.errors.length > 5">
-              ... và {{ uploadResults.errors.length - 5 }} lỗi khác
-            </li>
-          </ul>
-        </div>
+
 
         <div class="results-actions">
           <button @click="$emit('close')" class="btn-secondary">
@@ -138,7 +128,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { createAuthHeaders } from '@/utils/auth'
+import { createFileUploadHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 
 interface Props {
@@ -218,7 +208,7 @@ const uploadFile = async () => {
     
     const response = await fetch('/api/vocabulary-learning/upload-excel', {
       method: 'POST',
-      headers: createAuthHeaders(),
+      headers: createFileUploadHeaders(),
       body: formData
     })
     
@@ -233,22 +223,30 @@ const uploadFile = async () => {
         updatedCount: result.updatedCount || 0,
         errors: result.errors || []
       }
+      
+      if (result.success) {
+        showSuccess(`Upload thành công! Đã thêm ${result.addedCount || 0} ví dụ và cập nhật ${result.updatedCount || 0} ví dụ.`)
+      }
     } else {
       const error = await response.text()
+      const errorMsg = error || 'Upload thất bại'
+      showError(errorMsg)
       uploadResults.value = {
         success: false,
         addedCount: 0,
         updatedCount: 0,
-        errors: [error || 'Upload thất bại']
+        errors: [errorMsg]
       }
     }
   } catch (error) {
     clearInterval(progressInterval)
+    const errorMessage = 'Lỗi kết nối: ' + (error as Error).message
+    showError(errorMessage)
     uploadResults.value = {
       success: false,
       addedCount: 0,
       updatedCount: 0,
-      errors: ['Lỗi kết nối: ' + (error as Error).message]
+      errors: [errorMessage]
     }
   } finally {
     isUploading.value = false
@@ -564,24 +562,7 @@ const formatFileSize = (bytes: number): string => {
   font-size: 1.25rem;
 }
 
-.error-list {
-  margin: 1rem 0;
-}
 
-.error-list h4 {
-  color: #ff6b6b;
-  margin: 0 0 0.5rem 0;
-}
-
-.error-list ul {
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-.error-list li {
-  margin-bottom: 0.25rem;
-}
 
 .results-actions {
   display: flex;

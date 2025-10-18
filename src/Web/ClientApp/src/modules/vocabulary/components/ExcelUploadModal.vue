@@ -86,19 +86,7 @@
           </div>
         </div>
 
-        <div v-if="uploadResult.warnings.length" class="warnings-section">
-          <h4><i class="mdi mdi-alert"></i> Warnings</h4>
-          <ul class="message-list">
-            <li v-for="warning in uploadResult.warnings" :key="warning">{{ warning }}</li>
-          </ul>
-        </div>
 
-        <div v-if="uploadResult.errors.length" class="errors-section">
-          <h4><i class="mdi mdi-alert-circle"></i> Errors</h4>
-          <ul class="message-list">
-            <li v-for="error in uploadResult.errors" :key="error">{{ error }}</li>
-          </ul>
-        </div>
 
         <div class="result-actions">
           <button @click="resetUpload" class="reset-btn">
@@ -155,7 +143,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { createAuthHeaders } from '@/utils/auth'
+import { createFileUploadHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 
 interface UploadResult {
@@ -246,37 +234,116 @@ const formatFileSize = (bytes: number): string => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFile.value) return
+  console.log('🚀 uploadFile called!')
+  console.log('📁 Selected file:', selectedFile.value)
+  console.log('🔧 useNotifications:', { showSuccess, showError })
+  
+  if (!selectedFile.value) {
+    console.log('❌ No file selected, returning')
+    return
+  }
 
+  console.log('✅ Starting upload process...')
   isUploading.value = true
   uploadResult.value = null
 
   try {
+    // Validate file first
+    if (!selectedFile.value) {
+      throw new Error('No file selected')
+    }
+    
+    if (!isValidExcelFile(selectedFile.value)) {
+      throw new Error('Invalid file type. Please select an Excel file (.xlsx or .xls)')
+    }
+
+    console.log('Starting file upload process...')
+    console.log('File validation passed')
+
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    const response = await fetch('/api/vocabulary-learning/upload-excel', {
+    // Debug: Log FormData content
+    console.log('FormData entries:', Array.from(formData.entries()))
+    console.log('File details:', {
+      name: selectedFile.value.name,
+      type: selectedFile.value.type,
+      size: selectedFile.value.size,
+      lastModified: selectedFile.value.lastModified
+    })
+    
+    // Test if FormData contains the file
+    console.log('FormData has file:', formData.has('file'))
+    console.log('FormData get file:', formData.get('file'))
+
+    const uploadUrl = '/api/vocabulary-learning/upload-excel'
+    console.log('About to send request to:', uploadUrl)
+
+    console.log('Sending FormData to server...')
+    console.log('🌐 Current URL:', window.location.href)
+    console.log('📡 Upload URL:', uploadUrl)
+    console.log('🔑 Headers:', createFileUploadHeaders())
+
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
-      headers: createAuthHeaders()
+      headers: createFileUploadHeaders()
     })
+    
+    console.log('📥 Fetch completed, checking response...')
+
+    console.log('Response received!')
+    console.log('Response status:', response.status)
+    console.log('Response status text:', response.statusText)
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+    console.log('Response ok:', response.ok)
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('Error response body:', errorText)
+      console.error('Full error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+      
+      let errorMessage = ''
+      if (response.status === 415) {
+        errorMessage = `Không thể xử lý định dạng file. Chi tiết: ${errorText}`
+      } else if (response.status === 404) {
+        errorMessage = `Không tìm thấy API endpoint: ${uploadUrl}`
+      } else if (response.status === 401) {
+        errorMessage = `Không có quyền truy cập. Vui lòng đăng nhập lại.`
+      } else {
+        errorMessage = `Upload thất bại: ${response.status} ${response.statusText} - ${errorText}`
+      }
+      
+      showError(errorMessage)
+      throw new Error(errorMessage)
     }
 
     const result: UploadResult = await response.json()
+    console.log('📋 Upload result:', result)
     uploadResult.value = result
     
     if (result.success) {
+      console.log('✅ Upload successful!')
+      showSuccess(`Import thành công! Đã thêm ${result.importedWords} từ vựng và ${result.importedExamples} ví dụ.`)
       emit('success', result)
+    } else {
+      console.log('❌ Upload failed in result:', result.errors)
+      const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Import thất bại'
+      showError(`Import thất bại: ${errorMsg}`)
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Upload failed'
+    showError(errorMessage)
     uploadResult.value = {
       success: false,
       importedWords: 0,
       importedExamples: 0,
-      errors: [error instanceof Error ? error.message : 'Upload failed'],
+      errors: [errorMessage],
       warnings: []
     }
   } finally {
@@ -577,42 +644,7 @@ const resetUpload = () => {
   font-size: 0.9rem;
 }
 
-.warnings-section,
-.errors-section {
-  margin-bottom: 1rem;
-}
 
-.warnings-section h4 {
-  color: #ffd43b;
-  margin-bottom: 0.5rem;
-}
-
-.errors-section h4 {
-  color: #ff6b6b;
-  margin-bottom: 0.5rem;
-}
-
-.message-list {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 0;
-  list-style: none;
-}
-
-.message-list li {
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 0.5rem;
-  padding-left: 1rem;
-  position: relative;
-}
-
-.message-list li:before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #74c0fc;
-}
 
 .result-actions {
   display: flex;

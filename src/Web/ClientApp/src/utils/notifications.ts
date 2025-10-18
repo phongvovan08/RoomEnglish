@@ -18,6 +18,8 @@ export function useNotifications() {
     const id = `notification-${++notificationId}`
     const duration = notification.duration || 5000 // Default 5 seconds
     
+    console.log('🔔 Adding notification:', notification)
+    
     // Auto remove after duration
     let timeoutId: number | undefined
     if (duration > 0) {
@@ -34,6 +36,7 @@ export function useNotifications() {
     }
     
     notifications.value.push(newNotification)
+    console.log('📋 Total notifications:', notifications.value.length)
     
     return id
   }
@@ -72,10 +75,12 @@ export function useNotifications() {
 
   // Convenience methods
   const showSuccess = (title: string, message?: string, duration?: number) => {
+    console.log('✅ showSuccess called:', title, message)
     return addNotification({ type: 'success', title, message, duration })
   }
 
   const showError = (title: string, message?: string, duration?: number) => {
+    console.log('❌ showError called:', title, message)
     return addNotification({ type: 'error', title, message, duration })
   }
 

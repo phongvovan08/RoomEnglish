@@ -35,8 +35,14 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useNotifications } from '@/utils/notifications'
+import { watch } from 'vue'
 
 const { notifications, removeNotification } = useNotifications()
+
+// Debug: Watch notifications changes
+watch(notifications, (newNotifications) => {
+  console.log('🎯 NotificationToast: notifications changed', newNotifications.length, newNotifications)
+}, { immediate: true, deep: true })
 
 const getNotificationIcon = (type: string) => {
   const icons = {
@@ -64,8 +70,8 @@ const getNotificationIcon = (type: string) => {
 }
 
 .notification {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(26, 26, 46, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(231, 94, 141, 0.1);
   overflow: hidden;
@@ -82,7 +88,7 @@ const getNotificationIcon = (type: string) => {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--accent-pink), var(--accent-blue));
+  background: linear-gradient(90deg, #e75e8d, #74c0fc);
   animation: progressBar var(--duration, 5000ms) linear forwards;
 }
 
@@ -108,22 +114,22 @@ const getNotificationIcon = (type: string) => {
 
 .notification-success {
   border-left: 4px solid #22c55e;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(26, 26, 46, 0.95) 100%);
 }
 
 .notification-error {
   border-left: 4px solid #ef4444;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(26, 26, 46, 0.95) 100%);
 }
 
 .notification-warning {
   border-left: 4px solid #f59e0b;
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(26, 26, 46, 0.95) 100%);
 }
 
 .notification-info {
   border-left: 4px solid #3b82f6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(26, 26, 46, 0.95) 100%);
 }
 
 .notification-content {
@@ -165,14 +171,14 @@ const getNotificationIcon = (type: string) => {
   margin: 0 0 0.25rem 0;
   font-weight: 600;
   font-size: 0.875rem;
-  color: var(--text-primary);
+  color: #ffffff;
   line-height: 1.2;
 }
 
 .notification-message {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.4;
 }
 
@@ -182,7 +188,7 @@ const getNotificationIcon = (type: string) => {
   height: 1.5rem;
   border: none;
   background: none;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   border-radius: 0.25rem;
   transition: all 0.2s ease;
@@ -192,7 +198,7 @@ const getNotificationIcon = (type: string) => {
 }
 
 .notification-close:hover {
-  color: var(--text-primary);
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
 }
 

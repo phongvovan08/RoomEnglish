@@ -866,22 +866,6 @@
         "summary": "Upload Excel file",
         "description": "Imports vocabulary data from an Excel file",
         "operationId": "UploadVocabularyExcel",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "nullable": true
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": ""

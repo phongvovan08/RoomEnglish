@@ -110,17 +110,7 @@
           </div>
         </div>
         
-        <div v-if="uploadResults.errors && uploadResults.errors.length > 0" class="error-list">
-          <h4>Các lỗi gặp phải:</h4>
-          <ul>
-            <li v-for="(error, index) in uploadResults.errors.slice(0, 5)" :key="index">
-              {{ error }}
-            </li>
-            <li v-if="uploadResults.errors.length > 5">
-              ... và {{ uploadResults.errors.length - 5 }} lỗi khác
-            </li>
-          </ul>
-        </div>
+
 
         <div class="results-actions">
           <button @click="$emit('close')" class="btn-secondary">
@@ -138,7 +128,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import { createAuthHeaders } from '@/utils/auth'
+import { createFileUploadHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 
 interface Props {
@@ -199,8 +189,16 @@ const clearFile = () => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFile.value) return
+  console.log('🚀 VocabularyUploadModal: uploadFile called!')
+  console.log('📁 Selected file:', selectedFile.value)
+  console.log('🔧 useNotifications:', { showSuccess, showError })
   
+  if (!selectedFile.value) {
+    console.log('❌ No file selected, returning')
+    return
+  }
+
+  console.log('✅ Starting upload process...')
   isUploading.value = true
   uploadProgress.value = 0
   
@@ -216,41 +214,67 @@ const uploadFile = async () => {
     formData.append('file', selectedFile.value)
     formData.append('categoryId', props.categoryId.toString())
     
+    console.log('🌐 Current URL:', window.location.href)
+    console.log('📡 Upload URL:', '/api/vocabulary-learning/upload-excel')
+    console.log('🔑 Headers:', createFileUploadHeaders())
+    console.log('📤 Sending request...')
+
     const response = await fetch('/api/vocabulary-learning/upload-excel', {
       method: 'POST',
-      headers: createAuthHeaders(),
+      headers: createFileUploadHeaders(),
       body: formData
     })
+    
+    console.log('📥 Response received!')
+    console.log('Response status:', response.status)
+    console.log('Response ok:', response.ok)
     
     clearInterval(progressInterval)
     uploadProgress.value = 100
     
     if (response.ok) {
       const result = await response.json()
+      console.log('📋 Upload result:', result)
       uploadResults.value = {
         success: true,
         addedCount: result.addedCount || 0,
         updatedCount: result.updatedCount || 0,
         errors: result.errors || []
       }
+      
+      if (result.success) {
+        console.log('✅ Upload successful!')
+        showSuccess(`Upload thành công! Đã thêm ${result.addedCount || 0} từ và cập nhật ${result.updatedCount || 0} từ.`)
+      } else {
+        console.log('❌ Upload failed in result:', result.errors)
+        const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Import thất bại'
+        showError(`Import thất bại: ${errorMsg}`)
+      }
     } else {
       const error = await response.text()
+      console.log('❌ HTTP error:', response.status, error)
+      const errorMsg = error || 'Upload thất bại'
+      showError(errorMsg)
       uploadResults.value = {
         success: false,
         addedCount: 0,
         updatedCount: 0,
-        errors: [error || 'Upload thất bại']
+        errors: [errorMsg]
       }
     }
   } catch (error) {
     clearInterval(progressInterval)
+    console.log('💥 Exception caught:', error)
+    const errorMessage = 'Lỗi kết nối: ' + (error as Error).message
+    showError(errorMessage)
     uploadResults.value = {
       success: false,
       addedCount: 0,
       updatedCount: 0,
-      errors: ['Lỗi kết nối: ' + (error as Error).message]
+      errors: [errorMessage]
     }
   } finally {
+    console.log('🏁 Upload process finished')
     isUploading.value = false
   }
 }
@@ -564,24 +588,7 @@ const formatFileSize = (bytes: number): string => {
   font-size: 1.25rem;
 }
 
-.error-list {
-  margin: 1rem 0;
-}
 
-.error-list h4 {
-  color: #ff6b6b;
-  margin: 0 0 0.5rem 0;
-}
-
-.error-list ul {
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-.error-list li {
-  margin-bottom: 0.25rem;
-}
 
 .results-actions {
   display: flex;

@@ -4,6 +4,7 @@ using RoomEnglish.Infrastructure.Data;
 using RoomEnglish.Web.Services;
 using RoomEnglish.Web.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.Features;
 
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -21,6 +22,14 @@ public static class DependencyInjection
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHttpClient();
+        
+        // Configure multipart form data options
+        builder.Services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10MB limit
+            options.ValueLengthLimit = int.MaxValue;
+            options.ValueCountLimit = int.MaxValue;
+        });
         
         // Configure authentication settings
         builder.Services.Configure<AuthenticationSettings>(

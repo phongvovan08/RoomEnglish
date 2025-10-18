@@ -1,6 +1,10 @@
+using OfficeOpenXml;
 using RoomEnglish.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure EPPlus for noncommercial organizational use as required by EPPlus 8+ licensing.
+ExcelPackage.License.SetNonCommercialOrganization("RoomEnglish");
 
 // Add services to the container.
 builder.AddKeyVaultIfConfigured();

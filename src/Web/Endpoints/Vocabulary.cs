@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RoomEnglish.Application.Vocabulary.Commands.CompleteLearningSession;
 using RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromExcel;
@@ -42,7 +43,7 @@ public class Vocabulary : EndpointGroupBase
         group.MapPost("upload-excel", UploadExcel)
              .WithName("UploadVocabularyExcel")
              .WithSummary("Upload Excel file")
-             .WithDescription("Imports vocabulary data from an Excel file");
+           .WithDescription("Imports vocabulary data from an Excel file");
         group.MapGet("export-excel", ExportExcel)
              .WithName("ExportVocabularyExcel")
              .WithSummary("Export to Excel")
@@ -90,9 +91,17 @@ public class Vocabulary : EndpointGroupBase
 
     [Authorize]
     public async Task<IResult> UploadExcel(
-        ISender sender,
-        IFormFile file)
+        HttpRequest httpRequest,
+        ISender sender)
     {
+        if (!httpRequest.HasFormContentType)
+        {
+            return Results.StatusCode(StatusCodes.Status415UnsupportedMediaType);
+        }
+
+        var form = await httpRequest.ReadFormAsync();
+        var file = form.Files.GetFile("file");
+
         if (file == null || file.Length == 0)
         {
             return Results.BadRequest("No file uploaded");
