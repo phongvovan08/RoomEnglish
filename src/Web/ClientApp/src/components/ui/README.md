@@ -1,3 +1,18 @@
+posts/
+├── components/           # Components riêng cho module  
+├── composables/         # Composables theo feature
+│   └── use-posts/       # Grouped composables
+├── constants/           # Constants của module
+├── layouts/            # Layouts riêng cho module
+├── mocks/              # Mock data cho testing
+├── router/             # Routes của module
+├── stores/             # Pinia stores theo feature
+│   └── posts/          # Grouped stores
+├── types/              # TypeScript types
+│   └── index.ts        
+└── views/              # Main views/pages
+    └── Posts.vue
+
 # DataGrid Component Library
 
 Thư viện component DataGrid có thể tái sử dụng cho việc hiển thị dữ liệu dạng bảng và grid.
