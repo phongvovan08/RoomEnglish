@@ -42,6 +42,7 @@
       @search="handleGridSearch"
       @page-change="handleGridPageChange"
       @page-size-change="handleGridPageSizeChange"
+      @sort-change="handleSort"
     />
 
     <!-- Create/Edit Modal -->
@@ -172,6 +173,8 @@ const totalItems = ref(0)
 const totalPages = ref(0)
 const includeInactive = ref(false)
 const includeExamples = ref(true)
+const sortBy = ref<string>('')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 // Methods
 const loadCategory = async () => {
@@ -206,6 +209,12 @@ const loadVocabularies = async (page: number = currentPage.value) => {
     // Add search term if provided
     if (searchQuery.value) {
       params.append('SearchTerm', searchQuery.value)
+    }
+    
+    // Add sort parameters
+    if (sortBy.value) {
+      params.append('SortBy', sortBy.value)
+      params.append('SortOrder', sortOrder.value)
     }
     
     const response = await fetch(`/api/vocabulary-words?${params}`, {
@@ -326,6 +335,14 @@ const handleGridPageSizeChange = (newPageSize: number) => {
   pageSize.value = newPageSize
   currentPage.value = 1
   loadVocabularies(1)
+}
+
+const handleSort = (sortByParam: string, sortOrderParam: 'asc' | 'desc') => {
+  // Update sort state
+  sortBy.value = sortByParam
+  sortOrder.value = sortOrderParam
+  currentPage.value = 1 // Reset to first page when sorting
+  loadVocabularies()
 }
 
 // Lifecycle

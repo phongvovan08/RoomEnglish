@@ -4,6 +4,7 @@ using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Application.Common.Models;
 using RoomEnglish.Application.Common.Mappings;
 using AutoMapper;
+using System.Linq;
 
 namespace RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWords;
 
@@ -18,6 +19,8 @@ public record GetVocabularyWordsQuery : IRequest<PaginatedList<VocabularyWordDto
     public bool IncludeExamples { get; init; } = false;
     public bool IncludeUserProgress { get; init; } = false;
     public string? UserId { get; init; }
+    public string? SortBy { get; init; }
+    public string? SortOrder { get; init; } = "asc";
 }
 
 public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWordsQuery, PaginatedList<VocabularyWordDto>>
@@ -70,8 +73,10 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                 x.Definition.Contains(request.SearchTerm));
         }
 
+        // Apply sorting
+        query = ApplySorting(query, request.SortBy, request.SortOrder);
+
         return await query
-            .OrderBy(x => x.Word)
             .Select(x => new VocabularyWordDto
             {
                 Id = x.Id,
@@ -88,6 +93,7 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                 IncorrectCount = x.IncorrectCount,
                 CategoryId = x.CategoryId,
                 CategoryName = x.Category.Name,
+                ExampleCount = x.Examples.Count(e => e.IsActive), // Add example count for sorting
                 Examples = x.Examples
                     .Where(e => e.IsActive)
                     .OrderBy(e => e.DisplayOrder)
@@ -120,5 +126,23 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                     }).FirstOrDefault()
             })
             .PaginatedListAsync(request.PageNumber, request.PageSize);
+    }
+
+    private static IQueryable<Domain.Entities.VocabularyWord> ApplySorting(
+        IQueryable<Domain.Entities.VocabularyWord> query, 
+        string? sortBy, 
+        string? sortOrder)
+    {
+        var isDescending = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+
+        return sortBy?.ToLower() switch
+        {
+            "word" => isDescending ? query.OrderByDescending(x => x.Word) : query.OrderBy(x => x.Word),
+            "definition" => isDescending ? query.OrderByDescending(x => x.Definition) : query.OrderBy(x => x.Definition),
+            "pronunciation" => isDescending ? query.OrderByDescending(x => x.Phonetic) : query.OrderBy(x => x.Phonetic),
+            "examplecount" => isDescending ? query.OrderByDescending(x => x.Examples.Count(e => e.IsActive)) : query.OrderBy(x => x.Examples.Count(e => e.IsActive)),
+            "createdat" => isDescending ? query.OrderByDescending(x => x.Created) : query.OrderBy(x => x.Created),
+            _ => query.OrderBy(x => x.Word) // Default sorting by word
+        };
     }
 }
