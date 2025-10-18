@@ -25,77 +25,21 @@
           Upload Excel
         </button>
       </div>
-      
-      <div class="search-box">
-        <Icon icon="mdi:magnify" class="w-5 h-5" />
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Tìm kiếm từ vựng..."
-          class="search-input"
-        />
-      </div>
     </div>
 
-    <div class="vocabularies-grid">
-      <div 
-        v-for="vocabulary in filteredVocabularies" 
-        :key="vocabulary.id"
-        class="vocabulary-card"
-        @click="navigateToExamples(vocabulary.id)"
-      >
-        <div class="vocabulary-header">
-          <div class="word-info">
-            <h3>{{ vocabulary.word }}</h3>
-            <span v-if="vocabulary.pronunciation" class="pronunciation">{{ vocabulary.pronunciation }}</span>
-          </div>
-          <div class="vocabulary-actions">
-            <button @click.stop="editVocabulary(vocabulary)" class="action-btn edit">
-              <Icon icon="mdi:pencil" class="w-4 h-4" />
-            </button>
-            <button @click.stop="deleteVocabulary(vocabulary.id)" class="action-btn delete">
-              <Icon icon="mdi:delete" class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        <div class="vocabulary-content">
-          <p class="definition">{{ vocabulary.definition }}</p>
-          
-          <div class="vocabulary-stats">
-            <div class="stat">
-              <Icon icon="mdi:format-quote-close" class="w-4 h-4" />
-              <span>{{ vocabulary.exampleCount }} ví dụ</span>
-            </div>
-            <div class="stat">
-              <Icon icon="mdi:calendar" class="w-4 h-4" />
-              <span>{{ formatDate(vocabulary.createdAt) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="vocabulary-footer">
-          <span class="view-examples">Xem ví dụ →</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-if="filteredVocabularies.length === 0" class="empty-state">
-      <Icon icon="mdi:book-outline" class="w-16 h-16 text-gray-400 mb-4" />
-      <h3>Chưa có từ vựng nào</h3>
-      <p>Thêm từ vựng đầu tiên cho danh mục này</p>
-      <div class="empty-actions">
-        <button @click="showCreateModal = true" class="btn-primary">
-          <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
-          Thêm từ đầu tiên
-        </button>
-        <button @click="showUploadModal = true" class="btn-upload ml-2">
-          <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
-          Upload từ Excel
-        </button>
-      </div>
-    </div>
+    <!-- Vocabulary Data Grid -->
+    <VocabularyDataGrid
+      :vocabularies="vocabularies"
+      :page-size="pageSize"
+      @vocabulary-click="(vocab: Vocabulary) => navigateToExamples(vocab.id)"
+      @edit-vocabulary="editVocabulary"
+      @delete-vocabulary="(vocab: Vocabulary) => deleteVocabulary(vocab.id)"
+      @create-vocabulary="showCreateModal = true"
+      @upload-vocabulary="showUploadModal = true"
+      @search="handleGridSearch"
+      @page-change="handleGridPageChange"
+      @page-size-change="handleGridPageSizeChange"
+    />
 
     <!-- Create/Edit Modal -->
     <div v-if="showCreateModal || editingVocabulary" class="modal-overlay" @click="closeModal">
@@ -175,6 +119,7 @@ import { Icon } from '@iconify/vue'
 import { createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 import VocabularyUploadModal from '../components/VocabularyUploadModal.vue'
+import VocabularyDataGrid from '@/components/ui/VocabularyDataGrid.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -224,17 +169,6 @@ const totalItems = ref(0)
 const totalPages = ref(0)
 const includeInactive = ref(false)
 const includeExamples = ref(true)
-
-// Computed
-const filteredVocabularies = computed(() => {
-  if (!searchQuery.value) return vocabularies.value
-  
-  const query = searchQuery.value.toLowerCase()
-  return vocabularies.value.filter(vocabulary => 
-    vocabulary.word.toLowerCase().includes(query) ||
-    vocabulary.definition.toLowerCase().includes(query)
-  )
-})
 
 // Methods
 const loadCategory = async () => {
@@ -375,6 +309,22 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('vi-VN')
 }
 
+// Grid event handlers
+const handleGridSearch = (query: string) => {
+  searchQuery.value = query
+}
+
+const handleGridPageChange = (page: number) => {
+  currentPage.value = page
+  loadVocabularies(page)
+}
+
+const handleGridPageSizeChange = (newPageSize: number) => {
+  pageSize.value = newPageSize
+  currentPage.value = 1
+  loadVocabularies(1)
+}
+
 // Lifecycle
 onMounted(() => {
   loadCategory()
@@ -493,154 +443,6 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.2);
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.search-input {
-  background: none;
-  border: none;
-  color: white;
-  outline: none;
-  width: 250px;
-  font-size: 1rem;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.vocabularies-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.vocabulary-card {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.vocabulary-card:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.vocabulary-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
-.word-info h3 {
-  color: #74c0fc;
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.pronunciation {
-  color: rgba(255, 255, 255, 0.6);
-  font-style: italic;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-.vocabulary-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  padding: 0.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.action-btn.edit:hover {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-}
-
-.action-btn.delete:hover {
-  background: rgba(220, 53, 69, 0.2);
-  color: #dc3545;
-}
-
-.vocabulary-content {
-  margin-bottom: 1rem;
-}
-
-.definition {
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 1rem 0;
-  line-height: 1.5;
-  font-size: 1rem;
-}
-
-.vocabulary-stats {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.875rem;
-}
-
-.vocabulary-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
-  text-align: right;
-}
-
-.view-examples {
-  color: #51cf66;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.empty-state h3 {
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
-.empty-actions {
-  margin-top: 1.5rem;
-}
-
-.ml-2 {
-  margin-left: 0.5rem;
 }
 
 .modal-overlay {
@@ -764,24 +566,6 @@ onMounted(() => {
   
   .left-actions {
     justify-content: center;
-    margin-bottom: 1rem;
-  }
-  
-  .search-box {
-    justify-content: center;
-  }
-  
-  .search-input {
-    width: 200px;
-  }
-  
-  .vocabularies-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .vocabulary-card {
-    padding: 1rem;
   }
   
   .page-header h1 {
