@@ -13,117 +13,23 @@
         <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
         Tạo danh mục mới
       </button>
-      <div class="search-box">
-        <Icon icon="mdi:magnify" class="w-5 h-5" />
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Tìm kiếm danh mục..."
-          class="search-input"
-        />
-      </div>
     </div>
 
-    <div class="categories-grid">
-      <div 
-        v-for="category in filteredCategories" 
-        :key="category.id"
-        class="category-card"
-        @click="navigateToVocabularies(category.id)"
-      >
-        <div class="category-header">
-          <div class="category-icon">
-            <Icon icon="mdi:folder" class="w-6 h-6" />
-          </div>
-          <div class="category-actions">
-            <button @click.stop="editCategory(category)" class="action-btn edit">
-              <Icon icon="mdi:pencil" class="w-4 h-4" />
-            </button>
-            <button @click.stop="deleteCategory(category.id)" class="action-btn delete">
-              <Icon icon="mdi:delete" class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        <div class="category-content">
-          <h3>{{ category.name }}</h3>
-          <p>{{ category.description || 'Không có mô tả' }}</p>
-          
-          <div class="category-stats">
-            <div class="stat">
-              <Icon icon="mdi:book" class="w-4 h-4" />
-              <span>{{ category.vocabularyCount }} từ</span>
-            </div>
-            <div class="stat">
-              <Icon icon="mdi:calendar" class="w-4 h-4" />
-              <span>{{ formatDate(category.createdAt) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="category-footer">
-          <span class="view-details">Xem chi tiết →</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-if="filteredCategories.length === 0" class="empty-state">
-      <Icon icon="mdi:folder-outline" class="w-16 h-16 text-gray-400 mb-4" />
-      <h3>Chưa có danh mục nào</h3>
-      <p>Tạo danh mục đầu tiên để bắt đầu quản lý từ vựng</p>
-      <button @click="showCreateModal = true" class="btn-primary mt-4">
-        <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
-        Tạo danh mục đầu tiên
-      </button>
-    </div>
-
-    <!-- Pagination Controls -->
-    <div v-if="totalPages > 1" class="pagination-controls">
-      <div class="pagination-info">
-        <span>Hiển thị {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalItems) }} của {{ totalItems }} danh mục</span>
-      </div>
-      <div class="pagination-buttons">
-        <button @click="prevPage" :disabled="currentPage === 1" class="btn-pagination">
-          <Icon icon="mdi:chevron-left" />
-          Trước
-        </button>
-        <span class="page-numbers">
-          <button 
-            v-for="page in visiblePages" 
-            :key="page"
-            @click="goToPage(page)"
-            :class="['page-btn', { active: page === currentPage }]"
-          >
-            {{ page }}
-          </button>
-        </span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="btn-pagination">
-          Tiếp
-          <Icon icon="mdi:chevron-right" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters & Options -->
-    <div class="bottom-controls">
-      <div class="page-size-selector">
-        <label>Hiển thị:</label>
-        <select @change="changePageSize(($event.target as HTMLSelectElement).value)" :value="pageSize">
-          <option value="5">5</option>
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
-        <span>mục/trang</span>
-      </div>
-      <div class="filter-options">
-        <label class="checkbox-label">
-          <input type="checkbox" :checked="includeInactive" @change="toggleIncludeInactive">
-          <span>Hiển thị danh mục đã ẩn</span>
-        </label>
-      </div>
-    </div>
+    <!-- Category Data Grid -->
+    <CategoryDataGrid
+      :categories="categories"
+      :page-size="pageSize"
+      :current-page="currentPage"
+      :total-items="totalItems"
+      :total-pages="totalPages"
+      @detail-category="(category) => navigateToVocabularies(category.id)"
+      @edit-category="editCategory"
+      @delete-category="(category) => deleteCategory(category.id)"
+      @create-category="showCreateModal = true"
+      @search="handleSearch"
+      @page-change="goToPage"
+      @page-size-change="changePageSize"
+    />
 
     <!-- Create/Edit Modal -->
     <div v-if="showCreateModal || editingCategory" class="modal-overlay" @click="closeModal">
@@ -180,6 +86,7 @@ import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { getAuthTokenWithFallback, createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
+import CategoryDataGrid from '@/components/ui/CategoryDataGrid.vue'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotifications()
@@ -187,7 +94,7 @@ const { showSuccess, showError } = useNotifications()
 interface Category {
   id: number
   name: string
-  description: string
+  description?: string
   vocabularyCount: number
   createdAt: string
 }
@@ -221,7 +128,7 @@ const filteredCategories = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return categories.value.filter(category => 
     category.name.toLowerCase().includes(query) ||
-    category.description.toLowerCase().includes(query)
+    (category.description && category.description.toLowerCase().includes(query))
   )
 })
 
@@ -282,6 +189,12 @@ const loadCategories = async (page: number = currentPage.value) => {
   }
 }
 
+const handleSearch = (query: string) => {
+  searchQuery.value = query
+  currentPage.value = 1
+  loadCategories()
+}
+
 const navigateToVocabularies = (categoryId: number) => {
   router.push(`/management/vocabularies/${categoryId}`)
 }
@@ -321,7 +234,7 @@ const editCategory = (category: Category) => {
   editingCategory.value = category
   categoryForm.value = {
     name: category.name,
-    description: category.description
+    description: category.description || ''
   }
 }
 
