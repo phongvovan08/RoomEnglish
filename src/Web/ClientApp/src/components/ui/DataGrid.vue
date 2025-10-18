@@ -159,9 +159,22 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="pagination && totalPages > 1" class="pagination">
+    <div v-if="pagination && totalItems > 0" class="pagination">
       <div class="pagination-info">
-        Hiển thị {{ startIndex + 1 }}-{{ endIndex }} của {{ totalItems }} mục
+        <span>Hiển thị {{ startIndex + 1 }}-{{ endIndex }} của {{ totalItems }} mục</span>
+        <div class="page-jump">
+          <span>Đi đến trang:</span>
+          <input 
+            type="number" 
+            :min="1" 
+            :max="totalPages"
+            v-model.number="pageJumpValue"
+            @keyup.enter="jumpToPage"
+            @blur="jumpToPage"
+            class="page-jump-input"
+            :placeholder="`1-${totalPages}`"
+          />
+        </div>
       </div>
       
       <div class="pagination-controls">
@@ -177,18 +190,29 @@
           @click="goToPage(currentPage - 1)" 
           :disabled="currentPage === 1"
           class="pagination-btn"
+          title="Trang trước"
         >
           <Icon icon="mdi:chevron-left" class="w-4 h-4" />
         </button>
         
-        <span class="pagination-current">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
+        <!-- Page numbers -->
+        <div class="page-numbers">
+          <button
+            v-for="page in visiblePages"
+            :key="page"
+            @click="typeof page === 'number' && goToPage(page)"
+            :class="['page-number-btn', { active: page === currentPage, ellipsis: page === '...' }]"
+            :disabled="page === '...'"
+          >
+            {{ page }}
+          </button>
+        </div>
         
         <button 
           @click="goToPage(currentPage + 1)" 
           :disabled="currentPage === totalPages"
           class="pagination-btn"
+          title="Trang sau"
         >
           <Icon icon="mdi:chevron-right" class="w-4 h-4" />
         </button>
@@ -197,16 +221,22 @@
           @click="goToPage(totalPages)" 
           :disabled="currentPage === totalPages"
           class="pagination-btn"
+          title="Trang cuối"
         >
           <Icon icon="mdi:page-last" class="w-4 h-4" />
         </button>
+        
+        <!-- Keyboard shortcut info -->
+        <div class="keyboard-hint" title="Phím tắt: ← → để chuyển trang, Home/End đến trang đầu/cuối">
+          <Icon icon="mdi:keyboard" class="w-4 h-4" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 
 export interface GridColumn {
@@ -237,6 +267,11 @@ interface Props {
   emptyStateTitle?: string
   emptyStateMessage?: string
   keyField?: string
+  // Server-side pagination props
+  serverSide?: boolean
+  currentPage?: number
+  totalItems?: number
+  totalPages?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -248,7 +283,11 @@ const props = withDefaults(defineProps<Props>(), {
   searchPlaceholder: 'Tìm kiếm...',
   emptyStateTitle: 'Không có dữ liệu',
   emptyStateMessage: 'Chưa có dữ liệu để hiển thị',
-  keyField: 'id'
+  keyField: 'id',
+  serverSide: false,
+  currentPage: 1,
+  totalItems: 0,
+  totalPages: 1
 })
 
 const emit = defineEmits<{
@@ -263,10 +302,11 @@ const emit = defineEmits<{
 // Reactive state
 const viewMode = ref<'grid' | 'table'>('table')
 const searchQuery = ref('')
-const currentPage = ref(1)
+const localCurrentPage = ref(1)
 const currentPageSize = ref(props.pageSize)
 const sortBy = ref<string>('')
 const sortOrder = ref<'asc' | 'desc'>('asc')
+const pageJumpValue = ref<number>()
 
 // Computed properties
 const filteredData = computed(() => {
@@ -301,14 +341,83 @@ const sortedData = computed(() => {
   })
 })
 
-const totalItems = computed(() => sortedData.value.length)
-const totalPages = computed(() => Math.ceil(totalItems.value / currentPageSize.value))
+const totalItems = computed(() => {
+  return props.serverSide ? props.totalItems : sortedData.value.length
+})
 
-const startIndex = computed(() => (currentPage.value - 1) * currentPageSize.value)
-const endIndex = computed(() => Math.min(startIndex.value + currentPageSize.value, totalItems.value))
+const totalPages = computed(() => {
+  return props.serverSide ? props.totalPages : Math.ceil(totalItems.value / currentPageSize.value)
+})
+
+const currentPage = computed(() => {
+  return props.serverSide ? props.currentPage : localCurrentPage.value
+})
+
+const startIndex = computed(() => {
+  if (props.serverSide) {
+    return (currentPage.value - 1) * currentPageSize.value
+  }
+  return (localCurrentPage.value - 1) * currentPageSize.value
+})
+
+const endIndex = computed(() => {
+  if (props.serverSide) {
+    return Math.min(startIndex.value + props.data.length, totalItems.value)
+  }
+  return Math.min(startIndex.value + currentPageSize.value, totalItems.value)
+})
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const delta = 2 // Number of pages to show on each side of current page
+  
+  if (total <= 7) {
+    // If total pages is 7 or less, show all pages
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  const pages: (number | string)[] = []
+  
+  // Always show first page
+  pages.push(1)
+  
+  // Calculate start and end of middle section
+  const start = Math.max(2, current - delta)
+  const end = Math.min(total - 1, current + delta)
+  
+  // Add ellipsis after first page if needed
+  if (start > 2) {
+    pages.push('...')
+  }
+  
+  // Add middle pages
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  
+  // Add ellipsis before last page if needed
+  if (end < total - 1) {
+    pages.push('...')
+  }
+  
+  // Always show last page (if more than 1 page)
+  if (total > 1) {
+    pages.push(total)
+  }
+  
+  return pages
+})
 
 const paginatedData = computed(() => {
   if (!props.pagination) return sortedData.value
+  
+  if (props.serverSide) {
+    // For server-side pagination, data is already paginated
+    return props.data
+  }
+  
+  // For client-side pagination, slice the sorted data
   return sortedData.value.slice(startIndex.value, startIndex.value + currentPageSize.value)
 })
 
@@ -322,7 +431,9 @@ const getItemKey = (item: any, index: number): string | number => {
 }
 
 const handleSearch = () => {
-  currentPage.value = 1
+  if (!props.serverSide) {
+    localCurrentPage.value = 1
+  }
   emit('search', searchQuery.value)
 }
 
@@ -352,14 +463,25 @@ const handleAction = (actionKey: string, item: any) => {
 
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
+    if (!props.serverSide) {
+      localCurrentPage.value = page
+    }
     emit('page-change', page)
   }
 }
 
 const handlePageSizeChange = () => {
-  currentPage.value = 1
+  if (!props.serverSide) {
+    localCurrentPage.value = 1
+  }
   emit('page-size-change', currentPageSize.value)
+}
+
+const jumpToPage = () => {
+  if (pageJumpValue.value && pageJumpValue.value >= 1 && pageJumpValue.value <= totalPages.value) {
+    goToPage(pageJumpValue.value)
+    pageJumpValue.value = undefined // Clear input after jump
+  }
 }
 
 const formatDate = (date: string | Date): string => {
@@ -373,9 +495,48 @@ const formatNumber = (num: number): string => {
   return num.toLocaleString('vi-VN')
 }
 
+// Keyboard navigation
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.target instanceof HTMLInputElement) return // Don't interfere with input fields
+  
+  switch (event.key) {
+    case 'ArrowLeft':
+      event.preventDefault()
+      if (currentPage.value > 1) {
+        goToPage(currentPage.value - 1)
+      }
+      break
+    case 'ArrowRight':
+      event.preventDefault()
+      if (currentPage.value < totalPages.value) {
+        goToPage(currentPage.value + 1)
+      }
+      break
+    case 'Home':
+      event.preventDefault()
+      goToPage(1)
+      break
+    case 'End':
+      event.preventDefault()
+      goToPage(totalPages.value)
+      break
+  }
+}
+
 // Watch for data changes
 watch(() => props.data, () => {
-  currentPage.value = 1
+  if (!props.serverSide) {
+    localCurrentPage.value = 1
+  }
+})
+
+// Add keyboard event listener
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -697,12 +858,46 @@ watch(() => props.data, () => {
 .pagination-info {
   font-size: 0.875rem;
   color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .pagination-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.page-jump-input {
+  width: 4rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.page-jump-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: #111827;
 }
 
 .pagination-btn {
@@ -721,6 +916,68 @@ watch(() => props.data, () => {
 .pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.page-number-btn {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-number-btn:hover:not(:disabled):not(.ellipsis) {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.page-number-btn.active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.page-number-btn.active:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.page-number-btn.ellipsis {
+  border: none;
+  background: none;
+  cursor: default;
+  color: #9ca3af;
+}
+
+.page-number-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.keyboard-hint {
+  padding: 0.5rem;
+  color: #6b7280;
+  cursor: help;
+  transition: color 0.2s;
+}
+
+.keyboard-hint:hover {
+  color: #374151;
 }
 
 .pagination-current {

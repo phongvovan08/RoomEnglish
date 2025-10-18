@@ -10,6 +10,10 @@
     :search-placeholder="'Tìm kiếm từ vựng...'"
     :empty-state-title="'Chưa có từ vựng nào'"
     :empty-state-message="'Thêm từ vựng đầu tiên cho danh mục này'"
+    :server-side="true"
+    :current-page="currentPage"
+    :total-items="totalItems"
+    :total-pages="totalPages"
     @row-click="handleRowClick"
     @action-click="handleActionClick"
     @search="handleSearch"
@@ -111,10 +115,17 @@ interface Vocabulary {
 interface Props {
   vocabularies: Vocabulary[]
   pageSize?: number
+  // Server-side pagination props
+  currentPage?: number
+  totalItems?: number
+  totalPages?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  pageSize: 12
+  pageSize: 12,
+  currentPage: 1,
+  totalItems: 0,
+  totalPages: 1
 })
 
 const emit = defineEmits<{

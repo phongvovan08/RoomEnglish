@@ -239,7 +239,7 @@ public class VocabularyWords : EndpointGroupBase
         }
         catch (Exception ex)
         {
-            result = result with { Errors = [$"Error processing Excel file: {ex.Message}"] };
+            result = result with { Errors = [$"Error processing Excel file: {ex.Message} {ex.InnerException?.Message}"] };
         }
 
         return Results.Ok(result);

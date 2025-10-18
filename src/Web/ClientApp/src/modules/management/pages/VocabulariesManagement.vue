@@ -31,6 +31,9 @@
     <VocabularyDataGrid
       :vocabularies="vocabularies"
       :page-size="pageSize"
+      :current-page="currentPage"
+      :total-items="totalItems"
+      :total-pages="totalPages"
       @vocabulary-click="(vocab: Vocabulary) => navigateToExamples(vocab.id)"
       @edit-vocabulary="editVocabulary"
       @delete-vocabulary="(vocab: Vocabulary) => deleteVocabulary(vocab.id)"
