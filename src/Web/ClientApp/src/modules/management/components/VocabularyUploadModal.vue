@@ -212,14 +212,13 @@ const uploadFile = async () => {
   try {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
-    formData.append('categoryId', props.categoryId.toString())
     
     console.log('🌐 Current URL:', window.location.href)
-    console.log('📡 Upload URL:', '/api/vocabulary-learning/upload-excel')
+    console.log('📡 Upload URL:', `/api/vocabulary-words/upload-excel?categoryId=${props.categoryId}`)
     console.log('🔑 Headers:', createFileUploadHeaders())
     console.log('📤 Sending request...')
 
-    const response = await fetch('/api/vocabulary-learning/upload-excel', {
+    const response = await fetch(`/api/vocabulary-words/upload-excel?categoryId=${props.categoryId}`, {
       method: 'POST',
       headers: createFileUploadHeaders(),
       body: formData
@@ -236,7 +235,7 @@ const uploadFile = async () => {
       const result = await response.json()
       console.log('📋 Upload result:', result)
       uploadResults.value = {
-        success: true,
+        success: result.success,
         addedCount: result.addedCount || 0,
         updatedCount: result.updatedCount || 0,
         errors: result.errors || []
@@ -247,7 +246,7 @@ const uploadFile = async () => {
         showSuccess(`Upload thành công! Đã thêm ${result.addedCount || 0} từ và cập nhật ${result.updatedCount || 0} từ.`)
       } else {
         console.log('❌ Upload failed in result:', result.errors)
-        const errorMsg = result.errors.length > 0 ? result.errors[0] : 'Import thất bại'
+        const errorMsg = result.errors && result.errors.length > 0 ? result.errors[0] : 'Import thất bại'
         showError(`Import thất bại: ${errorMsg}`)
       }
     } else {

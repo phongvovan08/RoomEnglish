@@ -1490,6 +1490,38 @@
         ]
       }
     },
+    "/api/vocabulary-words/upload-excel": {
+      "post": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Upload Excel file",
+        "description": "Imports vocabulary words from an Excel file",
+        "operationId": "UploadVocabularyWordsExcel",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecasts": {
       "get": {
         "operationId": "GetWeatherForecasts",

@@ -6,6 +6,7 @@ using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWordDetail;
 using RoomEnglish.Web.Infrastructure;
 using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 namespace RoomEnglish.Web.Endpoints;
 
@@ -39,6 +40,10 @@ public class VocabularyWords : EndpointGroupBase
              .WithName("DeleteVocabularyWord")
              .WithSummary("Delete word")
              .WithDescription("Soft deletes a vocabulary word");
+        group.MapPost("upload-excel", UploadExcel)
+             .WithName("UploadVocabularyWordsExcel")
+             .WithSummary("Upload Excel file")
+             .WithDescription("Imports vocabulary words from an Excel file");
     }
 
     [Authorize]
@@ -123,5 +128,120 @@ public class VocabularyWords : EndpointGroupBase
         entity.IsActive = false;
         await context.SaveChangesAsync(CancellationToken.None);
         return Results.NoContent();
+    }
+
+    public record UploadExcelResult(
+        bool Success,
+        int AddedCount,
+        int UpdatedCount,
+        List<string> Errors);
+
+    [Authorize]
+    public async Task<IResult> UploadExcel(
+        HttpRequest httpRequest,
+        IApplicationDbContext context,
+        int categoryId)
+    {
+        if (!httpRequest.HasFormContentType)
+        {
+            return Results.StatusCode(StatusCodes.Status415UnsupportedMediaType);
+        }
+
+        var form = await httpRequest.ReadFormAsync();
+        var file = form.Files.GetFile("file");
+
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest("No file uploaded");
+        }
+
+        if (!file.FileName.EndsWith(".xlsx") && !file.FileName.EndsWith(".xls"))
+        {
+            return Results.BadRequest("Only Excel files (.xlsx, .xls) are allowed");
+        }
+
+        // Verify category exists
+        var categoryExists = await context.VocabularyCategories.AnyAsync(c => c.Id == categoryId && c.IsActive);
+        if (!categoryExists)
+        {
+            return Results.BadRequest("Invalid categoryId");
+        }
+
+        var result = new UploadExcelResult(false, 0, 0, new List<string>());
+
+        try
+        {
+            using var package = new OfficeOpenXml.ExcelPackage(file.OpenReadStream());
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+            
+            if (worksheet == null)
+            {
+                result = result with { Errors = ["No worksheet found in Excel file"] };
+                return Results.Ok(result);
+            }
+
+            var rowCount = worksheet.Dimension?.Rows ?? 0;
+            if (rowCount <= 1)
+            {
+                result = result with { Errors = ["Excel file contains no data rows"] };
+                return Results.Ok(result);
+            }
+
+            // Process data rows (assuming headers: Word, Definition, Pronunciation)
+            for (int row = 2; row <= rowCount; row++)
+            {
+                try
+                {
+                    var word = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
+                    var definition = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                    var pronunciation = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+
+                    if (string.IsNullOrEmpty(word) || string.IsNullOrEmpty(definition))
+                    {
+                        result.Errors.Add($"Row {row}: Word and Definition are required");
+                        continue;
+                    }
+
+                    // Check if word already exists
+                    var existingWord = await context.VocabularyWords
+                        .FirstOrDefaultAsync(w => w.Word.ToLower() == word.ToLower() && w.CategoryId == categoryId);
+
+                    if (existingWord != null)
+                    {
+                        // Update existing word
+                        existingWord.Definition = definition;
+                        existingWord.Phonetic = pronunciation ?? existingWord.Phonetic;
+                        result = result with { UpdatedCount = result.UpdatedCount + 1 };
+                    }
+                    else
+                    {
+                        // Create new word
+                        var newWord = new RoomEnglish.Domain.Entities.VocabularyWord
+                        {
+                            Word = word,
+                            Definition = definition,
+                            Phonetic = pronunciation ?? string.Empty,
+                            CategoryId = categoryId,
+                            IsActive = true
+                        };
+                        context.VocabularyWords.Add(newWord);
+                        result = result with { AddedCount = result.AddedCount + 1 };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.Errors.Add($"Row {row}: {ex.Message}");
+                }
+            }
+
+            await context.SaveChangesAsync(CancellationToken.None);
+            result = result with { Success = true };
+        }
+        catch (Exception ex)
+        {
+            result = result with { Errors = [$"Error processing Excel file: {ex.Message}"] };
+        }
+
+        return Results.Ok(result);
     }
 }
