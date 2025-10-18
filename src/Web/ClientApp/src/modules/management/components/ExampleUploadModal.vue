@@ -64,10 +64,16 @@
 
       <!-- Format Instructions -->
       <div class="format-instructions">
-        <h3>
-          <Icon icon="mdi:information" class="w-5 h-5 mr-2" />
-          Định dạng file Excel
-        </h3>
+        <div class="instructions-header">
+          <h3>
+            <Icon icon="mdi:information" class="w-5 h-5 mr-2" />
+            Định dạng file Excel
+          </h3>
+          <button @click="downloadTemplate" class="download-template-btn">
+            <Icon icon="mdi:download" class="w-4 h-4 mr-1" />
+            Tải mẫu Excel
+          </button>
+        </div>
         <div class="columns-info">
           <div class="column-item required">
             <span class="column-name">Sentence</span>
@@ -206,7 +212,7 @@ const uploadFile = async () => {
     formData.append('file', selectedFile.value)
     formData.append('vocabularyId', props.vocabularyId.toString())
     
-    const response = await fetch('/api/vocabulary-learning/upload-excel', {
+    const response = await fetch('/api/vocabulary-examples/upload-excel', {
       method: 'POST',
       headers: createFileUploadHeaders(),
       body: formData
@@ -250,6 +256,30 @@ const uploadFile = async () => {
     }
   } finally {
     isUploading.value = false
+  }
+}
+
+const downloadTemplate = async () => {
+  try {
+    const response = await fetch('/api/vocabulary-examples/template.xlsx', {
+      headers: createFileUploadHeaders()
+    })
+    
+    if (response.ok) {
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'vocabulary-examples-template.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } else {
+      showError('Không thể tải file mẫu')
+    }
+  } catch (error) {
+    showError('Lỗi kết nối khi tải file mẫu')
   }
 }
 
@@ -466,11 +496,37 @@ const formatFileSize = (bytes: number): string => {
   margin-bottom: 2rem;
 }
 
+.instructions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .format-instructions h3 {
   color: white;
-  margin: 0 0 1rem 0;
+  margin: 0;
   display: flex;
   align-items: center;
+}
+
+.download-template-btn {
+  background: linear-gradient(135deg, #66d9ef, #4a9eff);
+  color: white;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.download-template-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(102, 217, 239, 0.4);
 }
 
 .columns-info {

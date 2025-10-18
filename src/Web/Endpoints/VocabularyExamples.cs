@@ -5,6 +5,7 @@ using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyExamples;
+using OfficeOpenXml;
 
 namespace RoomEnglish.Web.Endpoints;
 
@@ -34,6 +35,14 @@ public class VocabularyExamples : EndpointGroupBase
              .WithName("DeleteVocabularyExample")
              .WithSummary("Delete example")
              .WithDescription("Soft deletes a vocabulary example");
+        group.MapPost("upload-excel", UploadExcel)
+             .WithName("UploadVocabularyExamples")
+             .WithSummary("Upload examples from Excel")
+             .WithDescription("Imports vocabulary examples from an Excel file");
+        group.MapGet("template.xlsx", GetExcelTemplate)
+             .WithName("GetVocabularyExamplesTemplate")
+             .WithSummary("Download Excel template")
+             .WithDescription("Downloads an Excel template for vocabulary examples import");
     }
 
     public record UpsertExampleRequest(
@@ -107,5 +116,166 @@ public class VocabularyExamples : EndpointGroupBase
         entity.IsActive = false;
         await context.SaveChangesAsync(CancellationToken.None);
         return Results.NoContent();
+    }
+
+    [Authorize]
+    public async Task<IResult> UploadExcel(
+        HttpRequest httpRequest,
+        IApplicationDbContext context)
+    {
+        if (!httpRequest.HasFormContentType)
+        {
+            return Results.BadRequest("Invalid content type");
+        }
+
+        var form = await httpRequest.ReadFormAsync();
+        var file = form.Files["file"];
+        var vocabularyIdStr = form["vocabularyId"];
+
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest("No file uploaded");
+        }
+
+        if (!int.TryParse(vocabularyIdStr, out var vocabularyId))
+        {
+            return Results.BadRequest("Invalid vocabulary ID");
+        }
+
+        // Verify vocabulary exists
+        var vocabularyExists = await context.VocabularyWords
+            .AnyAsync(v => v.Id == vocabularyId && v.IsActive);
+        if (!vocabularyExists)
+        {
+            return Results.BadRequest("Vocabulary word not found");
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+            using var package = new ExcelPackage(stream);
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+
+            if (worksheet == null)
+            {
+                return Results.BadRequest("No worksheet found in Excel file");
+            }
+
+            var addedCount = 0;
+            var updatedCount = 0;
+            var errors = new List<string>();
+
+            // Expected columns: Sentence (A), Translation (B), Grammar (C)
+            for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+            {
+                try
+                {
+                    var sentence = worksheet.Cells[row, 1].Text?.Trim();
+                    var translation = worksheet.Cells[row, 2].Text?.Trim();
+                    var grammar = worksheet.Cells[row, 3].Text?.Trim();
+
+                    if (string.IsNullOrEmpty(sentence) || string.IsNullOrEmpty(translation))
+                    {
+                        errors.Add($"Dòng {row}: Thiếu câu ví dụ hoặc bản dịch");
+                        continue;
+                    }
+
+                    // Check if example already exists for this vocabulary word
+                    var existingExample = await context.VocabularyExamples
+                        .FirstOrDefaultAsync(e => e.WordId == vocabularyId && 
+                                                  e.Sentence == sentence);
+
+                    if (existingExample != null)
+                    {
+                        // Update existing example
+                        existingExample.Translation = translation;
+                        existingExample.Grammar = grammar ?? string.Empty;
+                        existingExample.IsActive = true;
+                        updatedCount++;
+                    }
+                    else
+                    {
+                        // Create new example
+                        var newExample = new RoomEnglish.Domain.Entities.VocabularyExample
+                        {
+                            Sentence = sentence,
+                            Translation = translation,
+                            Grammar = grammar ?? string.Empty,
+                            WordId = vocabularyId,
+                            IsActive = true,
+                            DifficultyLevel = 1,
+                            DisplayOrder = 0
+                        };
+
+                        context.VocabularyExamples.Add(newExample);
+                        addedCount++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"Dòng {row}: {ex.Message}");
+                }
+            }
+
+            await context.SaveChangesAsync(CancellationToken.None);
+
+            return Results.Ok(new
+            {
+                success = true,
+                addedCount,
+                updatedCount,
+                errors
+            });
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest($"Error processing Excel file: {ex.Message}");
+        }
+    }
+
+    public async Task<IResult> GetExcelTemplate()
+    {
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Examples Template");
+
+        // Headers
+        worksheet.Cells[1, 1].Value = "Sentence (English)";
+        worksheet.Cells[1, 2].Value = "Translation (Vietnamese)";
+        worksheet.Cells[1, 3].Value = "Grammar Explanation";
+
+        // Sample data
+        var sampleData = new object[,]
+        {
+            { "Hello, how are you?", "Xin chào, bạn khỏe không?", "Basic greeting expression" },
+            { "She is a beautiful woman.", "Cô ấy là một người phụ nữ đẹp.", "Adjective describing physical appearance" },
+            { "I love reading books.", "Tôi thích đọc sách.", "Simple present tense expressing preference" }
+        };
+
+        for (int i = 0; i < sampleData.GetLength(0); i++)
+        {
+            for (int j = 0; j < sampleData.GetLength(1); j++)
+            {
+                worksheet.Cells[i + 2, j + 1].Value = sampleData[i, j];
+            }
+        }
+
+        // Format headers
+        using (var range = worksheet.Cells[1, 1, 1, 3])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+        }
+
+        // Auto-fit columns
+        worksheet.Cells.AutoFitColumns();
+
+        var stream = new MemoryStream();
+        await package.SaveAsAsync(stream);
+        stream.Position = 0;
+
+        return Results.File(stream.ToArray(), 
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "vocabulary-examples-template.xlsx");
     }
 }

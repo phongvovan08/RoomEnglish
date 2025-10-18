@@ -1322,6 +1322,46 @@
         ]
       }
     },
+    "/api/vocabulary-examples/upload-excel": {
+      "post": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Upload examples from Excel",
+        "description": "Imports vocabulary examples from an Excel file",
+        "operationId": "UploadVocabularyExamples",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-examples/template.xlsx": {
+      "get": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Download Excel template",
+        "description": "Downloads an Excel template for vocabulary examples import",
+        "operationId": "GetVocabularyExamplesTemplate",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/vocabulary-words": {
       "get": {
         "tags": [
