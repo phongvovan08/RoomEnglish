@@ -10,7 +10,6 @@
     :search-placeholder="'Tìm kiếm từ vựng...'"
     :empty-state-title="'Chưa có từ vựng nào'"
     :empty-state-message="'Thêm từ vựng đầu tiên cho danh mục này'"
-    :server-side="true"
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"

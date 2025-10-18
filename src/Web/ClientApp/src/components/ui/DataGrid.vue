@@ -284,7 +284,7 @@ const props = withDefaults(defineProps<Props>(), {
   emptyStateTitle: 'Không có dữ liệu',
   emptyStateMessage: 'Chưa có dữ liệu để hiển thị',
   keyField: 'id',
-  serverSide: false,
+  serverSide: true,  // Changed to true - Server-side by default
   currentPage: 1,
   totalItems: 0,
   totalPages: 1

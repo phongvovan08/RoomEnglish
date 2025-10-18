@@ -13,13 +13,13 @@ DataGrid là component Vue 3 với TypeScript hỗ trợ hai chế độ hiển 
 - ✅ Chuyển đổi giữa view Table và Grid
 - ✅ Tìm kiếm và lọc dữ liệu
 - ✅ Sắp xếp theo cột (sortable columns)
-- ✅ **Phân trang nâng cao** với các tính năng:
+- ✅ **Server-side Pagination mặc định** với các tính năng:
   - Navigation buttons (First, Previous, Next, Last)
   - Page numbers với ellipsis (...) cho nhiều trang
   - Input field để nhập trực tiếp số trang
   - Keyboard shortcuts (←→ Home/End)
   - Tùy chọn page size
-  - **Server-side và Client-side pagination**
+  - **Optimized cho large datasets**
 - ✅ Custom slot cho cell và grid item
 - ✅ Action buttons với variants khác nhau
 - ✅ Empty state customizable
@@ -73,11 +73,11 @@ interface GridAction {
 | `emptyStateTitle` | `string` | `'Không có dữ liệu'` | Tiêu đề empty state |
 | `emptyStateMessage` | `string` | `'Chưa có dữ liệu để hiển thị'` | Thông báo empty state |
 | `keyField` | `string` | `'id'` | Field làm key cho v-for |
-| **Server-side Pagination** |
-| `serverSide` | `boolean` | `false` | Bật server-side pagination |
-| `currentPage` | `number` | `1` | Trang hiện tại (server-side) |
-| `totalItems` | `number` | `0` | Tổng số items (server-side) |
-| `totalPages` | `number` | `1` | Tổng số trang (server-side) |
+| **Server-side Pagination (Default)** |
+| `serverSide` | `boolean` | `true` | Server-side pagination (mặc định) |
+| `currentPage` | `number` | `1` | Trang hiện tại (required cho server-side) |
+| `totalItems` | `number` | `0` | Tổng số items (required cho server-side) |
+| `totalPages` | `number` | `1` | Tổng số trang (required cho server-side) |
 
 ## Events
 
@@ -115,7 +115,7 @@ interface GridAction {
 </template>
 ```
 
-## Ví dụ sử dụng cơ bản
+## Ví dụ sử dụng cơ bản (Server-side)
 
 ```vue
 <template>
@@ -123,18 +123,24 @@ interface GridAction {
     :data="users"
     :columns="userColumns"
     :actions="userActions"
+    :current-page="currentPage"
+    :total-items="totalItems"
+    :total-pages="totalPages"
     @row-click="viewUser"
     @action-click="handleAction"
+    @page-change="loadPage"
+    @search="handleSearch"
   />
 </template>
 
 <script setup lang="ts">
 import DataGrid, { type GridColumn, type GridAction } from '@/components/ui/DataGrid.vue'
 
-const users = ref([
-  { id: 1, name: 'John Doe', email: 'john@example.com', status: 'active' },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'inactive' }
-])
+// Reactive data for server-side pagination
+const currentPage = ref(1)
+const totalItems = ref(0)
+const totalPages = ref(1)
+const users = ref([])
 
 const userColumns: GridColumn[] = [
   { key: 'name', label: 'Tên', sortable: true },
@@ -147,6 +153,23 @@ const userActions: GridAction[] = [
   { key: 'delete', icon: 'mdi:delete', tooltip: 'Xóa', variant: 'danger' }
 ]
 
+// Server-side pagination handlers
+const loadPage = async (page: number) => {
+  const response = await api.get(`/users?page=${page}&size=10`)
+  users.value = response.data.items
+  currentPage.value = response.data.currentPage
+  totalItems.value = response.data.totalItems
+  totalPages.value = response.data.totalPages
+}
+
+const handleSearch = async (query: string) => {
+  const response = await api.get(`/users?page=1&size=10&search=${query}`)
+  users.value = response.data.items
+  currentPage.value = 1
+  totalItems.value = response.data.totalItems
+  totalPages.value = response.data.totalPages
+}
+
 const viewUser = (user: any) => {
   console.log('View user:', user)
 }
@@ -155,22 +178,28 @@ const handleAction = (action: string, user: any) => {
   if (action === 'edit') {
     // Edit logic
   } else if (action === 'delete') {
-    // Delete logic
+    // Delete logic and reload current page
+    await deleteUser(user.id)
+    await loadPage(currentPage.value)
   }
 }
+
+// Load initial data
+onMounted(() => {
+  loadPage(1)
+})
 </script>
 ```
 
-## Server-side Pagination
+## Server-side Pagination (Recommended)
 
-Dành cho datasets lớn khi backend xử lý pagination:
+**Mặc định và được khuyên dùng cho tất cả cases:**
 
 ```vue
 <template>
   <DataGrid
     :data="items"
     :columns="columns"
-    :server-side="true"
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"
@@ -195,9 +224,9 @@ const loadPage = async (page) => {
 </script>
 ```
 
-## Client-side Pagination 
+## Client-side Pagination (Legacy)
 
-Dành cho datasets nhỏ, tự động phân trang:
+**Chỉ dùng khi thực sự cần thiết:**
 
 ```vue
 <template>
@@ -253,20 +282,49 @@ Dành cho datasets nhỏ, tự động phân trang:
 </template>
 ```
 
-## VocabularyDataGrid - Component Wrapper
+## Wrapper Components - Server-side Ready
 
-Để sử dụng DataGrid cho từ vựng, chúng ta đã tạo wrapper component `VocabularyDataGrid`:
+### VocabularyDataGrid
+
+Wrapper component cho quản lý từ vựng với server-side pagination:
 
 ```vue
 <template>
   <VocabularyDataGrid
     :vocabularies="vocabularies"
+    :current-page="currentPage"
+    :total-items="totalItems"
+    :total-pages="totalPages"
     :page-size="12"
     @vocabulary-click="viewVocabulary"
     @edit-vocabulary="editVocabulary"
     @delete-vocabulary="deleteVocabulary"
     @create-vocabulary="showCreateModal = true"
     @upload-vocabulary="showUploadModal = true"
+    @page-change="loadVocabulariesPage"
+    @search="handleVocabularySearch"
+  />
+</template>
+```
+
+### CategoryDataGrid
+
+Wrapper component cho quản lý danh mục với server-side pagination:
+
+```vue
+<template>
+  <CategoryDataGrid
+    :categories="categories"
+    :current-page="currentPage"
+    :total-items="totalItems" 
+    :total-pages="totalPages"
+    :page-size="10"
+    @category-click="viewCategory"
+    @edit-category="editCategory"
+    @delete-category="deleteCategory"
+    @create-category="showCreateModal = true"
+    @page-change="loadCategoriesPage"
+    @search="handleCategorySearch"
   />
 </template>
 ```
@@ -325,29 +383,40 @@ DataGrid hỗ trợ các phím tắt để điều hướng trang nhanh chóng:
 5. **Memory**: Implement virtual scrolling cho large datasets (future enhancement)
 6. **User Experience**: Sử dụng keyboard shortcuts cho power users
 
-### Pagination Best Practices
+### Server-side Pagination Best Practices
 
-7. **Choose Right Mode**: 
-   - `server-side="false"`: Datasets < 1000 items
-   - `server-side="true"`: Datasets > 1000 items
+7. **Use Server-side by Default**: 
+   - ✅ **All new components**: Always use server-side pagination
+   - ✅ **Consistent performance**: Works with any dataset size
+   - ✅ **Future-proof**: Easy to scale
 
-8. **Server-side Implementation**:
+8. **Required Backend API Format**:
    ```typescript
-   // Backend should return pagination info
-   interface ApiResponse {
-     items: T[]
-     currentPage: number
-     totalItems: number  
-     totalPages: number
-     pageSize: number
+   // API Response format
+   interface ApiResponse<T> {
+     items: T[]              // Current page items
+     currentPage: number     // Current page number (1-based)
+     totalItems: number      // Total count of all items
+     totalPages: number      // Total number of pages
+     pageSize: number        // Items per page
+   }
+   
+   // API Request parameters
+   interface ApiRequest {
+     page: number           // Page number (1-based)
+     size: number          // Page size (10, 20, 50, etc.)
+     search?: string       // Search query (optional)
+     sortBy?: string       // Sort field (optional)
+     sortOrder?: 'asc'|'desc'  // Sort order (optional)
    }
    ```
 
-9. **Error Handling**: Handle pagination errors gracefully
+9. **Error Handling Pattern**:
    ```vue
    <DataGrid 
-     :server-side="true"
      :current-page="currentPage"
+     :total-items="totalItems"
+     :total-pages="totalPages"
      @page-change="handlePageChange"
    />
    
@@ -355,13 +424,31 @@ DataGrid hỗ trợ các phím tắt để điều hướng trang nhanh chóng:
      try {
        await loadData(page)
      } catch (error) {
-       // Reset to previous page on error
+       // Keep previous page on error
        console.error('Failed to load page:', error)
+       showError('Không thể tải dữ liệu. Vui lòng thử lại.')
      }
    }
    ```
 
-10. **Loading States**: Show loading indicators during page changes
+10. **Loading States & UX**:
+    ```vue
+    <DataGrid 
+      :data="isLoading ? [] : items"
+      :current-page="currentPage"
+      @page-change="handlePageChange"
+    />
+    
+    <div v-if="isLoading" class="loading-overlay">
+      Đang tải dữ liệu...
+    </div>
+    ```
+
+11. **Wrapper Component Pattern**:
+    - ✅ Create wrapper components for each data type
+    - ✅ Handle API calls in wrapper, not in DataGrid
+    - ✅ Provide custom slots for domain-specific layouts
+    - ✅ Follow naming convention: `{EntityName}DataGrid.vue`
 
 ## Pagination Features
 
@@ -413,5 +500,72 @@ Trên mobile, pagination tự động ẩn bớt controls để tiết kiệm kh
 - [ ] Inline editing
 
 ---
+
+## Creating New Wrapper Components
+
+Use the `_DataGridTemplate.vue` file as a starting point for creating new wrapper components:
+
+### Quick Start with Template
+
+1. **Copy the template**:
+   ```bash
+   cp _DataGridTemplate.vue UserDataGrid.vue
+   ```
+
+2. **Replace placeholders**:
+   - Replace `Entity` with your entity name (e.g., `User`, `Product`)
+   - Replace `entity` with lowercase entity name (e.g., `user`, `product`)
+   - Update interface properties to match your entity
+   - Replace `{entity display name}` with proper Vietnamese display name
+
+3. **Customize columns**:
+   ```typescript
+   const columns = computed<GridColumn[]>(() => [
+     {
+       key: 'name',
+       label: 'Tên người dùng',
+       sortable: true,
+       type: 'text'
+     },
+     {
+       key: 'email',
+       label: 'Email',
+       sortable: true,
+       type: 'email'
+     }
+   ])
+   ```
+
+4. **Update interface**:
+   ```typescript
+   interface User {
+     id: number
+     name: string
+     email: string
+     createdAt: string
+   }
+   ```
+
+5. **Customize grid card layout**:
+   ```vue
+   <template #grid-item="{ item }">
+     <div class="user-card">
+       <h3>{{ item.name }}</h3>
+       <p>{{ item.email }}</p>
+     </div>
+   </template>
+   ```
+
+### Template Features
+
+The `_DataGridTemplate.vue` includes:
+- ✅ Server-side pagination (default)
+- ✅ Complete TypeScript interfaces
+- ✅ Custom grid and table layouts
+- ✅ Event handling patterns
+- ✅ Empty state management
+- ✅ Action buttons and tooltips
+- ✅ Responsive design
+- ✅ Comprehensive styling
 
 **Thư viện được phát triển cho dự án RoomEnglish - Quản lý từ vựng tiếng Anh**
