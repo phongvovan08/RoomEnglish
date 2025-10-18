@@ -7,6 +7,7 @@
     :searchable="true"
     :clickable="false"
     :server-side="true"
+    :loading="loading"
     :page-size="pageSize"
     :search-placeholder="'Tìm kiếm danh mục...'"
     :empty-state-title="'Chưa có danh mục nào'"
@@ -102,6 +103,7 @@ interface Category {
 interface Props {
   categories: Category[]
   pageSize?: number
+  loading?: boolean
   // Server-side pagination props
   currentPage?: number
   totalItems?: number
@@ -110,6 +112,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   pageSize: 12,
+  loading: false,
   currentPage: 1,
   totalItems: 0,
   totalPages: 1

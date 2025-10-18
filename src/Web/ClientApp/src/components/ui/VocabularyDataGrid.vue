@@ -7,6 +7,7 @@
     :searchable="true"
     :clickable="false"
     :server-side="true"
+    :loading="loading"
     :page-size="pageSize"
     :search-placeholder="'Tìm kiếm từ vựng...'"
     :empty-state-title="'Chưa có từ vựng nào'"
@@ -119,6 +120,7 @@ interface Vocabulary {
 interface Props {
   vocabularies: Vocabulary[]
   pageSize?: number
+  loading?: boolean
   // Server-side pagination props
   currentPage?: number
   totalItems?: number
@@ -127,6 +129,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   pageSize: 12,
+  loading: false,
   currentPage: 1,
   totalItems: 0,
   totalPages: 1

@@ -1,7 +1,15 @@
 <template>
   <div class="data-grid">
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner">
+        <Icon icon="mdi:loading" class="w-8 h-8 animate-spin" />
+        <span>Đang tải dữ liệu...</span>
+      </div>
+    </div>
+
     <!-- Grid Header -->
-    <div class="grid-header">
+    <div class="grid-header" :class="{ 'loading-disabled': loading }">
       <div class="grid-controls">
         <div class="view-toggle">
             <button 
@@ -46,7 +54,7 @@
     </div>
 
     <!-- Table View -->
-    <div v-if="viewMode === 'table'" class="table-container">
+    <div v-if="viewMode === 'table'" class="table-container" :class="{ 'loading-disabled': loading }">
       <table class="data-table">
         <thead>
           <tr>
@@ -112,7 +120,7 @@
     </div>
 
     <!-- Grid View -->
-    <div v-if="viewMode === 'grid'" class="grid-container">
+    <div v-if="viewMode === 'grid'" class="grid-container" :class="{ 'loading-disabled': loading }">
       <div 
         v-for="(item, index) in paginatedData" 
         :key="getItemKey(item, index)"
@@ -267,6 +275,7 @@ interface Props {
   emptyStateTitle?: string
   emptyStateMessage?: string
   keyField?: string
+  loading?: boolean
   // Server-side pagination props
   serverSide?: boolean
   currentPage?: number
@@ -284,6 +293,7 @@ const props = withDefaults(defineProps<Props>(), {
   emptyStateTitle: 'Không có dữ liệu',
   emptyStateMessage: 'Chưa có dữ liệu để hiển thị',
   keyField: 'id',
+  loading: false,
   serverSide: true,  // Changed to true - Server-side by default
   currentPage: 1,
   totalItems: 0,
@@ -552,6 +562,54 @@ onUnmounted(() => {
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
+  position: relative;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 0.5rem;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #2563eb;
+}
+
+.loading-spinner span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.loading-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 .grid-header {

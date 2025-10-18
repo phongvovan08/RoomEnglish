@@ -30,6 +30,7 @@
     <!-- Vocabulary Data Grid -->
     <VocabularyDataGrid
       :vocabularies="vocabularies"
+      :loading="isLoading"
       :page-size="pageSize"
       :current-page="currentPage"
       :total-items="totalItems"
@@ -157,6 +158,7 @@ const categoryId = computed(() => parseInt(route.params.categoryId as string))
 const currentCategory = ref<Category | null>(null)
 const vocabularies = ref<Vocabulary[]>([])
 const searchQuery = ref('')
+const isLoading = ref(false)
 const showCreateModal = ref(false)
 const showUploadModal = ref(false)
 const editingVocabulary = ref<Vocabulary | null>(null)
@@ -196,6 +198,7 @@ const loadCategory = async () => {
 
 const loadVocabularies = async (page: number = currentPage.value) => {
   try {
+    isLoading.value = true
     // Build query parameters matching GetVocabularyWordsQuery
     const params = new URLSearchParams({
       CategoryId: categoryId.value.toString(),
@@ -233,6 +236,8 @@ const loadVocabularies = async (page: number = currentPage.value) => {
   } catch (error) {
     showError('Lỗi kết nối', 'Không thể kết nối đến máy chủ. Vui lòng thử lại.')
     console.error('Failed to load vocabularies:', error)
+  } finally {
+    isLoading.value = false
   }
 }
 

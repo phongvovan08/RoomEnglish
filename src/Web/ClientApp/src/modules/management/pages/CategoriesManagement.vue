@@ -18,6 +18,7 @@
     <!-- Category Data Grid -->
     <CategoryDataGrid
       :categories="categories"
+      :loading="isLoading"
       :page-size="pageSize"
       :current-page="currentPage"
       :total-items="totalItems"
@@ -110,6 +111,7 @@ const categories = ref<Category[]>([])
 const searchQuery = ref('')
 const showCreateModal = ref(false)
 const editingCategory = ref<Category | null>(null)
+const isLoading = ref(false)
 const categoryForm = ref<CategoryForm>({
   name: '',
   description: ''
@@ -157,6 +159,7 @@ const visiblePages = computed(() => {
 // Methods
 const loadCategories = async (page: number = currentPage.value) => {
   try {
+    isLoading.value = true
     const token = await getAuthTokenWithFallback()
     console.log('Token:', token ? 'exists' : 'missing')
     
@@ -200,6 +203,8 @@ const loadCategories = async (page: number = currentPage.value) => {
   } catch (err) {
     showError('Lỗi kết nối', 'Không thể kết nối đến máy chủ. Vui lòng thử lại.')
     console.error('Failed to load categories:', err)
+  } finally {
+    isLoading.value = false
   }
 }
 
