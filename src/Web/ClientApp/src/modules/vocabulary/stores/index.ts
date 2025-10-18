@@ -1,0 +1,1 @@
+export { useVocabularyStore } from './vocabulary/vocabulary'

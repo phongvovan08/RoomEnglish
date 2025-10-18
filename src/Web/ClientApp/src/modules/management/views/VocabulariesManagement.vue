@@ -124,7 +124,7 @@ import { Icon } from '@iconify/vue'
 import { createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 import VocabularyUploadModal from '../components/VocabularyUploadModal.vue'
-import VocabularyDataGrid from '@/components/ui/VocabularyDataGrid.vue'
+import VocabularyDataGrid from '@/modules/vocabulary/components/VocabularyDataGrid.vue'
 
 const router = useRouter()
 const route = useRoute()

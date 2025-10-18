@@ -1,0 +1,1 @@
+export { useVocabularyCategories } from './useVocabularyCategories'

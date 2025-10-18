@@ -1,0 +1,1 @@
+export { useCategoriesManagement } from './useCategoriesManagement'

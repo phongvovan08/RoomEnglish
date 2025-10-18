@@ -1,0 +1,1 @@
+export { useVocabularyWords } from './useVocabularyWords'

@@ -1,6 +1,6 @@
 <template>
   <DataGrid
-    :data="vocabularies"
+    :data="categories"
     :columns="columns"
     :actions="actions"
     :pagination="true"
@@ -9,47 +9,44 @@
     :server-side="true"
     :loading="loading"
     :page-size="pageSize"
-    :search-placeholder="'Tìm kiếm từ vựng...'"
-    :empty-state-title="'Chưa có từ vựng nào'"
-    :empty-state-message="'Thêm từ vựng đầu tiên cho danh mục này'"
+    :search-placeholder="'Tìm kiếm danh mục...'"
+    :empty-state-title="'Chưa có danh mục nào'"
+    :empty-state-message="'Tạo danh mục đầu tiên để bắt đầu'"
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"
-    @row-click="handleRowClick"
     @action-click="handleActionClick"
     @search="handleSearch"
     @page-change="handlePageChange"
     @page-size-change="handlePageSizeChange"
     @sort-change="handleSortChange"
   >
-    <!-- Custom grid item for vocabulary -->
+    <!-- Custom grid item for category -->
     <template #grid-item="{ item }">
-      <div class="vocabulary-card" >
-        <div class="vocabulary-header">
-          <div class="word-info">
-            <h3>{{ item.word }}</h3>
-            <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
+      <div class="category-card">
+        <div class="category-header">
+          <div class="category-info">
+            <h3>{{ item.name }}</h3>
+            <span v-if="item.description" class="description">{{ item.description }}</span>
           </div>
-          <div class="vocabulary-actions">
-            <button @click.stop="$emit('vocabulary-click', item)" class="action-btn detail">
+          <div class="category-actions">
+            <button @click.stop="$emit('detail-category', item)" class="action-btn detail">
               <Icon icon="mdi:eye" class="w-4 h-4" />
             </button>
-            <button @click.stop="$emit('edit-vocabulary', item)" class="action-btn edit">
+            <button @click.stop="$emit('edit-category', item)" class="action-btn edit">
               <Icon icon="mdi:pencil" class="w-4 h-4" />
             </button>
-            <button @click.stop="$emit('delete-vocabulary', item)" class="action-btn delete">
+            <button @click.stop="$emit('delete-category', item)" class="action-btn delete">
               <Icon icon="mdi:delete" class="w-4 h-4" />
             </button>
           </div>
         </div>
         
-        <div class="vocabulary-content">
-          <p class="definition">{{ item.definition }}</p>
-          
-          <div class="vocabulary-stats">
+        <div class="category-content">
+          <div class="category-stats">
             <div class="stat">
-              <Icon icon="mdi:format-quote-close" class="w-4 h-4" />
-              <span>{{ item.exampleCount || 0 }} ví dụ</span>
+              <Icon icon="mdi:book-alphabet" class="w-4 h-4" />
+              <span>{{ item.vocabularyCount || 0 }} từ vựng</span>
             </div>
             <div class="stat">
               <Icon icon="mdi:calendar" class="w-4 h-4" />
@@ -57,22 +54,13 @@
             </div>
           </div>
         </div>
-
-        <div class="vocabulary-footer">
-          <span class="view-examples">Xem ví dụ →</span>
-        </div>
       </div>
     </template>
 
-    <!-- Custom cell for pronunciation in table view -->
-    <template #cell-pronunciation="{ value }">
-      <span class="pronunciation-cell">{{ value || '—' }}</span>
-    </template>
-
-    <!-- Custom cell for example count -->
-    <template #cell-exampleCount="{ value }">
-      <div class="example-count">
-        <Icon icon="mdi:format-quote-close" class="w-4 h-4" />
+    <!-- Custom cell for vocabulary count -->
+    <template #cell-vocabularyCount="{ value }">
+      <div class="vocabulary-count">
+        <Icon icon="mdi:book-alphabet" class="w-4 h-4" />
         <span>{{ value || 0 }}</span>
       </div>
     </template>
@@ -84,18 +72,14 @@
 
     <!-- Custom empty state -->
     <template #empty-state>
-      <div class="vocabulary-empty-state">
-        <Icon icon="mdi:book-outline" class="w-16 h-16 text-gray-400 mb-4" />
-        <h3>Chưa có từ vựng nào</h3>
-        <p>Thêm từ vựng đầu tiên cho danh mục này</p>
+      <div class="category-empty-state">
+        <Icon icon="mdi:folder-outline" class="w-16 h-16 text-gray-400 mb-4" />
+        <h3>Chưa có danh mục nào</h3>
+        <p>Tạo danh mục đầu tiên để bắt đầu quản lý từ vựng</p>
         <div class="empty-actions">
-          <button @click="$emit('create-vocabulary')" class="btn-primary">
+          <button @click="$emit('create-category')" class="btn-primary">
             <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
-            Thêm từ đầu tiên
-          </button>
-          <button @click="$emit('upload-vocabulary')" class="btn-upload">
-            <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
-            Upload từ Excel
+            Tạo danh mục đầu tiên
           </button>
         </div>
       </div>
@@ -106,19 +90,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import DataGrid, { type GridColumn, type GridAction } from './DataGrid.vue'
+import DataGrid, { type GridColumn, type GridAction } from '@/components/ui/DataGrid.vue'
 
-interface Vocabulary {
+interface Category {
   id: number
-  word: string
-  definition: string
-  pronunciation?: string
-  exampleCount: number
+  name: string
+  description?: string
+  vocabularyCount: number
   createdAt: string
 }
 
 interface Props {
-  vocabularies: Vocabulary[]
+  categories: Category[]
   pageSize?: number
   loading?: boolean
   // Server-side pagination props
@@ -136,11 +119,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'vocabulary-click': [vocabulary: Vocabulary]
-  'edit-vocabulary': [vocabulary: Vocabulary]
-  'delete-vocabulary': [vocabulary: Vocabulary]
-  'create-vocabulary': []
-  'upload-vocabulary': []
+  'category-click': [category: Category]
+  'detail-category': [category: Category]
+  'edit-category': [category: Category]
+  'delete-category': [category: Category]
+  'create-category': []
   'search': [query: string]
   'page-change': [page: number]
   'page-size-change': [pageSize: number]
@@ -150,26 +133,20 @@ const emit = defineEmits<{
 // Define columns for table view
 const columns = computed<GridColumn[]>(() => [
   {
-    key: 'word',
-    label: 'Từ vựng',
+    key: 'name',
+    label: 'Tên danh mục',
     sortable: true,
     type: 'text'
   },
   {
-    key: 'definition',
-    label: 'Định nghĩa',
+    key: 'description',
+    label: 'Mô tả',
     sortable: false,
     type: 'text'
   },
   {
-    key: 'pronunciation',
-    label: 'Phát âm',
-    sortable: false,
-    type: 'text'
-  },
-  {
-    key: 'exampleCount',
-    label: 'Ví dụ',
+    key: 'vocabularyCount',
+    label: 'Từ vựng',
     sortable: true,
     type: 'number'
   },
@@ -192,29 +169,25 @@ const actions = computed<GridAction[]>(() => [
   {
     key: 'edit',
     icon: 'mdi:pencil',
-    tooltip: 'Sửa từ vựng',
+    tooltip: 'Sửa danh mục',
     variant: 'primary'
   },
   {
     key: 'delete',
     icon: 'mdi:delete',
-    tooltip: 'Xóa từ vựng',
+    tooltip: 'Xóa danh mục',
     variant: 'danger'
   }
 ])
 
 // Event handlers
-const handleRowClick = (vocabulary: Vocabulary) => {
-  emit('vocabulary-click', vocabulary)
-}
-
-const handleActionClick = (action: string, vocabulary: Vocabulary) => {
+const handleActionClick = (action: string, category: Category) => {
   if (action === 'detail') {
-    emit('vocabulary-click', vocabulary)
+    emit('detail-category', category)
   } else if (action === 'edit') {
-    emit('edit-vocabulary', vocabulary)
+    emit('edit-category', category)
   } else if (action === 'delete') {
-    emit('delete-vocabulary', vocabulary)
+    emit('delete-category', category)
   }
 }
 
@@ -243,42 +216,45 @@ const formatDate = (date: string | Date): string => {
 </script>
 
 <style scoped>
-/* Vocabulary card styles for grid view */
-.vocabulary-card {
+/* Category card styles for grid view */
+.category-card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
-.vocabulary-card:hover {
+.category-card:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border-color: #93c5fd;
 }
 
-.vocabulary-header {
+.category-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.75rem;
 }
 
-.word-info h3 {
+.category-info h3 {
   font-size: 1.125rem;
   font-weight: 600;
   color: #111827;
   margin: 0 0 0.25rem 0;
 }
 
-.pronunciation {
+.description {
   font-size: 0.875rem;
   color: #6b7280;
-  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.vocabulary-actions {
+.category-actions {
   display: flex;
   gap: 0.25rem;
 }
@@ -308,23 +284,11 @@ const formatDate = (date: string | Date): string => {
   color: #dc2626;
 }
 
-.vocabulary-content {
+.category-content {
   margin-bottom: 0.75rem;
 }
 
-.definition {
-  color: #374151;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin: 0 0 0.75rem 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.vocabulary-stats {
+.category-stats {
   display: flex;
   gap: 1rem;
 }
@@ -337,24 +301,8 @@ const formatDate = (date: string | Date): string => {
   color: #6b7280;
 }
 
-.vocabulary-footer {
-  padding-top: 0.5rem;
-  border-top: 1px solid #f3f4f6;
-}
-
-.view-examples {
-  font-size: 0.875rem;
-  color: #2563eb;
-  font-weight: 500;
-}
-
 /* Table cell styles */
-.pronunciation-cell {
-  font-style: italic;
-  color: #6b7280;
-}
-
-.example-count {
+.vocabulary-count {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -367,7 +315,7 @@ const formatDate = (date: string | Date): string => {
 }
 
 /* Empty state styles */
-.vocabulary-empty-state {
+.category-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -376,15 +324,16 @@ const formatDate = (date: string | Date): string => {
   color: #6b7280;
 }
 
-.vocabulary-empty-state h3 {
+.category-empty-state h3 {
   font-size: 1.125rem;
   font-weight: 500;
   color: #111827;
   margin: 0 0 0.25rem 0;
 }
 
-.vocabulary-empty-state p {
+.category-empty-state p {
   margin: 0 0 1.5rem 0;
+  text-align: center;
 }
 
 .empty-actions {
@@ -408,23 +357,5 @@ const formatDate = (date: string | Date): string => {
 
 .btn-primary:hover {
   background-color: #1d4ed8;
-}
-
-.btn-upload {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #10b981;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-upload:hover {
-  background-color: #059669;
 }
 </style>

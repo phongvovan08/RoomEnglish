@@ -129,7 +129,7 @@ const router = createRouter({
     {
       path: Routes.Vocabulary.children.Management.path,
       name: Routes.Vocabulary.children.Management.name,
-      component: () => import("../modules/vocabulary/pages/VocabularyManagement.vue").catch(err => {
+      component: () => import("../modules/vocabulary/views/VocabularyManagement.vue").catch(err => {
         console.error('Failed to load VocabularyManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
@@ -140,7 +140,7 @@ const router = createRouter({
     {
       path: Routes.Management.children.Categories.path,
       name: Routes.Management.children.Categories.name,
-      component: () => import("../modules/management/pages/CategoriesManagement.vue").catch(err => {
+      component: () => import("../modules/management/views/CategoriesManagement.vue").catch(err => {
         console.error('Failed to load CategoriesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
@@ -149,7 +149,7 @@ const router = createRouter({
     {
       path: Routes.Management.children.Vocabularies.children.List.path,
       name: Routes.Management.children.Vocabularies.children.List.name,
-      component: () => import("../modules/management/pages/VocabulariesManagement.vue").catch(err => {
+      component: () => import("../modules/management/views/VocabulariesManagement.vue").catch(err => {
         console.error('Failed to load VocabulariesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
@@ -158,7 +158,7 @@ const router = createRouter({
     {
       path: Routes.Management.children.Examples.children.List.path,
       name: Routes.Management.children.Examples.children.List.name,
-      component: () => import("../modules/management/pages/ExamplesManagement.vue").catch(err => {
+      component: () => import("../modules/management/views/ExamplesManagement.vue").catch(err => {
         console.error('Failed to load ExamplesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),

@@ -88,7 +88,7 @@ import { Icon } from '@iconify/vue'
 import { Routes } from '@/router/constants'
 import { getAuthTokenWithFallback, createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
-import CategoryDataGrid from '@/components/ui/CategoryDataGrid.vue'
+import CategoryDataGrid from '../components/CategoryDataGrid.vue'
 
 const router = useRouter()
 const { showSuccess, showError } = useNotifications()

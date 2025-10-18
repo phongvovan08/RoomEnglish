@@ -124,7 +124,7 @@ import { Icon } from '@iconify/vue'
 import { createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 import ExampleUploadModal from '../components/ExampleUploadModal.vue'
-import ExampleDataGrid from '@/components/ui/ExampleDataGrid.vue'
+import ExampleDataGrid from '../components/ExampleDataGrid.vue'
 
 const router = useRouter()
 const route = useRoute()

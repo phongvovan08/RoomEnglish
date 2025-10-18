@@ -1,6 +1,6 @@
 <template>
   <DataGrid
-    :data="examples"
+    :data="vocabularies"
     :columns="columns"
     :actions="actions"
     :pagination="true"
@@ -9,9 +9,9 @@
     :server-side="true"
     :loading="loading"
     :page-size="pageSize"
-    :search-placeholder="'Tìm kiếm ví dụ...'"
-    :empty-state-title="'Chưa có ví dụ nào'"
-    :empty-state-message="'Thêm ví dụ đầu tiên cho từ vựng này'"
+    :search-placeholder="'Tìm kiếm từ vựng...'"
+    :empty-state-title="'Chưa có từ vựng nào'"
+    :empty-state-message="'Thêm từ vựng đầu tiên cho danh mục này'"
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"
@@ -22,38 +22,34 @@
     @page-size-change="handlePageSizeChange"
     @sort-change="handleSortChange"
   >
-    <!-- Custom grid item for example -->
+    <!-- Custom grid item for vocabulary -->
     <template #grid-item="{ item }">
-      <div class="example-card">
-        <div class="example-header">
-          <div class="example-info">
-            <h3>{{ item.sentence }}</h3>
-            <span v-if="item.grammar" class="grammar-point">{{ item.grammar }}</span>
+      <div class="vocabulary-card" >
+        <div class="vocabulary-header">
+          <div class="word-info">
+            <h3>{{ item.word }}</h3>
+            <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
           </div>
-          <div class="example-actions">
-            <button @click.stop="$emit('example-click', item)" class="action-btn detail">
+          <div class="vocabulary-actions">
+            <button @click.stop="$emit('vocabulary-click', item)" class="action-btn detail">
               <Icon icon="mdi:eye" class="w-4 h-4" />
             </button>
-            <button @click.stop="$emit('edit-example', item)" class="action-btn edit">
+            <button @click.stop="$emit('edit-vocabulary', item)" class="action-btn edit">
               <Icon icon="mdi:pencil" class="w-4 h-4" />
             </button>
-            <button @click.stop="$emit('delete-example', item)" class="action-btn delete">
+            <button @click.stop="$emit('delete-vocabulary', item)" class="action-btn delete">
               <Icon icon="mdi:delete" class="w-4 h-4" />
             </button>
           </div>
         </div>
         
-        <div class="example-content">
-          <p class="translation">{{ item.translation }}</p>
+        <div class="vocabulary-content">
+          <p class="definition">{{ item.definition }}</p>
           
-          <div class="example-stats">
+          <div class="vocabulary-stats">
             <div class="stat">
-              <Icon icon="mdi:volume-high" class="w-4 h-4" />
-              <span>{{ item.audioUrl ? 'Có âm thanh' : 'Không có âm thanh' }}</span>
-            </div>
-            <div class="stat">
-              <Icon icon="mdi:star" class="w-4 h-4" />
-              <span>Level {{ item.difficultyLevel || 1 }}</span>
+              <Icon icon="mdi:format-quote-close" class="w-4 h-4" />
+              <span>{{ item.exampleCount || 0 }} ví dụ</span>
             </div>
             <div class="stat">
               <Icon icon="mdi:calendar" class="w-4 h-4" />
@@ -62,43 +58,22 @@
           </div>
         </div>
 
-        <div class="example-footer">
-          <span class="view-details">Xem chi tiết →</span>
+        <div class="vocabulary-footer">
+          <span class="view-examples">Xem ví dụ →</span>
         </div>
       </div>
     </template>
 
-    <!-- Custom cell for sentence in table view -->
-    <template #cell-sentence="{ value }">
-      <div class="sentence-cell">
-        <span class="sentence-text">{{ value }}</span>
-      </div>
+    <!-- Custom cell for pronunciation in table view -->
+    <template #cell-pronunciation="{ value }">
+      <span class="pronunciation-cell">{{ value || '—' }}</span>
     </template>
 
-    <!-- Custom cell for translation -->
-    <template #cell-translation="{ value }">
-      <span class="translation-cell">{{ value }}</span>
-    </template>
-
-    <!-- Custom cell for grammar point -->
-    <template #cell-grammar="{ value }">
-      <span class="grammar-cell">{{ value || '—' }}</span>
-    </template>
-
-    <!-- Custom cell for audio -->
-    <template #cell-audioUrl="{ value }">
-      <div class="audio-cell">
-        <Icon v-if="value" icon="mdi:volume-high" class="w-4 h-4 text-green-500" />
-        <Icon v-else icon="mdi:volume-off" class="w-4 h-4 text-gray-400" />
-      </div>
-    </template>
-
-    <!-- Custom cell for difficulty level -->
-    <template #cell-difficultyLevel="{ value }">
-      <div class="difficulty-cell">
-        <span class="level-badge" :class="`level-${value || 1}`">
-          Level {{ value || 1 }}
-        </span>
+    <!-- Custom cell for example count -->
+    <template #cell-exampleCount="{ value }">
+      <div class="example-count">
+        <Icon icon="mdi:format-quote-close" class="w-4 h-4" />
+        <span>{{ value || 0 }}</span>
       </div>
     </template>
 
@@ -109,16 +84,16 @@
 
     <!-- Custom empty state -->
     <template #empty-state>
-      <div class="example-empty-state">
-        <Icon icon="mdi:format-quote-outline" class="w-16 h-16 text-gray-400 mb-4" />
-        <h3>Chưa có ví dụ nào</h3>
-        <p>Thêm ví dụ đầu tiên cho từ vựng này</p>
+      <div class="vocabulary-empty-state">
+        <Icon icon="mdi:book-outline" class="w-16 h-16 text-gray-400 mb-4" />
+        <h3>Chưa có từ vựng nào</h3>
+        <p>Thêm từ vựng đầu tiên cho danh mục này</p>
         <div class="empty-actions">
-          <button @click="$emit('create-example')" class="btn-primary">
+          <button @click="$emit('create-vocabulary')" class="btn-primary">
             <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
-            Thêm ví dụ đầu tiên
+            Thêm từ đầu tiên
           </button>
-          <button @click="$emit('upload-example')" class="btn-upload">
+          <button @click="$emit('upload-vocabulary')" class="btn-upload">
             <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
             Upload từ Excel
           </button>
@@ -131,23 +106,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import DataGrid, { type GridColumn, type GridAction } from './DataGrid.vue'
+import DataGrid, { type GridColumn, type GridAction } from '@/components/ui/DataGrid.vue'
 
-interface Example {
+interface Vocabulary {
   id: number
-  sentence: string
-  translation: string
-  grammar?: string
-  audioUrl?: string
-  difficultyLevel: number
-  isActive: boolean
-  displayOrder: number
-  wordId: number
+  word: string
+  definition: string
+  pronunciation?: string
+  exampleCount: number
   createdAt: string
 }
 
 interface Props {
-  examples: Example[]
+  vocabularies: Vocabulary[]
   pageSize?: number
   loading?: boolean
   // Server-side pagination props
@@ -165,11 +136,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'example-click': [example: Example]
-  'edit-example': [example: Example]
-  'delete-example': [example: Example]
-  'create-example': []
-  'upload-example': []
+  'vocabulary-click': [vocabulary: Vocabulary]
+  'edit-vocabulary': [vocabulary: Vocabulary]
+  'delete-vocabulary': [vocabulary: Vocabulary]
+  'create-vocabulary': []
+  'upload-vocabulary': []
   'search': [query: string]
   'page-change': [page: number]
   'page-size-change': [pageSize: number]
@@ -179,32 +150,26 @@ const emit = defineEmits<{
 // Define columns for table view
 const columns = computed<GridColumn[]>(() => [
   {
-    key: 'sentence',
-    label: 'Câu ví dụ',
+    key: 'word',
+    label: 'Từ vựng',
     sortable: true,
     type: 'text'
   },
   {
-    key: 'translation',
-    label: 'Dịch nghĩa',
+    key: 'definition',
+    label: 'Định nghĩa',
     sortable: false,
     type: 'text'
   },
   {
-    key: 'grammar',
-    label: 'Ngữ pháp',
+    key: 'pronunciation',
+    label: 'Phát âm',
     sortable: false,
     type: 'text'
   },
   {
-    key: 'audioUrl',
-    label: 'Âm thanh',
-    sortable: true,
-    type: 'text'
-  },
-  {
-    key: 'difficultyLevel',
-    label: 'Độ khó',
+    key: 'exampleCount',
+    label: 'Ví dụ',
     sortable: true,
     type: 'number'
   },
@@ -227,29 +192,29 @@ const actions = computed<GridAction[]>(() => [
   {
     key: 'edit',
     icon: 'mdi:pencil',
-    tooltip: 'Sửa ví dụ',
+    tooltip: 'Sửa từ vựng',
     variant: 'primary'
   },
   {
     key: 'delete',
     icon: 'mdi:delete',
-    tooltip: 'Xóa ví dụ',
+    tooltip: 'Xóa từ vựng',
     variant: 'danger'
   }
 ])
 
 // Event handlers
-const handleRowClick = (example: Example) => {
-  emit('example-click', example)
+const handleRowClick = (vocabulary: Vocabulary) => {
+  emit('vocabulary-click', vocabulary)
 }
 
-const handleActionClick = (action: string, example: Example) => {
+const handleActionClick = (action: string, vocabulary: Vocabulary) => {
   if (action === 'detail') {
-    emit('example-click', example)
+    emit('vocabulary-click', vocabulary)
   } else if (action === 'edit') {
-    emit('edit-example', example)
+    emit('edit-vocabulary', vocabulary)
   } else if (action === 'delete') {
-    emit('delete-example', example)
+    emit('delete-vocabulary', vocabulary)
   }
 }
 
@@ -278,8 +243,8 @@ const formatDate = (date: string | Date): string => {
 </script>
 
 <style scoped>
-/* Example card styles for grid view */
-.example-card {
+/* Vocabulary card styles for grid view */
+.vocabulary-card {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
@@ -288,36 +253,32 @@ const formatDate = (date: string | Date): string => {
   transition: all 0.2s;
 }
 
-.example-card:hover {
+.vocabulary-card:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border-color: #93c5fd;
 }
 
-.example-header {
+.vocabulary-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.75rem;
 }
 
-.example-info h3 {
-  font-size: 1rem;
+.word-info h3 {
+  font-size: 1.125rem;
   font-weight: 600;
   color: #111827;
   margin: 0 0 0.25rem 0;
-  line-height: 1.4;
 }
 
-.grammar-point {
-  font-size: 0.75rem;
-  color: #7c3aed;
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
+.pronunciation {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
 }
 
-.example-actions {
+.vocabulary-actions {
   display: flex;
   gap: 0.25rem;
 }
@@ -347,22 +308,25 @@ const formatDate = (date: string | Date): string => {
   color: #dc2626;
 }
 
-.example-content {
+.vocabulary-content {
   margin-bottom: 0.75rem;
 }
 
-.translation {
+.definition {
   color: #374151;
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0 0 0.75rem 0;
-  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.example-stats {
+.vocabulary-stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .stat {
@@ -373,83 +337,28 @@ const formatDate = (date: string | Date): string => {
   color: #6b7280;
 }
 
-.example-footer {
+.vocabulary-footer {
   padding-top: 0.5rem;
   border-top: 1px solid #f3f4f6;
 }
 
-.view-details {
+.view-examples {
   font-size: 0.875rem;
   color: #2563eb;
   font-weight: 500;
 }
 
 /* Table cell styles */
-.sentence-cell {
-  max-width: 300px;
-}
-
-.sentence-text {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.translation-cell {
+.pronunciation-cell {
   font-style: italic;
   color: #6b7280;
+}
+
+.example-count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.875rem;
-  max-width: 200px;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.grammar-cell {
-  font-size: 0.75rem;
-  color: #7c3aed;
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-}
-
-.audio-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.difficulty-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.level-badge {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.level-1 {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.level-2 {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.level-3 {
-  background-color: #fed7d7;
-  color: #c53030;
 }
 
 .date-cell {
@@ -458,7 +367,7 @@ const formatDate = (date: string | Date): string => {
 }
 
 /* Empty state styles */
-.example-empty-state {
+.vocabulary-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -467,14 +376,14 @@ const formatDate = (date: string | Date): string => {
   color: #6b7280;
 }
 
-.example-empty-state h3 {
+.vocabulary-empty-state h3 {
   font-size: 1.125rem;
   font-weight: 500;
   color: #111827;
   margin: 0 0 0.25rem 0;
 }
 
-.example-empty-state p {
+.vocabulary-empty-state p {
   margin: 0 0 1.5rem 0;
 }
 
