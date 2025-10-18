@@ -327,7 +327,6 @@ const closeUploadModal = () => {
 }
 
 const handleUploadSuccess = () => {
-  showSuccess('Upload thành công', 'Các ví dụ đã được thêm từ file Excel')
   loadExamples()
   closeUploadModal()
 }

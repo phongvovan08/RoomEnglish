@@ -126,6 +126,11 @@
             <span class="stat-label">Lỗi:</span>
             <span class="stat-value">{{ uploadResults.errors?.length || 0 }} từ</span>
           </div>
+          
+          <div v-if="autoCloseCountdown > 0" class="auto-close-message">
+            <Icon icon="mdi:timer" class="w-4 h-4 mr-1" />
+            Tự động cập nhật danh sách trong {{ autoCloseCountdown }} giây...
+          </div>
         </div>
         
 
@@ -174,6 +179,7 @@ const selectedFile = ref<File | null>(null)
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 const uploadResults = ref<UploadResults | null>(null)
+const autoCloseCountdown = ref(0)
 
 const handleDrop = (event: DragEvent) => {
   isDragover.value = false
@@ -253,6 +259,18 @@ const uploadFile = async () => {
     if (result.success) {
       console.log('✅ Upload successful!')
       showSuccess(`Upload thành công! Đã thêm ${result.addedCount || 0} từ và cập nhật ${result.updatedCount || 0} từ.`)
+      
+      // Start countdown
+      autoCloseCountdown.value = 3
+      const countdownInterval = setInterval(() => {
+        autoCloseCountdown.value--
+        if (autoCloseCountdown.value <= 0) {
+          clearInterval(countdownInterval)
+          if (uploadResults.value) {
+            emit('success', uploadResults.value)
+          }
+        }
+      }, 1000)
     } else {
       console.log('❌ Upload failed in result:', result.errors)
       const errorMsg = result.errors && result.errors.length > 0 ? result.errors[0] : 'Import thất bại'
@@ -645,6 +663,26 @@ const formatFileSize = (bytes: number): string => {
   color: white;
   font-weight: 600;
   font-size: 1.25rem;
+}
+
+.auto-close-message {
+  background: rgba(66, 165, 245, 0.2);
+  border: 1px solid rgba(66, 165, 245, 0.3);
+  color: #42a5f5;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 
