@@ -1663,6 +1663,26 @@
         ]
       }
     },
+    "/api/vocabulary-words/template.xlsx": {
+      "get": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Download Excel template",
+        "description": "Downloads an Excel template for vocabulary words import",
+        "operationId": "GetVocabularyWordsTemplate",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecasts": {
       "get": {
         "operationId": "GetWeatherForecasts",

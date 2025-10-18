@@ -44,6 +44,10 @@ public class VocabularyWords : EndpointGroupBase
              .WithName("UploadVocabularyWordsExcel")
              .WithSummary("Upload Excel file")
              .WithDescription("Imports vocabulary words from an Excel file");
+        group.MapGet("template.xlsx", GetExcelTemplate)
+             .WithName("GetVocabularyWordsTemplate")
+             .WithSummary("Download Excel template")
+             .WithDescription("Downloads an Excel template for vocabulary words import");
     }
 
     [Authorize]
@@ -187,19 +191,34 @@ public class VocabularyWords : EndpointGroupBase
                 return Results.Ok(result);
             }
 
-            // Process data rows (assuming headers: Word, Definition, Pronunciation)
+            // Process data rows (columns: Word, Phonetic, PartOfSpeech, Meaning, Definition, DifficultyLevel)
             for (int row = 2; row <= rowCount; row++)
             {
                 try
                 {
                     var word = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
-                    var definition = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
-                    var pronunciation = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                    var phonetic = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                    var partOfSpeech = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                    var meaning = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
+                    var definition = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+                    var difficultyLevelStr = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
 
-                    if (string.IsNullOrEmpty(word) || string.IsNullOrEmpty(definition))
+                    if (string.IsNullOrEmpty(word) || string.IsNullOrEmpty(meaning))
                     {
-                        result.Errors.Add($"Row {row}: Word and Definition are required");
+                        result.Errors.Add($"Row {row}: Word and Meaning are required");
                         continue;
+                    }
+
+                    // Parse difficulty level
+                    if (!int.TryParse(difficultyLevelStr, out var difficultyLevel))
+                    {
+                        difficultyLevel = 1; // Default difficulty
+                    }
+
+                    // Validate difficulty level range
+                    if (difficultyLevel < 1 || difficultyLevel > 5)
+                    {
+                        difficultyLevel = 1;
                     }
 
                     // Check if word already exists
@@ -209,8 +228,11 @@ public class VocabularyWords : EndpointGroupBase
                     if (existingWord != null)
                     {
                         // Update existing word
-                        existingWord.Definition = definition;
-                        existingWord.Phonetic = pronunciation ?? existingWord.Phonetic;
+                        existingWord.Phonetic = phonetic ?? existingWord.Phonetic;
+                        existingWord.PartOfSpeech = partOfSpeech ?? existingWord.PartOfSpeech;
+                        existingWord.Meaning = meaning;
+                        existingWord.Definition = definition ?? existingWord.Definition;
+                        existingWord.DifficultyLevel = difficultyLevel;
                         result = result with { UpdatedCount = result.UpdatedCount + 1 };
                     }
                     else
@@ -219,8 +241,11 @@ public class VocabularyWords : EndpointGroupBase
                         var newWord = new RoomEnglish.Domain.Entities.VocabularyWord
                         {
                             Word = word,
-                            Definition = definition,
-                            Phonetic = pronunciation ?? string.Empty,
+                            Phonetic = phonetic ?? string.Empty,
+                            PartOfSpeech = partOfSpeech ?? string.Empty,
+                            Meaning = meaning,
+                            Definition = definition ?? string.Empty,
+                            DifficultyLevel = difficultyLevel,
                             CategoryId = categoryId,
                             IsActive = true
                         };
@@ -243,5 +268,55 @@ public class VocabularyWords : EndpointGroupBase
         }
 
         return Results.Ok(result);
+    }
+
+    public async Task<IResult> GetExcelTemplate()
+    {
+        using var package = new OfficeOpenXml.ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Vocabulary Template");
+
+        // Headers
+        worksheet.Cells[1, 1].Value = "Word (English)";
+        worksheet.Cells[1, 2].Value = "Phonetic";
+        worksheet.Cells[1, 3].Value = "Part of Speech";
+        worksheet.Cells[1, 4].Value = "Meaning (Vietnamese)";
+        worksheet.Cells[1, 5].Value = "Definition (English)";
+        worksheet.Cells[1, 6].Value = "Difficulty Level";
+
+        // Sample data
+        var sampleData = new object[,]
+        {
+            { "hello", "/həˈloʊ/", "interjection", "xin chào", "used as a greeting", 1 },
+            { "beautiful", "/ˈbjuːtɪfəl/", "adjective", "đẹp", "pleasing the senses or mind aesthetically", 2 },
+            { "computer", "/kəmˈpjuːtər/", "noun", "máy tính", "an electronic device for storing and processing data", 2 },
+            { "study", "/ˈstʌdi/", "verb", "học, nghiên cứu", "to learn about something or acquire knowledge", 1 }
+        };
+
+        for (int i = 0; i < sampleData.GetLength(0); i++)
+        {
+            for (int j = 0; j < sampleData.GetLength(1); j++)
+            {
+                worksheet.Cells[i + 2, j + 1].Value = sampleData[i, j];
+            }
+        }
+
+        // Format headers
+        using (var range = worksheet.Cells[1, 1, 1, 6])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightBlue);
+        }
+
+        // Auto-fit columns
+        worksheet.Cells.AutoFitColumns();
+
+        var stream = new MemoryStream();
+        await package.SaveAsAsync(stream);
+        stream.Position = 0;
+
+        return Results.File(stream.ToArray(), 
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "vocabulary-words-template.xlsx");
     }
 }
