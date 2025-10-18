@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using RoomEnglish.Web.Infrastructure;
 using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using MediatR;
+using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyExamples;
 
 namespace RoomEnglish.Web.Endpoints;
 
@@ -42,31 +44,11 @@ public class VocabularyExamples : EndpointGroupBase
 
     [Authorize]
     public async Task<IResult> GetExamples(
-        IApplicationDbContext context,
-        [FromQuery] int? vocabularyId)
+        ISender sender,
+        [AsParameters] GetVocabularyExamplesQuery query)
     {
-        var query = context.VocabularyExamples.AsQueryable();
-
-        if (vocabularyId.HasValue)
-        {
-            query = query.Where(e => e.WordId == vocabularyId.Value);
-        }
-
-        var items = await query
-            .Where(e => e.IsActive)
-            .OrderBy(e => e.DisplayOrder)
-            .Select(e => new
-            {
-                id = e.Id,
-                sentence = e.Sentence,
-                translation = e.Translation,
-                grammar = e.Grammar,
-                createdAt = e.Created,
-                vocabularyWordId = e.WordId
-            })
-            .ToListAsync();
-
-        return Results.Ok(new { items });
+        var result = await sender.Send(query);
+        return Results.Ok(result);
     }
 
     [Authorize]

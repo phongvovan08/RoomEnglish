@@ -25,89 +25,26 @@
           Upload Excel
         </button>
       </div>
-      
-      <div class="search-box">
-        <Icon icon="mdi:magnify" class="w-5 h-5" />
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Tìm kiếm ví dụ..."
-          class="search-input"
-        />
-      </div>
     </div>
 
-    <div class="examples-list">
-      <div 
-        v-for="example in filteredExamples" 
-        :key="example.id"
-        class="example-card"
-      >
-        <div class="example-header">
-          <div class="example-info">
-            <span class="example-number">#{{ example.id }}</span>
-          </div>
-          <div class="example-actions">
-            <button @click="editExample(example)" class="action-btn edit">
-              <Icon icon="mdi:pencil" class="w-4 h-4" />
-            </button>
-            <button @click="deleteExample(example.id)" class="action-btn delete">
-              <Icon icon="mdi:delete" class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        
-        <div class="example-content">
-          <div class="sentence-section">
-            <label class="section-label">
-              <Icon icon="mdi:format-quote-open" class="w-4 h-4" />
-              Câu ví dụ (Tiếng Anh)
-            </label>
-            <p class="sentence english">{{ example.sentence }}</p>
-          </div>
-          
-          <div class="translation-section">
-            <label class="section-label">
-              <Icon icon="mdi:translate" class="w-4 h-4" />
-              Bản dịch (Tiếng Việt)
-            </label>
-            <p class="sentence vietnamese">{{ example.translation }}</p>
-          </div>
-          
-          <div v-if="example.grammar" class="grammar-section">
-            <label class="section-label">
-              <Icon icon="mdi:school" class="w-4 h-4" />
-              Giải thích ngữ pháp
-            </label>
-            <p class="grammar-explanation">{{ example.grammar }}</p>
-          </div>
-          
-          <div class="example-footer">
-            <span class="date-created">
-              <Icon icon="mdi:calendar" class="w-4 h-4" />
-              {{ formatDate(example.createdAt) }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div v-if="filteredExamples.length === 0" class="empty-state">
-      <Icon icon="mdi:format-quote-outline" class="w-16 h-16 text-gray-400 mb-4" />
-      <h3>Chưa có ví dụ nào</h3>
-      <p>Thêm ví dụ đầu tiên cho từ vựng này</p>
-      <div class="empty-actions">
-        <button @click="showCreateModal = true" class="btn-primary">
-          <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
-          Thêm ví dụ đầu tiên
-        </button>
-        <button @click="showUploadModal = true" class="btn-upload ml-2">
-          <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
-          Upload từ Excel
-        </button>
-      </div>
-    </div>
+    <!-- Example Data Grid -->
+    <ExampleDataGrid
+      :examples="examples"
+      :loading="isLoading"
+      :page-size="pageSize"
+      :current-page="currentPage"
+      :total-items="totalItems"
+      :total-pages="totalPages"
+      @example-click="(example: Example) => console.log('View example:', example)"
+      @edit-example="editExample"
+      @delete-example="(example: Example) => deleteExample(example.id)"
+      @create-example="showCreateModal = true"
+      @upload-example="showUploadModal = true"
+      @search="handleSearch"
+      @page-change="goToPage"
+      @page-size-change="changePageSize"
+      @sort-change="handleSort"
+    />
 
     <!-- Create/Edit Modal -->
     <div v-if="showCreateModal || editingExample" class="modal-overlay" @click="closeModal">
@@ -187,6 +124,7 @@ import { Icon } from '@iconify/vue'
 import { createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 import ExampleUploadModal from '../components/ExampleUploadModal.vue'
+import ExampleDataGrid from '@/components/ui/ExampleDataGrid.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -203,6 +141,11 @@ interface Example {
   sentence: string
   translation: string
   grammar?: string
+  audioUrl?: string
+  difficultyLevel: number
+  isActive: boolean
+  displayOrder: number
+  wordId: number
   createdAt: string
 }
 
@@ -222,23 +165,20 @@ const searchQuery = ref('')
 const showCreateModal = ref(false)
 const showUploadModal = ref(false)
 const editingExample = ref<Example | null>(null)
+const isLoading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalItems = ref(0)
+const totalPages = ref(0)
+const sortBy = ref('')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 const exampleForm = ref<ExampleForm>({
   sentence: '',
   translation: '',
   grammar: ''
 })
 
-// Computed
-const filteredExamples = computed(() => {
-  if (!searchQuery.value) return examples.value
-  
-  const query = searchQuery.value.toLowerCase()
-  return examples.value.filter(example => 
-    example.sentence.toLowerCase().includes(query) ||
-    example.translation.toLowerCase().includes(query) ||
-    (example.grammar && example.grammar.toLowerCase().includes(query))
-  )
-})
+// Computed properties (if needed for other purposes)
 
 // Methods
 const loadVocabulary = async () => {
@@ -260,19 +200,51 @@ const loadVocabulary = async () => {
 
 const loadExamples = async () => {
   try {
-    const response = await fetch(`/api/vocabulary-examples?vocabularyId=${vocabularyId.value}`, {
+    isLoading.value = true
+    const params = new URLSearchParams({
+      VocabularyId: vocabularyId.value.toString(),
+      PageNumber: currentPage.value.toString(),
+      PageSize: pageSize.value.toString(),
+      IncludeInactive: 'false'
+    })
+    
+    if (searchQuery.value) {
+      params.append('SearchTerm', searchQuery.value)
+    }
+    
+    if (sortBy.value) {
+      params.append('SortBy', sortBy.value)
+      params.append('SortOrder', sortOrder.value)
+    }
+    
+    const response = await fetch(`/api/vocabulary-examples?${params}`, {
       headers: createAuthHeaders()
     })
     
     if (response.ok) {
       const data = await response.json()
-      examples.value = data.items || []
+      examples.value = (data.items || []).map((item: any) => ({
+        id: item.id,
+        sentence: item.sentence,
+        translation: item.translation,
+        grammar: item.grammar || undefined,
+        audioUrl: item.audioUrl || undefined,
+        difficultyLevel: item.difficultyLevel || 1,
+        isActive: item.isActive ?? true,
+        displayOrder: item.displayOrder || 0,
+        wordId: item.wordId,
+        createdAt: item.createdAt || new Date().toISOString()
+      }))
+      totalItems.value = data.totalCount || 0
+      totalPages.value = Math.ceil(totalItems.value / pageSize.value)
     } else {
       showError('Lỗi tải ví dụ', `Không thể tải danh sách ví dụ. Mã lỗi: ${response.status}`)
     }
   } catch (error) {
     showError('Lỗi kết nối', 'Không thể kết nối đến máy chủ. Vui lòng thử lại.')
     console.error('Failed to load examples:', error)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -362,6 +334,31 @@ const handleUploadSuccess = () => {
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('vi-VN')
+}
+
+// DataGrid handlers
+const handleSearch = (term: string) => {
+  searchQuery.value = term
+  currentPage.value = 1
+  loadExamples()
+}
+
+const goToPage = (page: number) => {
+  currentPage.value = page
+  loadExamples()
+}
+
+const changePageSize = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadExamples()
+}
+
+const handleSort = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+  sortBy.value = newSortBy
+  sortOrder.value = newSortOrder
+  currentPage.value = 1
+  loadExamples()
 }
 
 // Lifecycle
