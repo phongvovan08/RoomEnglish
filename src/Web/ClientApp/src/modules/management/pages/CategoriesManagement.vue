@@ -29,6 +29,7 @@
       @search="handleSearch"
       @page-change="goToPage"
       @page-size-change="changePageSize"
+      @sort-change="handleSort"
     />
 
     <!-- Create/Edit Modal -->
@@ -120,6 +121,8 @@ const pageSize = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
 const includeInactive = ref(false)
+const sortBy = ref<string>('')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 // Computed
 const filteredCategories = computed(() => {
@@ -164,6 +167,17 @@ const loadCategories = async (page: number = currentPage.value) => {
       IncludeInactive: includeInactive.value.toString()
     })
     
+    // Add search parameter
+    if (searchQuery.value) {
+      params.append('SearchTerm', searchQuery.value)
+    }
+    
+    // Add sort parameters
+    if (sortBy.value) {
+      params.append('SortBy', sortBy.value)
+      params.append('SortOrder', sortOrder.value)
+    }
+    
     const response = await fetch(`/api/vocabulary-categories?${params}`, {
       headers: {
         'Authorization': `Bearer ${token || ''}`,
@@ -192,6 +206,14 @@ const loadCategories = async (page: number = currentPage.value) => {
 const handleSearch = (query: string) => {
   searchQuery.value = query
   currentPage.value = 1
+  loadCategories()
+}
+
+const handleSort = (sortByParam: string, sortOrderParam: 'asc' | 'desc') => {
+  // Update sort state
+  sortBy.value = sortByParam
+  sortOrder.value = sortOrderParam
+  currentPage.value = 1 // Reset to first page when sorting
   loadCategories()
 }
 

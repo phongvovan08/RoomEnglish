@@ -14,6 +14,7 @@ public class VocabularyCategoryDto : IMapFrom<VocabularyCategory>
     public bool IsActive { get; init; }
     public int DisplayOrder { get; init; }
     public int WordCount { get; init; }
+    public int VocabularyCount { get; init; } // Alias for WordCount for frontend compatibility
     public DateTime Created { get; init; }
 }
 

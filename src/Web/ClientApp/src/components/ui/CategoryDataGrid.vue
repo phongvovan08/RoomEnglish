@@ -6,6 +6,7 @@
     :pagination="true"
     :searchable="true"
     :clickable="false"
+    :server-side="true"
     :page-size="pageSize"
     :search-placeholder="'Tìm kiếm danh mục...'"
     :empty-state-title="'Chưa có danh mục nào'"
@@ -17,6 +18,7 @@
     @search="handleSearch"
     @page-change="handlePageChange"
     @page-size-change="handlePageSizeChange"
+    @sort-change="handleSortChange"
   >
     <!-- Custom grid item for category -->
     <template #grid-item="{ item }">
@@ -122,6 +124,7 @@ const emit = defineEmits<{
   'search': [query: string]
   'page-change': [page: number]
   'page-size-change': [pageSize: number]
+  'sort-change': [sortBy: string, sortOrder: 'asc' | 'desc']
 }>()
 
 // Define columns for table view
@@ -195,6 +198,10 @@ const handlePageChange = (page: number) => {
 
 const handlePageSizeChange = (pageSize: number) => {
   emit('page-size-change', pageSize)
+}
+
+const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+  emit('sort-change', sortBy, sortOrder)
 }
 
 // Utility functions

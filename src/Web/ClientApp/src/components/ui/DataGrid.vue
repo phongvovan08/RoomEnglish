@@ -310,6 +310,9 @@ const pageJumpValue = ref<number>()
 
 // Computed properties
 const filteredData = computed(() => {
+  // In server-side mode, filtering is handled by the server
+  if (props.serverSide) return props.data
+  
   if (!searchQuery.value) return props.data
   
   const query = searchQuery.value.toLowerCase()
@@ -322,6 +325,9 @@ const filteredData = computed(() => {
 })
 
 const sortedData = computed(() => {
+  // In server-side mode, sorting is handled by the server
+  if (props.serverSide) return filteredData.value
+  
   if (!sortBy.value) return filteredData.value
   
   return [...filteredData.value].sort((a, b) => {
