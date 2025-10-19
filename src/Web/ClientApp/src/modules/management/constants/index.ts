@@ -17,6 +17,9 @@ export const MANAGEMENT_API_ENDPOINTS = {
   EXAMPLES: '/api/vocabulary-examples',
   EXAMPLES_UPLOAD: '/api/vocabulary-examples/upload-excel', 
   EXAMPLES_TEMPLATE: '/api/vocabulary-examples/template.xlsx',
+  EXAMPLES_IMPORT_JSON: '/api/vocabulary-examples/import-json',
+  EXAMPLES_IMPORT_WORDS: '/api/vocabulary-examples/import-words',
+  EXAMPLES_JSON_TEMPLATE: '/api/vocabulary-examples/template.json',
   EXAMPLES_SEARCH: '/api/vocabulary-examples/search'
 } as const
 

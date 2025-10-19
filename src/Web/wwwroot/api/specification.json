@@ -1362,6 +1362,90 @@
         ]
       }
     },
+    "/api/vocabulary-examples/import-json": {
+      "post": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Import examples from JSON",
+        "description": "Imports vocabulary examples from JSON data",
+        "operationId": "ImportVocabularyExamplesFromJson",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportJsonRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-examples/import-words": {
+      "post": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Import examples from word list",
+        "description": "Generates vocabulary examples from word list using ChatGPT",
+        "operationId": "ImportVocabularyExamplesFromWords",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportWordsRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-examples/template.json": {
+      "get": {
+        "tags": [
+          "Vocabulary Examples"
+        ],
+        "summary": "Download JSON template",
+        "description": "Downloads a JSON template for vocabulary examples import",
+        "operationId": "GetVocabularyExamplesJsonTemplate",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/vocabulary-words": {
       "get": {
         "tags": [
@@ -1676,7 +1760,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportJsonRequest"
+                "$ref": "#/components/schemas/ImportJsonRequest2"
               }
             }
           },
@@ -1708,7 +1792,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportWordsRequest"
+                "$ref": "#/components/schemas/ImportWordsRequest2"
               }
             }
           },
@@ -2330,6 +2414,35 @@
           }
         }
       },
+      "ImportJsonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jsonData": {
+            "type": "string"
+          },
+          "vocabularyId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ImportWordsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vocabularyId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "UpsertWordRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -2350,7 +2463,7 @@
           }
         }
       },
-      "ImportJsonRequest": {
+      "ImportJsonRequest2": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2359,7 +2472,7 @@
           }
         }
       },
-      "ImportWordsRequest": {
+      "ImportWordsRequest2": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

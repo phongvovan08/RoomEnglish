@@ -280,6 +280,86 @@ export function useExamplesManagement() {
     })
   }
 
+  // Download JSON template
+  const downloadJsonTemplate = async () => {
+    try {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.EXAMPLES_JSON_TEMPLATE, {
+        headers: createAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error(`${ERROR_MESSAGES.DOWNLOAD_TEMPLATE}: ${response.status}`)
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'examples-template.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading template:', error)
+      throw error
+    }
+  }
+
+  // Import from JSON
+  const { execute: importFromJson, isLoading: isImportingJson } = usePromiseWrapper({
+    key: 'import-examples-json',
+    promiseFn: async ({ jsonData, vocabularyId }: { jsonData: string, vocabularyId: number }) => {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.EXAMPLES_IMPORT_JSON, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ jsonData, vocabularyId })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return JSON.parse(errorText);
+      }
+
+      const result = await response.json()
+      
+      // Auto reload after successful import
+      setTimeout(() => {
+        refreshExamples()
+      }, 1000)
+      
+      return result
+    },
+    successMessage: SUCCESS_MESSAGES.IMPORT_JSON_SUCCESS
+  })
+
+  // Import from Word List (using ChatGPT)
+  const { execute: importFromWords, isLoading: isImportingWords } = usePromiseWrapper({
+    key: 'import-examples-words',
+    promiseFn: async ({ words, vocabularyId }: { words: string[], vocabularyId: number }) => {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.EXAMPLES_IMPORT_WORDS, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ words, vocabularyId })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return JSON.parse(errorText);
+      }
+
+      const result = await response.json()
+      
+      // Auto reload after successful import
+      setTimeout(() => {
+        refreshExamples()
+      }, 1000)
+      
+      return result
+    },
+    successMessage: SUCCESS_MESSAGES.IMPORT_WORDS_SUCCESS
+  })
+
   return {
     // State
     examples: computed(() => managementStore.examples),
@@ -306,6 +386,9 @@ export function useExamplesManagement() {
     deleteExample,
     uploadExcel,
     downloadExcelTemplate,
+    downloadJsonTemplate,
+    importFromJson,
+    importFromWords,
     searchExamples,
     filterByVocabulary,
     sortExamples,

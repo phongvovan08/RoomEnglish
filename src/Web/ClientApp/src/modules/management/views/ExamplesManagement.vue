@@ -24,6 +24,10 @@
           <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
           Upload Excel
         </button>
+        <button @click="showJsonUploadModal = true" class="btn-json">
+          <Icon icon="mdi:code-json" class="w-5 h-5 mr-2" />
+          Import Examples
+        </button>
       </div>
     </div>
 
@@ -114,6 +118,16 @@
         />
       </div>
     </div>
+
+    <!-- JSON Upload Modal -->
+    <JsonUploadModal 
+      :is-open="showJsonUploadModal"
+      @close="showJsonUploadModal = false"
+      @upload-success="handleJsonUploadSuccess"
+      @download-template="handleDownloadJsonTemplate"
+      @import-json="handleImportJson"
+      @import-words="handleImportWords"
+    />
   </div>
 </template>
 
@@ -125,10 +139,13 @@ import { createAuthHeaders } from '@/utils/auth'
 import { useNotifications } from '@/utils/notifications'
 import ExampleUploadModal from '../components/ExampleUploadModal.vue'
 import ExampleDataGrid from '../components/ExampleDataGrid.vue'
+import JsonUploadModal from '@/modules/vocabulary/components/JsonUploadModal.vue'
+import { useExamplesManagement } from '../composables/use-examples-management'
 
 const router = useRouter()
 const route = useRoute()
 const { showSuccess, showError } = useNotifications()
+const { importFromJson, importFromWords, downloadJsonTemplate } = useExamplesManagement()
 
 interface Vocabulary {
   id: number
@@ -164,6 +181,7 @@ const examples = ref<Example[]>([])
 const searchQuery = ref('')
 const showCreateModal = ref(false)
 const showUploadModal = ref(false)
+const showJsonUploadModal = ref(false)
 const editingExample = ref<Example | null>(null)
 const isLoading = ref(false)
 const currentPage = ref(1)
@@ -360,6 +378,89 @@ const handleSort = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
   loadExamples()
 }
 
+// JSON Upload handlers
+const handleJsonUploadSuccess = () => {
+  loadExamples()
+  showJsonUploadModal.value = false
+}
+
+const handleDownloadJsonTemplate = async () => {
+  try {
+    await downloadJsonTemplate()
+    showSuccess('JSON template downloaded successfully')
+  } catch (error) {
+    showError('Failed to download JSON template: ' + (error as Error).message)
+  }
+}
+
+const handleImportJson = async (jsonData: string) => {
+  try {
+    console.log('TRY handleImportJson for examples')
+    const result = await importFromJson({ jsonData, vocabularyId: vocabularyId.value })
+    
+    // Check if result exists and has expected properties
+    if (result && typeof result.successCount !== 'undefined') {
+      // Check if there were any errors
+      if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
+        // Show errors if any
+        const errorTitle = `Import completed with ${result.errorCount} errors`
+        const errorDetails = `${result.errors.join(', ')}\n\n`
+        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
+      } else {
+        // Show success if no errors
+        showSuccess(`Import successful: ${result.successCount} examples imported`)
+      }
+      
+      // Auto refresh after import (whether successful or with errors)
+      setTimeout(() => {
+        loadExamples()
+      }, 1000)
+    } else {
+      console.warn('Import result missing expected properties:', result)
+      showError('Import completed but response format was unexpected')
+    }
+  } catch (error) {
+    console.log('catch error handleImportJson')
+    console.log(error)
+    // Error handling is now done by usePromiseWrapper
+    // Just log for debugging - toast.error is already called by the wrapper
+  }
+}
+
+const handleImportWords = async (words: string[]) => {
+  try {
+    console.log('TRY handleImportWords for examples', words)
+    const result = await importFromWords({ words, vocabularyId: vocabularyId.value })
+    
+    // Check if result exists and has expected properties
+    if (result && typeof result.successCount !== 'undefined') {
+      // Check if there were any errors
+      if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
+        // Show errors if any
+        const errorTitle = `Import completed with ${result.errorCount} errors`
+        const errorDetails = `${result.errors.join(', ')}\n\nSuccessfully processed: ${result.successCount} examples`
+        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
+      } else {
+        // Show success if no errors
+        showSuccess(`Import successful: ${result.successCount} examples processed via ChatGPT`)
+      }
+      
+      // Auto refresh after import (whether successful or with errors)
+      setTimeout(() => {
+        loadExamples()
+      }, 1000)
+    } else {
+      console.warn('Import result missing expected properties:', result)
+      showError('Import completed but response format was unexpected')
+    }
+  } catch (error) {
+    console.log('catch error handleImportWords')
+    console.log(error)
+    // Error handling is now done by usePromiseWrapper
+    // Just log for debugging - toast.error is already called by the wrapper
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   loadVocabulary()
@@ -463,6 +564,24 @@ onMounted(() => {
 .btn-upload:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(81, 207, 102, 0.4);
+}
+
+.btn-json {
+  background: linear-gradient(135deg, #ffd43b, #fab005);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.btn-json:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 212, 59, 0.4);
 }
 
 .btn-secondary {

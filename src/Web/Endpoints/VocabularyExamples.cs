@@ -5,7 +5,10 @@ using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyExamples;
+using RoomEnglish.Application.VocabularyExamples.Commands.ImportExamplesFromJson;
+using RoomEnglish.Application.VocabularyExamples.Commands.ImportExamplesFromWords;
 using OfficeOpenXml;
+using System.Text.Json;
 
 namespace RoomEnglish.Web.Endpoints;
 
@@ -43,6 +46,18 @@ public class VocabularyExamples : EndpointGroupBase
              .WithName("GetVocabularyExamplesTemplate")
              .WithSummary("Download Excel template")
              .WithDescription("Downloads an Excel template for vocabulary examples import");
+        group.MapPost("import-json", ImportJson)
+             .WithName("ImportVocabularyExamplesFromJson")
+             .WithSummary("Import examples from JSON")
+             .WithDescription("Imports vocabulary examples from JSON data");
+        group.MapPost("import-words", ImportWords)
+             .WithName("ImportVocabularyExamplesFromWords")
+             .WithSummary("Import examples from word list")
+             .WithDescription("Generates vocabulary examples from word list using ChatGPT");
+        group.MapGet("template.json", GetJsonTemplate)
+             .WithName("GetVocabularyExamplesJsonTemplate")
+             .WithSummary("Download JSON template")
+             .WithDescription("Downloads a JSON template for vocabulary examples import");
     }
 
     public record UpsertExampleRequest(
@@ -277,5 +292,73 @@ public class VocabularyExamples : EndpointGroupBase
         return Results.File(stream.ToArray(), 
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "vocabulary-examples-template.xlsx");
+    }
+
+    public record ImportJsonRequest(string JsonData, int VocabularyId);
+    public record ImportWordsRequest(string[] Words, int VocabularyId);
+
+    [Authorize]
+    public async Task<IResult> ImportJson(
+        ISender sender,
+        ImportJsonRequest request)
+    {
+        var command = new ImportExamplesFromJsonCommand 
+        { 
+            JsonData = request.JsonData,
+            VocabularyId = request.VocabularyId
+        };
+        
+        var result = await sender.Send(command);
+        
+        return Results.Ok(new 
+        { 
+            successCount = result.SuccessCount, 
+            errorCount = result.ErrorCount, 
+            errors = result.Errors.ToArray(),
+            success = result.Success,
+            message = result.Message
+        });
+    }
+
+    [Authorize]
+    public async Task<IResult> ImportWords(
+        ISender sender,
+        ImportWordsRequest request)
+    {
+        var command = new ImportExamplesFromWordsCommand 
+        { 
+            Words = request.Words.ToList(),
+            VocabularyId = request.VocabularyId
+        };
+        
+        var result = await sender.Send(command);
+        
+        return Results.Ok(new 
+        { 
+            successCount = result.SuccessCount, 
+            errorCount = result.ErrorCount, 
+            errors = result.Errors.ToArray(),
+            success = result.Success,
+            message = result.Message
+        });
+    }
+
+    [Authorize]
+    public IResult GetJsonTemplate()
+    {
+        var template = new[]
+        {
+            new
+            {
+                sentence = "This is an example sentence",
+                translation = "Đây là câu ví dụ",
+                grammar = "Present simple tense"
+            }
+        };
+
+        var jsonString = System.Text.Json.JsonSerializer.Serialize(template, new JsonSerializerOptions { WriteIndented = true });
+        var bytes = System.Text.Encoding.UTF8.GetBytes(jsonString);
+
+        return Results.File(bytes, "application/json", "examples-template.json");
     }
 }
