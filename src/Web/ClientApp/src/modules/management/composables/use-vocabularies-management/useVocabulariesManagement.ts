@@ -252,6 +252,33 @@ export function useVocabulariesManagement() {
     successMessage: SUCCESS_MESSAGES.IMPORT_JSON_SUCCESS
   })
 
+  // Import from Word List (using ChatGPT)
+  const { execute: importFromWords, isLoading: isImportingWords } = usePromiseWrapper({
+    key: 'import-vocabularies-words',
+    promiseFn: async (words: string[]) => {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.VOCABULARIES_IMPORT_WORDS, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ words })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return JSON.parse(errorText);
+      }
+
+      const result = await response.json()
+      
+      // Auto reload after successful import
+      setTimeout(() => {
+        refreshVocabularies()
+      }, 1000)
+      
+      return result
+    },
+    successMessage: SUCCESS_MESSAGES.IMPORT_WORDS_SUCCESS
+  })
+
   // Download JSON Template
   const downloadJsonTemplate = async () => {
     try {
@@ -361,6 +388,7 @@ export function useVocabulariesManagement() {
     isDeletingVocabulary: readonly(isDeletingVocabulary),
     isUploadingExcel: readonly(isUploadingExcel),
     isImportingJson: readonly(isImportingJson),
+    isImportingWords: readonly(isImportingWords),
     
     // Grid state
     grid: computed(() => managementStore.vocabulariesGrid),
@@ -378,6 +406,7 @@ export function useVocabulariesManagement() {
     uploadExcel,
     downloadExcelTemplate,
     importFromJson,
+    importFromWords,
     downloadJsonTemplate,
     searchVocabularies,
     filterByCategory,

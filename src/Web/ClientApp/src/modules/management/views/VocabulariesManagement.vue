@@ -126,6 +126,7 @@
       @upload-success="handleJsonUploadSuccess"
       @download-template="handleDownloadJsonTemplate"
       @import-json="handleImportJson"
+      @import-words="handleImportWords"
     />
   </div>
 </template>
@@ -144,7 +145,7 @@ import VocabularyDataGrid from '@/modules/vocabulary/components/VocabularyDataGr
 const router = useRouter()
 const route = useRoute()
 const { showSuccess, showError } = useNotifications()
-const { importFromJson, downloadJsonTemplate } = useVocabulariesManagement()
+const { importFromJson, importFromWords, downloadJsonTemplate } = useVocabulariesManagement()
 
 interface Category {
   id: number
@@ -381,6 +382,40 @@ const handleImportJson = async (jsonData: string) => {
     }
   } catch (error) {
     console.log('catch error')
+    console.log(error)
+    // Error handling is now done by usePromiseWrapper
+    // Just log for debugging - toast.error is already called by the wrapper
+  }
+}
+
+const handleImportWords = async (words: string[]) => {
+  try {
+    console.log('TRY handleImportWords', words)
+    const result = await importFromWords(words)
+    
+    // Check if result exists and has expected properties
+    if (result && typeof result.successCount !== 'undefined') {
+      // Check if there were any errors
+      if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
+        // Show errors if any
+        const errorTitle = `Import completed with ${result.errorCount} errors`
+        const errorDetails = `${result.errors.join(', ')}\n\nSuccessfully processed: ${result.successCount} words`
+        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
+      } else {
+        // Show success if no errors
+        showSuccess(`Import successful: ${result.successCount} words processed via ChatGPT`)
+      }
+      
+      // Auto refresh after import (whether successful or with errors)
+      setTimeout(() => {
+        loadVocabularies()
+      }, 1000)
+    } else {
+      console.warn('Import result missing expected properties:', result)
+      showError('Import completed but response format was unexpected')
+    }
+  } catch (error) {
+    console.log('catch error handleImportWords')
     console.log(error)
     // Error handling is now done by usePromiseWrapper
     // Just log for debugging - toast.error is already called by the wrapper

@@ -43,26 +43,34 @@
           </div>
               <div class="divider">HOẶC</div>
 
-              <!-- Direct JSON Input -->
+              <!-- Direct Word List Input -->
               <div class="upload-method">
-                <label class="json-input-label">
-                  <Icon icon="mdi:code-braces" class="w-5 h-5 mr-2" />
-                  Nhập JSON trực tiếp:
+                <label class="word-input-label">
+                  <Icon icon="mdi:text-box-multiple" class="w-5 h-5 mr-2" />
+                  Nhập danh sách từ vựng:
                 </label>
                 <textarea
-                  v-model="jsonInput"
-                  placeholder="Nhập dữ liệu JSON vào đây..."
-                  class="json-textarea"
+                  v-model="wordListInput"
+                  placeholder="Nhập từ vựng, mỗi từ một dòng. Ví dụ:&#10;why&#10;wife&#10;will&#10;win"
+                  class="word-textarea"
                   rows="10"
                 ></textarea>
+                <div class="input-help">
+                  <Icon icon="mdi:information" class="w-4 h-4 mr-1" />
+                  <span>Hệ thống sẽ tự động tra cứu thông tin chi tiết cho từng từ vựng</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div v-if="jsonInput" class="file-info">
-            <div class="json-info">
+          <div v-if="jsonInput || wordListInput" class="file-info">
+            <div v-if="jsonInput" class="json-info">
               <Icon icon="mdi:code-json" class="w-5 h-5 mr-2" />
               <span>JSON data ready ({{ jsonInput.length }} characters)</span>
+            </div>
+            <div v-else-if="wordListInput" class="word-info">
+              <Icon icon="mdi:text-box-multiple" class="w-5 h-5 mr-2" />
+              <span>Word list ready ({{ getWordCount() }} từ vựng)</span>
             </div>
           </div>
 
@@ -84,14 +92,14 @@
         </button>
         <button 
           @click="handleUpload" 
-          :disabled="(!selectedFile && !jsonInput) || isUploading"
+          :disabled="(!selectedFile && !jsonInput && !wordListInput) || isUploading"
           class="upload-button"
         >
           <Icon 
             :icon="isUploading ? 'mdi:loading' : 'mdi:upload'" 
             :class="['w-4 h-4 mr-2', { 'animate-spin': isUploading }]" 
           />
-          {{ isUploading ? 'Đang import...' : 'Import JSON' }}
+          {{ isUploading ? 'Đang import...' : (wordListInput ? 'Import từ vựng' : 'Import JSON') }}
         </button>
       </div>
 
@@ -121,6 +129,7 @@ interface Emits {
   (e: 'upload-success'): void
   (e: 'download-template'): void
   (e: 'import-json', jsonData: string): void
+  (e: 'import-words', words: string[]): void
 }
 
 const props = defineProps<Props>()
@@ -128,6 +137,7 @@ const emit = defineEmits<Emits>()
 
 const selectedFile = ref<File | null>(null)
 const jsonInput = ref('')
+const wordListInput = ref('')
 const validationErrors = ref<string[]>([])
 const isUploading = ref(false)
 const showSuccess = ref(false)
@@ -141,6 +151,7 @@ const handleFileSelect = (event: Event) => {
   if (file) {
     selectedFile.value = file
     jsonInput.value = '' // Clear direct input when file is selected
+    wordListInput.value = '' // Clear word list input when file is selected
     validateFile(file)
   }
 }
@@ -188,11 +199,21 @@ const validateJson = (jsonString: string): boolean => {
   }
 }
 
+const getWordCount = (): number => {
+  if (!wordListInput.value.trim()) return 0
+  return wordListInput.value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .length
+}
+
 const handleUpload = async () => {
-  let jsonData = ''
+  validationErrors.value = []
   
   if (selectedFile.value) {
-    // Read file content
+    // Handle JSON file upload
+    let jsonData = ''
     try {
       const fileContent = await readFileAsText(selectedFile.value)
       jsonData = fileContent
@@ -200,20 +221,47 @@ const handleUpload = async () => {
       validationErrors.value = ['Không thể đọc file: ' + (error as Error).message]
       return
     }
+    
+    if (!validateJson(jsonData)) {
+      return
+    }
+    
+    isUploading.value = true
+    try {
+      emit('import-json', jsonData)
+    } finally {
+      isUploading.value = false
+    }
   } else if (jsonInput.value) {
-    jsonData = jsonInput.value
-  }
-  
-  if (!validateJson(jsonData)) {
-    return
-  }
-  
-  isUploading.value = true
-  
-  try {
-    emit('import-json', jsonData)
-  } finally {
-    isUploading.value = false
+    // Handle direct JSON input
+    if (!validateJson(jsonInput.value)) {
+      return
+    }
+    
+    isUploading.value = true
+    try {
+      emit('import-json', jsonInput.value)
+    } finally {
+      isUploading.value = false
+    }
+  } else if (wordListInput.value) {
+    // Handle word list input
+    const words = wordListInput.value
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+    
+    if (words.length === 0) {
+      validationErrors.value = ['Vui lòng nhập ít nhất một từ vựng']
+      return
+    }
+    
+    isUploading.value = true
+    try {
+      emit('import-words', words)
+    } finally {
+      isUploading.value = false
+    }
   }
 }
 
@@ -441,7 +489,8 @@ defineExpose({
   padding: 8px 0;
 }
 
-.json-input-label {
+.json-input-label,
+.word-input-label {
   display: flex;
   align-items: center;
   font-size: 0.875rem;
@@ -450,21 +499,43 @@ defineExpose({
   margin-bottom: 8px;
 }
 
-.json-textarea {
+.json-textarea,
+.word-textarea {
   width: 100%;
   padding: 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-family: 'Courier New', monospace;
   font-size: 0.875rem;
   resize: vertical;
   min-height: 120px;
 }
 
-.json-textarea:focus {
+.json-textarea {
+  font-family: 'Courier New', monospace;
+}
+
+.word-textarea {
+  color: #1f2937;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.json-textarea:focus,
+.word-textarea:focus {
   outline: none;
   box-shadow: 0 0 0 2px #3b82f6;
   border-color: transparent;
+}
+
+.input-help {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #f0f9ff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #0369a1;
 }
 
 .file-info {

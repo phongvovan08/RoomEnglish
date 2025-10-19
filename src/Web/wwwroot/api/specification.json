@@ -1695,6 +1695,38 @@
         ]
       }
     },
+    "/api/vocabulary-words/import-words": {
+      "post": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Import from word list",
+        "description": "Imports vocabulary words from word list using ChatGPT",
+        "operationId": "ImportVocabularyWordsFromList",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportWordsRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/vocabulary-words/template.xlsx": {
       "get": {
         "tags": [
@@ -2324,6 +2356,18 @@
         "properties": {
           "jsonData": {
             "type": "string"
+          }
+        }
+      },
+      "ImportWordsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

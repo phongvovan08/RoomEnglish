@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWords;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWordDetail;
 using RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromJson;
+using RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromWords;
 using RoomEnglish.Web.Infrastructure;
 using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,10 @@ public class VocabularyWords : EndpointGroupBase
              .WithName("ImportVocabularyWordsJson")
              .WithSummary("Import from JSON")
              .WithDescription("Imports vocabulary words from JSON data");
+        group.MapPost("import-words", ImportWords)
+             .WithName("ImportVocabularyWordsFromList")
+             .WithSummary("Import from word list")
+             .WithDescription("Imports vocabulary words from word list using ChatGPT");
         group.MapGet("template.xlsx", GetExcelTemplate)
              .WithName("GetVocabularyWordsTemplate")
              .WithSummary("Download Excel template")
@@ -375,6 +380,55 @@ public class VocabularyWords : EndpointGroupBase
         catch (Exception ex)
         {
             return Results.Problem($"Failed to import JSON: {ex.Message}");
+        }
+    }
+
+    public record ImportWordsRequest(List<string> Words);
+
+    [Authorize]
+    public async Task<IResult> ImportWords(
+        ISender sender,
+        ImportWordsRequest request)
+    {
+        try
+        {
+            if (request.Words == null || !request.Words.Any())
+            {
+                return Results.BadRequest("Word list is required");
+            }
+
+            var command = new ImportVocabularyFromWordsCommand
+            {
+                Words = request.Words
+            };
+
+            var result = await sender.Send(command);
+
+            if (result.ErrorCount == 0)
+            {
+                return Results.Ok(new { 
+                    success = true,
+                    message = $"Successfully processed {result.SuccessCount} vocabulary words via ChatGPT",
+                    totalProcessed = result.TotalProcessed,
+                    successCount = result.SuccessCount,
+                    errorCount = result.ErrorCount
+                });
+            }
+            else
+            {
+                return Results.BadRequest(new { 
+                    success = false,
+                    message = result.Message,
+                    totalProcessed = result.TotalProcessed,
+                    successCount = result.SuccessCount,
+                    errorCount = result.ErrorCount,
+                    errors = result.Errors
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to import words: {ex.Message}");
         }
     }
 
