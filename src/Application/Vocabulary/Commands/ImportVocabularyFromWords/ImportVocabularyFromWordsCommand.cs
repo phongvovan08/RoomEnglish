@@ -76,8 +76,8 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
             return result;
         }
 
-        // Get vocabulary data from ChatGPT
-        var vocabularyDataList = await GetVocabularyDataFromChatGPT(wordsToProcess);
+        // Get vocabulary data from ChatGPT in batches
+        var vocabularyDataList = await GetVocabularyDataFromChatGPTInBatches(wordsToProcess);
 
         // Get default category ID (assuming we have a default category)
         var categoryDataList = await _context.VocabularyCategories
@@ -155,6 +155,21 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
         return result;
     }
 
+    private async Task<List<ChatGPTVocabularyResponse>> GetVocabularyDataFromChatGPTInBatches(List<string> words)
+    {
+        const int batchSize = 50;
+        var tasks = new List<Task<List<ChatGPTVocabularyResponse>>>();
+
+        for (int i = 0; i < words.Count; i += batchSize)
+        {
+            var batch = words.Skip(i).Take(batchSize).ToList();
+            tasks.Add(GetVocabularyDataFromChatGPT(batch));
+        }
+
+        var batchResults = await Task.WhenAll(tasks);
+        return batchResults.SelectMany(r => r).ToList();
+    }
+
     private async Task<List<ChatGPTVocabularyResponse>> GetVocabularyDataFromChatGPT(List<string> words)
     {
         try
@@ -166,7 +181,7 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
                 return GetMockVocabularyData(words);
             }
 
-            var client = new ChatClient("gpt-4o-mini", apiKey);
+            var client = new ChatClient("gpt-4o", apiKey);
             
             var prompt = CreatePromptForWords(words);
             var response = await client.CompleteChatAsync(prompt);

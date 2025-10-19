@@ -145,7 +145,7 @@ import VocabularyDataGrid from '@/modules/vocabulary/components/VocabularyDataGr
 
 const router = useRouter()
 const route = useRoute()
-const { showSuccess, showError } = useNotifications()
+const { showSuccess, showError ,showWarning} = useNotifications()
 const { importFromJson, importFromWords, downloadJsonTemplate, isImportingWords } = useVocabulariesManagement()
 
 interface Category {
@@ -365,9 +365,8 @@ const handleImportJson = async (jsonData: string) => {
       // Check if there were any errors
       if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
         // Show errors if any
-        const errorTitle = `Import completed with ${result.errorCount} errors`
-        const errorDetails = `${result.errors.join(', ')}\n\n`
-        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
+        const errorTitle = `Import completed with ${result.successCount} success ${result.errorCount} errors`
+        showWarning(errorTitle) // Longer duration for error messages
       } else {
         // Show success if no errors
         showSuccess(`Import successful: ${result.successCount} words imported`)
@@ -399,9 +398,8 @@ const handleImportWords = async (words: string[]) => {
       // Check if there were any errors
       if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
         // Show errors if any
-        const errorTitle = `Import completed with ${result.errorCount} errors`
-        const errorDetails = `${result.errors.join(', ')}\n\nSuccessfully processed: ${result.successCount} words`
-        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
+         const errorTitle = `Import completed with ${result.successCount} success ${result.errorCount} errors`
+        showWarning(errorTitle) // Longer duration for error messages
       } else {
         // Show success if no errors
         showSuccess(`Import successful: ${result.successCount} words processed via ChatGPT`)

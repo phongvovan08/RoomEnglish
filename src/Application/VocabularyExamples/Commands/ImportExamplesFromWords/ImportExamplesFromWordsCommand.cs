@@ -184,7 +184,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             throw new InvalidOperationException("OpenAI API key not configured");
         }
 
-        var client = new ChatClient("gpt-4o-mini", apiKey);
+        var client = new ChatClient("gpt-4o", apiKey);
         
         var prompt = CreatePromptForExamples(vocabularyWord, request);
 
