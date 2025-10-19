@@ -20,14 +20,6 @@
           <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
           Thêm ví dụ
         </button>
-        <button @click="showUploadModal = true" class="btn-upload">
-          <Icon icon="mdi:upload" class="w-5 h-5 mr-2" />
-          Upload Excel
-        </button>
-        <button @click="showJsonUploadModal = true" class="btn-json">
-          <Icon icon="mdi:code-json" class="w-5 h-5 mr-2" />
-          Import JSON
-        </button>
         <button @click="showExampleGenerationModal = true" class="btn-generate">
           <Icon icon="mdi:auto-fix" class="w-5 h-5 mr-2" />
           Tạo ví dụ AI
