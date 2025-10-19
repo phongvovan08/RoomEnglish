@@ -92,14 +92,14 @@
         </button>
         <button 
           @click="handleUpload" 
-          :disabled="(!selectedFile && !jsonInput && !wordListInput) || isUploading"
+          :disabled="(!selectedFile && !jsonInput && !wordListInput) || isImportingState"
           class="upload-button"
         >
           <Icon 
-            :icon="isUploading ? 'mdi:loading' : 'mdi:upload'" 
-            :class="['w-4 h-4 mr-2', { 'animate-spin': isUploading }]" 
+            :icon="isImportingState ? 'mdi:loading' : 'mdi:upload'" 
+            :class="['w-4 h-4 mr-2', { 'animate-spin': isImportingState }]" 
           />
-          {{ isUploading ? 'Đang import...' : (wordListInput ? 'Import từ vựng' : 'Import JSON') }}
+          {{ isImportingState ? 'Đang import...' : (wordListInput ? 'Import từ vựng' : 'Import JSON') }}
         </button>
       </div>
 
@@ -117,11 +117,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 
 interface Props {
   isOpen: boolean
+  isImporting?: boolean
 }
 
 interface Emits {
@@ -132,7 +133,9 @@ interface Emits {
   (e: 'import-words', words: string[]): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isImporting: false
+})
 const emit = defineEmits<Emits>()
 
 const selectedFile = ref<File | null>(null)
@@ -143,6 +146,9 @@ const isUploading = ref(false)
 const showSuccess = ref(false)
 const successMessage = ref('')
 const countdown = ref(3)
+
+// Combined loading state from both local and external
+const isImportingState = computed(() => isUploading.value || props.isImporting)
 
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement

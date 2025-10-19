@@ -122,6 +122,7 @@
     <!-- JSON Upload Modal -->
     <JsonUploadModal 
       :is-open="showJsonUploadModal"
+      :is-importing="isImportingWords"
       @close="showJsonUploadModal = false"
       @upload-success="handleJsonUploadSuccess"
       @download-template="handleDownloadJsonTemplate"
@@ -145,7 +146,7 @@ import VocabularyDataGrid from '@/modules/vocabulary/components/VocabularyDataGr
 const router = useRouter()
 const route = useRoute()
 const { showSuccess, showError } = useNotifications()
-const { importFromJson, importFromWords, downloadJsonTemplate } = useVocabulariesManagement()
+const { importFromJson, importFromWords, downloadJsonTemplate, isImportingWords } = useVocabulariesManagement()
 
 interface Category {
   id: number
@@ -405,6 +406,9 @@ const handleImportWords = async (words: string[]) => {
         // Show success if no errors
         showSuccess(`Import successful: ${result.successCount} words processed via ChatGPT`)
       }
+      
+      // Close modal after successful import
+      showJsonUploadModal.value = false
       
       // Auto refresh after import (whether successful or with errors)
       setTimeout(() => {
