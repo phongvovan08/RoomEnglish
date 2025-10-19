@@ -15,6 +15,7 @@
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"
+    :default-view-mode="'grid'"
     @action-click="handleActionClick"
     @search="handleSearch"
     @page-change="handlePageChange"

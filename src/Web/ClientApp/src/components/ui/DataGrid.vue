@@ -281,6 +281,8 @@ interface Props {
   currentPage?: number
   totalItems?: number
   totalPages?: number
+  // View mode default
+  defaultViewMode?: 'table' | 'grid'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -297,7 +299,8 @@ const props = withDefaults(defineProps<Props>(), {
   serverSide: true,  // Changed to true - Server-side by default
   currentPage: 1,
   totalItems: 0,
-  totalPages: 1
+  totalPages: 1,
+  defaultViewMode: 'table'
 })
 
 const emit = defineEmits<{
@@ -310,7 +313,7 @@ const emit = defineEmits<{
 }>()
 
 // Reactive state
-const viewMode = ref<'grid' | 'table'>('table')
+const viewMode = ref<'grid' | 'table'>(props.defaultViewMode)
 const searchQuery = ref('')
 const localCurrentPage = ref(1)
 const currentPageSize = ref(props.pageSize)
