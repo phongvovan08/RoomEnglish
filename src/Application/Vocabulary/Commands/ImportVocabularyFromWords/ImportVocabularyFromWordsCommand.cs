@@ -1,10 +1,11 @@
-using MediatR;
-using RoomEnglish.Application.Common.Interfaces;
-using RoomEnglish.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using OpenAI.Chat;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using OpenAI.Chat;
+using RoomEnglish.Application.Common.Interfaces;
+using RoomEnglish.Application.VocabularyExamples.Commands.ImportExamplesFromWords;
+using RoomEnglish.Domain.Entities;
 
 namespace RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromWords;
 
@@ -165,18 +166,21 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
                 return GetMockVocabularyData(words);
             }
 
-            var client = new ChatClient("gpt-3.5-turbo", apiKey);
+            var client = new ChatClient("gpt-4o-mini", apiKey);
             
             var prompt = CreatePromptForWords(words);
             var response = await client.CompleteChatAsync(prompt);
             
-            var jsonResponse = response.Value.Content[0].Text;
-            var vocabularyData = JsonSerializer.Deserialize<List<ChatGPTVocabularyResponse>>(jsonResponse, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true 
-            });
+            var content = response.Value.Content[0].Text;
+            var jsonStart = content.IndexOf('[');
+            var jsonEnd = content.LastIndexOf(']');
 
-            return vocabularyData ?? GetMockVocabularyData(words);
+            if (jsonStart >= 0 && jsonEnd > jsonStart)
+            {
+                var jsonContent = content.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                return JsonSerializer.Deserialize<List<ChatGPTVocabularyResponse>>(jsonContent) ?? new List<ChatGPTVocabularyResponse>();
+            }
+            throw new InvalidOperationException("Invalid JSON response from ChatGPT");
         }
         catch (Exception ex)
         {
@@ -216,7 +220,7 @@ Each object must include:
 - Meaning (some meanings used)
 - Definition (English)
 - CategoryName (level of Word)
-Example format:
+Return ONLY a valid JSON array with this exact format:
 [
   {{
     ""Word"": ""Hello"",
@@ -224,7 +228,7 @@ Example format:
     ""PartOfSpeech"": ""Interjection"",
     ""Meaning"": ""Xin chào"",
     ""Definition"": ""Used as a greeting or to begin a phone conversation""
-    ""Definition"": ""A1""
+    ""CategoryName"": ""A1""
   }}
 ]";
     }
