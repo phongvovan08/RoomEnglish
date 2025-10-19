@@ -119,7 +119,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                             Grammar = exampleData.Grammar,
                             WordId = vocabularyWord.Id,
                             IsActive = true,
-                            DifficultyLevel = 1, // Default difficulty
+                            DifficultyLevel = (int)(request.DifficultyLevel ?? Commands.ImportExamplesFromWords.DifficultyLevel.Easy),
                             DisplayOrder = 0
                         };
 
@@ -144,7 +144,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         catch (Exception ex)
         {
             // If ChatGPT fails, use fallback mock data
-            var fallbackExamples = GenerateFallbackExamples(vocabularyWord.Word);
+            var fallbackExamples = GenerateFallbackExamples(vocabularyWord.Word, request);
             
             foreach (var example in fallbackExamples)
             {
@@ -157,7 +157,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                         Grammar = example.Grammar,
                         WordId = vocabularyWord.Id,
                         IsActive = true,
-                        DifficultyLevel = 1,
+                        DifficultyLevel = (int)(request.DifficultyLevel ?? Commands.ImportExamplesFromWords.DifficultyLevel.Easy),
                         DisplayOrder = 0
                     };
 
@@ -204,7 +204,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         throw new InvalidOperationException("Invalid JSON response from ChatGPT");
     }
 
-    private List<ChatGPTExampleResponse> GenerateFallbackExamples(string vocabularyWord)
+    private List<ChatGPTExampleResponse> GenerateFallbackExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
     {
         var examples = new List<ChatGPTExampleResponse>();
         
@@ -234,10 +234,9 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         
         var difficultyInstruction = request.DifficultyLevel switch
         {
-            Commands.ImportExamplesFromWords.DifficultyLevel.Easy => "Create simple, easy-to-understand examples suitable for beginners.",
-            Commands.ImportExamplesFromWords.DifficultyLevel.Medium => "Create examples with moderate complexity suitable for intermediate learners.",
-            Commands.ImportExamplesFromWords.DifficultyLevel.Hard => "Create advanced examples with complex grammar and vocabulary suitable for advanced learners.",
-            null => "Keep examples at beginner to intermediate level.",
+            DifficultyLevel.Easy => "Create simple, easy-to-understand examples suitable for beginners.",
+            DifficultyLevel.Medium => "Create examples with long, easy-to-understand sentences.",
+            DifficultyLevel.Hard => "Create long, advanced examples with complex grammar and vocabulary, suitable for advanced learners.",
             _ => "Keep examples at beginner to intermediate level."
         };
 

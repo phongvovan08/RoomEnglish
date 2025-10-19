@@ -130,7 +130,7 @@ interface ExampleGenerationConfig {
   count: number
   includeGrammar: boolean
   includeContext: boolean
-  difficultyLevel: number | 1
+  difficultyLevel: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -232,7 +232,7 @@ const resetForm = () => {
   exampleCount.value = 10
   includeGrammar.value = true
   includeContext.value = true
-  difficultyLevel.value = null
+  difficultyLevel.value = 1
   validationErrors.value = []
   showSuccess.value = false
   isGenerating.value = false
