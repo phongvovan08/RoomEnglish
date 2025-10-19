@@ -295,7 +295,12 @@ public class VocabularyExamples : EndpointGroupBase
     }
 
     public record ImportJsonRequest(string JsonData, int VocabularyId);
-    public record ImportWordsRequest(string[] Words, int VocabularyId);
+    public record ImportWordsRequest(
+        int VocabularyId,
+        int ExampleCount = 10,
+        bool IncludeGrammar = true,
+        bool IncludeContext = true,
+        DifficultyLevel? DifficultyLevel = null);
 
     [Authorize]
     public async Task<IResult> ImportJson(
@@ -327,8 +332,11 @@ public class VocabularyExamples : EndpointGroupBase
     {
         var command = new ImportExamplesFromWordsCommand 
         { 
-            Words = request.Words.ToList(),
-            VocabularyId = request.VocabularyId
+            VocabularyId = request.VocabularyId,
+            ExampleCount = request.ExampleCount,
+            IncludeGrammar = request.IncludeGrammar,
+            IncludeContext = request.IncludeContext,
+            DifficultyLevel = request.DifficultyLevel
         };
         
         var result = await sender.Send(command);

@@ -2431,15 +2431,22 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "words": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "vocabularyId": {
             "type": "integer",
             "format": "int32"
+          },
+          "exampleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "includeGrammar": {
+            "type": "boolean"
+          },
+          "includeContext": {
+            "type": "boolean"
+          },
+          "includeDifficulty": {
+            "type": "boolean"
           }
         }
       },

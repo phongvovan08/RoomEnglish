@@ -8,10 +8,20 @@ using Microsoft.Extensions.Configuration;
 
 namespace RoomEnglish.Application.VocabularyExamples.Commands.ImportExamplesFromWords;
 
+public enum DifficultyLevel
+{
+    Easy = 1,
+    Medium = 2,
+    Hard = 3
+}
+
 public record ImportExamplesFromWordsCommand : IRequest<ImportExamplesWordsResult>
 {
-    public List<string> Words { get; init; } = new();
     public int VocabularyId { get; init; }
+    public int ExampleCount { get; init; } = 10;
+    public bool IncludeGrammar { get; init; } = true;
+    public bool IncludeContext { get; init; } = true;
+    public DifficultyLevel? DifficultyLevel { get; init; } = null;
 }
 
 public class ImportExamplesWordsResult
@@ -46,7 +56,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     {
         var result = new ImportExamplesWordsResult
         {
-            TotalProcessed = request.Words.Count
+            TotalProcessed = 1 // Processing one vocabulary word
         };
 
         try
@@ -64,20 +74,13 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 return result;
             }
 
-            // Process words in batches for better performance
-            var batchSize = 5; // Process 5 words at a time
-            var totalWords = request.Words.Count;
-            
-            for (int i = 0; i < totalWords; i += batchSize)
-            {
-                var batch = request.Words.Skip(i).Take(batchSize).ToList();
-                await ProcessWordsBatch(batch, vocabularyWord, result, cancellationToken);
-            }
+            // Process the single vocabulary word to generate examples
+            await ProcessVocabularyWord(vocabularyWord, result, request, cancellationToken);
 
             result.Success = result.ErrorCount == 0;
             result.Message = result.Success 
-                ? $"Successfully processed {result.SuccessCount} examples"
-                : $"Processed with {result.ErrorCount} errors";
+                ? $"Successfully generated {result.SuccessCount} examples for '{vocabularyWord.Word}'"
+                : $"Generated examples with {result.ErrorCount} errors";
 
             return result;
         }
@@ -91,11 +94,11 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         }
     }
 
-    private async Task ProcessWordsBatch(List<string> words, VocabularyWord vocabularyWord, ImportExamplesWordsResult result, CancellationToken cancellationToken)
+    private async Task ProcessVocabularyWord(VocabularyWord vocabularyWord, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            var examplesData = await GetExamplesDataFromChatGPT(words, vocabularyWord.Word);
+            var examplesData = await GetExamplesDataFromChatGPT(vocabularyWord.Word, request);
             
             foreach (var exampleData in examplesData)
             {
@@ -141,7 +144,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         catch (Exception ex)
         {
             // If ChatGPT fails, use fallback mock data
-            var fallbackExamples = GenerateFallbackExamples(words, vocabularyWord.Word);
+            var fallbackExamples = GenerateFallbackExamples(vocabularyWord.Word);
             
             foreach (var example in fallbackExamples)
             {
@@ -173,7 +176,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         }
     }
 
-    private async Task<List<ChatGPTExampleResponse>> GetExamplesDataFromChatGPT(List<string> words, string mainVocabulary)
+    private async Task<List<ChatGPTExampleResponse>> GetExamplesDataFromChatGPT(string vocabularyWord, ImportExamplesFromWordsCommand request)
     {
         var apiKey = _configuration["OpenAI:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
@@ -183,27 +186,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
 
         var client = new ChatClient("gpt-3.5-turbo", apiKey);
         
-        var wordsText = string.Join(", ", words);
-        var prompt = $@"Create example sentences using these words: {wordsText}. 
-        The main vocabulary word is '{mainVocabulary}'. 
-        Create 1-2 practical example sentences for each word that demonstrate proper usage.
-        
-        Return ONLY a valid JSON array with this exact format:
-        [
-          {{
-            ""sentence"": ""English sentence using the word"",
-            ""translation"": ""Vietnamese translation"", 
-            ""grammar"": ""Brief grammar explanation""
-          }}
-        ]
-        
-        Requirements:
-        - Each sentence should be practical and commonly used
-        - Translations should be natural Vietnamese
-        - Grammar explanations should be brief and helpful
-        - Focus on the main vocabulary word '{mainVocabulary}' but include other words naturally
-        - Maximum 2 examples per word provided
-        ";
+        var prompt = CreatePromptForExamples(vocabularyWord, request);
 
         var chatCompletion = await client.CompleteChatAsync(prompt);
         var content = chatCompletion.Value.Content[0].Text;
@@ -221,20 +204,65 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         throw new InvalidOperationException("Invalid JSON response from ChatGPT");
     }
 
-    private List<ChatGPTExampleResponse> GenerateFallbackExamples(List<string> words, string mainVocabulary)
+    private List<ChatGPTExampleResponse> GenerateFallbackExamples(string vocabularyWord)
     {
         var examples = new List<ChatGPTExampleResponse>();
         
-        foreach (var word in words.Take(3)) // Limit fallback examples
+        // Generate simple fallback examples for the vocabulary word
+        for (int i = 1; i <= 3; i++)
         {
             examples.Add(new ChatGPTExampleResponse
             {
-                Sentence = $"This is an example sentence using the word '{word}' with {mainVocabulary}.",
-                Translation = $"Đây là câu ví dụ sử dụng từ '{word}' với {mainVocabulary}.",
-                Grammar = $"Simple sentence structure demonstrating '{word}' usage."
+                Sentence = $"This is example {i} using the word '{vocabularyWord}' in context.",
+                Translation = $"Đây là ví dụ {i} sử dụng từ '{vocabularyWord}' trong ngữ cảnh.",
+                Grammar = $"Simple sentence structure demonstrating '{vocabularyWord}' usage."
             });
         }
         
         return examples;
+    }
+
+    private string CreatePromptForExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
+    {
+        var grammarInstruction = request.IncludeGrammar 
+            ? "Include brief grammar explanations for each example." 
+            : "Grammar explanations are optional.";
+        
+        var contextInstruction = request.IncludeContext 
+            ? "Give examples in different contexts (formal, informal, business, everyday life, commonly used in life)."
+            : "Use common everyday contexts.";
+        
+        var difficultyInstruction = request.DifficultyLevel switch
+        {
+            Commands.ImportExamplesFromWords.DifficultyLevel.Easy => "Create simple, easy-to-understand examples suitable for beginners.",
+            Commands.ImportExamplesFromWords.DifficultyLevel.Medium => "Create examples with moderate complexity suitable for intermediate learners.",
+            Commands.ImportExamplesFromWords.DifficultyLevel.Hard => "Create advanced examples with complex grammar and vocabulary suitable for advanced learners.",
+            null => "Keep examples at beginner to intermediate level.",
+            _ => "Keep examples at beginner to intermediate level."
+        };
+
+        return $@"Create {request.ExampleCount} practical example sentences using the vocabulary word '{vocabularyWord}'.
+
+        {contextInstruction}
+        {difficultyInstruction}
+        {grammarInstruction}
+
+        Return ONLY a valid JSON array with this exact format:
+        [
+          {{
+            ""Sentence"": ""English sentence using '{vocabularyWord}'"",
+            ""Translation"": ""Natural Vietnamese translation"", 
+            ""Grammar"": ""Brief grammar explanation (if applicable)""
+          }}
+        ]
+        
+        Requirements:
+        - Each sentence must use the word '{vocabularyWord}' naturally
+        - Sentences should be practical and commonly used
+        - Vietnamese translations must be natural and accurate
+        - Create exactly {request.ExampleCount} unique examples
+        - Focus on demonstrating different uses of '{vocabularyWord}'
+        - Avoid repetitive sentence structures
+        ";
     }
 }

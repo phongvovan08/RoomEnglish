@@ -26,7 +26,11 @@
         </button>
         <button @click="showJsonUploadModal = true" class="btn-json">
           <Icon icon="mdi:code-json" class="w-5 h-5 mr-2" />
-          Import Examples
+          Import JSON
+        </button>
+        <button @click="showExampleGenerationModal = true" class="btn-generate">
+          <Icon icon="mdi:auto-fix" class="w-5 h-5 mr-2" />
+          Tạo ví dụ AI
         </button>
       </div>
     </div>
@@ -128,6 +132,17 @@
       @import-json="handleImportJson"
       @import-words="handleImportWords"
     />
+
+    <!-- Example Generation Modal -->
+    <ExampleGenerationModal 
+      ref="exampleGenerationModalRef"
+      :is-open="showExampleGenerationModal"
+      :vocabulary-word="currentVocabulary?.word"
+      :vocabulary-definition="currentVocabulary?.definition"
+      @close="showExampleGenerationModal = false"
+      @generation-success="handleGenerationSuccess"
+      @generate-examples="handleGenerateExamples"
+    />
   </div>
 </template>
 
@@ -140,6 +155,7 @@ import { useNotifications } from '@/utils/notifications'
 import ExampleUploadModal from '../components/ExampleUploadModal.vue'
 import ExampleDataGrid from '../components/ExampleDataGrid.vue'
 import JsonUploadModal from '@/modules/vocabulary/components/JsonUploadModal.vue'
+import ExampleGenerationModal from '@/modules/vocabulary/components/ExampleGenerationModal.vue'
 import { useExamplesManagement } from '../composables/use-examples-management'
 
 const router = useRouter()
@@ -182,6 +198,8 @@ const searchQuery = ref('')
 const showCreateModal = ref(false)
 const showUploadModal = ref(false)
 const showJsonUploadModal = ref(false)
+const showExampleGenerationModal = ref(false)
+const exampleGenerationModalRef = ref()
 const editingExample = ref<Example | null>(null)
 const isLoading = ref(false)
 const currentPage = ref(1)
@@ -384,6 +402,74 @@ const handleJsonUploadSuccess = () => {
   showJsonUploadModal.value = false
 }
 
+// Example Generation handlers
+const handleGenerationSuccess = () => {
+  loadExamples()
+  showExampleGenerationModal.value = false
+}
+
+interface ExampleGenerationConfig {
+  count: number
+  includeGrammar: boolean
+  includeContext: boolean
+  difficultyLevel: number | null
+}
+
+const handleGenerateExamples = async (config: ExampleGenerationConfig) => {
+  try {
+    console.log('TRY handleGenerateExamples', config)
+    
+    // Call the API with all the configuration
+    const result = await importFromWords({ 
+      vocabularyId: vocabularyId.value,
+      exampleCount: config.count,
+      includeGrammar: config.includeGrammar,
+      includeContext: config.includeContext,
+      difficultyLevel: config.difficultyLevel
+    })
+    
+    // Check if result exists and has expected properties
+    if (result && typeof result.successCount !== 'undefined') {
+      // Check if there were any errors
+      if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
+        // Show errors if any
+        const errorTitle = `Generation completed with ${result.errorCount} errors`
+        const errorDetails = `${result.errors.join(', ')}\n\nSuccessfully generated: ${result.successCount} examples`
+        showError(errorTitle, errorDetails, 8000)
+        
+        // Show partial success in modal
+        exampleGenerationModalRef.value?.showSuccessMessage(
+          `Generated ${result.successCount} examples with ${result.errorCount} errors`
+        )
+      } else {
+        // Show success if no errors
+        const successMessage = `AI Generation successful: ${result.successCount} examples created for "${currentVocabulary.value?.word}"`
+        showSuccess(successMessage)
+        
+        // Show success in modal
+        exampleGenerationModalRef.value?.showSuccessMessage(successMessage)
+      }
+      
+      // Auto refresh after generation
+      setTimeout(() => {
+        loadExamples()
+      }, 1000)
+    } else {
+      console.warn('Generation result missing expected properties:', result)
+      const errorMessage = 'Generation completed but response format was unexpected'
+      showError(errorMessage)
+      exampleGenerationModalRef.value?.handleGenerationError(errorMessage)
+    }
+  } catch (error) {
+    console.log('catch error handleGenerateExamples')
+    console.log(error)
+    
+    // Show error in modal
+    const errorMessage = 'Generation failed. Please try again.'
+    exampleGenerationModalRef.value?.handleGenerationError(errorMessage)
+  }
+}
+
 const handleDownloadJsonTemplate = async () => {
   try {
     await downloadJsonTemplate()
@@ -430,7 +516,7 @@ const handleImportJson = async (jsonData: string) => {
 const handleImportWords = async (words: string[]) => {
   try {
     console.log('TRY handleImportWords for examples', words)
-    const result = await importFromWords({ words, vocabularyId: vocabularyId.value })
+    const result = await importFromWords({ vocabularyId: vocabularyId.value })
     
     // Check if result exists and has expected properties
     if (result && typeof result.successCount !== 'undefined') {
@@ -582,6 +668,24 @@ onMounted(() => {
 .btn-json:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 212, 59, 0.4);
+}
+
+.btn-generate {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.btn-generate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
 .btn-secondary {

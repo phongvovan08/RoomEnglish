@@ -336,11 +336,23 @@ export function useExamplesManagement() {
   // Import from Word List (using ChatGPT)
   const { execute: importFromWords, isLoading: isImportingWords } = usePromiseWrapper({
     key: 'import-examples-words',
-    promiseFn: async ({ words, vocabularyId }: { words: string[], vocabularyId: number }) => {
+    promiseFn: async ({ vocabularyId, exampleCount = 10, includeGrammar = true, includeContext = true, difficultyLevel = null }: { 
+      vocabularyId: number,
+      exampleCount?: number,
+      includeGrammar?: boolean,
+      includeContext?: boolean,
+      difficultyLevel?: number | null
+    }) => {
       const response = await fetch(MANAGEMENT_API_ENDPOINTS.EXAMPLES_IMPORT_WORDS, {
         method: 'POST',
         headers: createAuthHeaders(),
-        body: JSON.stringify({ words, vocabularyId })
+        body: JSON.stringify({ 
+          vocabularyId, 
+          exampleCount,
+          includeGrammar,
+          includeContext,
+          difficultyLevel
+        })
       })
 
       if (!response.ok) {
