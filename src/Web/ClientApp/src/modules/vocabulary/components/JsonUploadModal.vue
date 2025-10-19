@@ -229,8 +229,17 @@ const handleUpload = async () => {
     isUploading.value = true
     try {
       emit('import-json', jsonData)
+      // Wait a bit for the emit to be processed, then reset form
+      setTimeout(() => {
+        resetForm()
+      }, 1500) // Wait 1.5 seconds to show loading
+    } catch (error) {
+      console.error('Error importing JSON:', error)
     } finally {
-      isUploading.value = false
+      // Don't set isUploading to false immediately, let the timeout handle it
+      setTimeout(() => {
+        isUploading.value = false
+      }, 1500)
     }
   } else if (jsonInput.value) {
     // Handle direct JSON input
@@ -241,8 +250,17 @@ const handleUpload = async () => {
     isUploading.value = true
     try {
       emit('import-json', jsonInput.value)
+      // Wait a bit for the emit to be processed, then reset form
+      setTimeout(() => {
+        resetForm()
+      }, 1500) // Wait 1.5 seconds to show loading
+    } catch (error) {
+      console.error('Error importing JSON:', error)
     } finally {
-      isUploading.value = false
+      // Don't set isUploading to false immediately, let the timeout handle it
+      setTimeout(() => {
+        isUploading.value = false
+      }, 1500)
     }
   } else if (wordListInput.value) {
     // Handle word list input
@@ -259,8 +277,17 @@ const handleUpload = async () => {
     isUploading.value = true
     try {
       emit('import-words', words)
+      // Wait a bit for the emit to be processed, then reset form
+      setTimeout(() => {
+        resetForm()
+      }, 1500) // Wait 1.5 seconds to show loading
+    } catch (error) {
+      console.error('Error importing words:', error)
     } finally {
-      isUploading.value = false
+      // Don't set isUploading to false immediately, let the timeout handle it
+      setTimeout(() => {
+        isUploading.value = false
+      }, 1500)
     }
   }
 }
@@ -315,16 +342,23 @@ const showSuccessMessage = (message: string) => {
 // Reset form when modal closes
 watch(() => props.isOpen, (newValue) => {
   if (!newValue) {
-    selectedFile.value = null
-    jsonInput.value = ''
-    validationErrors.value = []
-    showSuccess.value = false
+    resetForm()
   }
 })
 
+const resetForm = () => {
+  selectedFile.value = null
+  jsonInput.value = ''
+  wordListInput.value = ''
+  validationErrors.value = []
+  showSuccess.value = false
+  isUploading.value = false
+}
+
 // Expose method for parent to show success
 defineExpose({
-  showSuccessMessage
+  showSuccessMessage,
+  resetForm
 })
 </script>
 
