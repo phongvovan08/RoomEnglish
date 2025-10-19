@@ -2,7 +2,7 @@ import { usePromiseWrapper } from '@/modules/shared/composables/use-promise-wrap
 import { createAuthHeaders } from '@/utils/auth'
 import { useManagementStore } from '../../stores/management/management'
 import { MANAGEMENT_API_ENDPOINTS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants'
-import type { CategoryManagement, CategoryForm, GetCategoriesQuery } from '../../types'
+import type { CategoryForm, GetCategoriesQuery } from '../../types'
 
 export function useCategoriesManagement() {
   const managementStore = useManagementStore()

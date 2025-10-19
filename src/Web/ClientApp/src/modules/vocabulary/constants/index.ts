@@ -6,6 +6,8 @@ export const VOCABULARY_API_ENDPOINTS = {
   LEARNING: '/api/vocabulary-learning',
   UPLOAD_EXCEL: '/api/vocabulary-words/upload-excel',
   EXCEL_TEMPLATE: '/api/vocabulary-words/template.xlsx',
+  IMPORT_JSON: '/api/vocabulary-words/import-json',
+  JSON_TEMPLATE: '/api/vocabulary-words/template.json',
   EXAMPLES_UPLOAD_EXCEL: '/api/vocabulary-examples/upload-excel',
   EXAMPLES_TEMPLATE: '/api/vocabulary-examples/template.xlsx'
 } as const

@@ -8,6 +8,8 @@ export const MANAGEMENT_API_ENDPOINTS = {
   VOCABULARIES: '/api/vocabulary-words',
   VOCABULARIES_UPLOAD: '/api/vocabulary-words/upload-excel',
   VOCABULARIES_TEMPLATE: '/api/vocabulary-words/template.xlsx',
+  VOCABULARIES_IMPORT_JSON: '/api/vocabulary-words/import-json',
+  VOCABULARIES_JSON_TEMPLATE: '/api/vocabulary-words/template.json',
   VOCABULARIES_SEARCH: '/api/vocabulary-words/search',
   
   // Examples
@@ -81,6 +83,7 @@ export const ERROR_MESSAGES = {
   DELETE_VOCABULARY: 'Không thể xóa từ vựng',
   DELETE_EXAMPLE: 'Không thể xóa ví dụ',
   UPLOAD_FILE: 'Không thể upload file',
+  IMPORT_JSON: 'Không thể import JSON',
   DOWNLOAD_TEMPLATE: 'Không thể tải template',
   INVALID_FILE: 'File không hợp lệ',
   NETWORK_ERROR: 'Lỗi kết nối mạng',
@@ -100,6 +103,7 @@ export const SUCCESS_MESSAGES = {
   DELETE_VOCABULARY: 'Xóa từ vựng thành công',
   DELETE_EXAMPLE: 'Xóa ví dụ thành công',
   UPLOAD_SUCCESS: 'Upload file thành công',
+  IMPORT_JSON_SUCCESS: 'Import JSON thành công',
   TEMPLATE_DOWNLOADED: 'Tải template thành công'
 } as const
 

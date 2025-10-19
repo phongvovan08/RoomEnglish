@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWords;
 using RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWordDetail;
+using RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromJson;
 using RoomEnglish.Web.Infrastructure;
 using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -44,10 +45,18 @@ public class VocabularyWords : EndpointGroupBase
              .WithName("UploadVocabularyWordsExcel")
              .WithSummary("Upload Excel file")
              .WithDescription("Imports vocabulary words from an Excel file");
+        group.MapPost("import-json", ImportJson)
+             .WithName("ImportVocabularyWordsJson")
+             .WithSummary("Import from JSON")
+             .WithDescription("Imports vocabulary words from JSON data");
         group.MapGet("template.xlsx", GetExcelTemplate)
              .WithName("GetVocabularyWordsTemplate")
              .WithSummary("Download Excel template")
              .WithDescription("Downloads an Excel template for vocabulary words import");
+        group.MapGet("template.json", GetJsonTemplate)
+             .WithName("GetVocabularyWordsJsonTemplate")
+             .WithSummary("Download JSON template")
+             .WithDescription("Downloads a JSON template for vocabulary words import");
     }
 
     [Authorize]
@@ -318,5 +327,97 @@ public class VocabularyWords : EndpointGroupBase
         return Results.File(stream.ToArray(), 
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "vocabulary-words-template.xlsx");
+    }
+
+    public record ImportJsonRequest(string JsonData);
+
+    [Authorize]
+    public async Task<IResult> ImportJson(
+        ISender sender,
+        ImportJsonRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.JsonData))
+            {
+                return Results.BadRequest("JSON data is required");
+            }
+
+            var command = new ImportVocabularyFromJsonCommand
+            {
+                JsonData = request.JsonData
+            };
+
+            var result = await sender.Send(command);
+
+            if (result.ErrorCount == 0)
+            {
+                return Results.Ok(new { 
+                    success = true,
+                    message = $"Successfully imported {result.SuccessCount} vocabulary words",
+                    totalProcessed = result.TotalProcessed,
+                    successCount = result.SuccessCount,
+                    errorCount = result.ErrorCount
+                });
+            }
+            else
+            {
+                return Results.BadRequest(new { 
+                    success = false,
+                    message = $"Imported {result.SuccessCount} words with {result.ErrorCount} errors",
+                    totalProcessed = result.TotalProcessed,
+                    successCount = result.SuccessCount,
+                    errorCount = result.ErrorCount,
+                    errors = result.Errors
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Failed to import JSON: {ex.Message}");
+        }
+    }
+
+    [Authorize]
+    public Task<IResult> GetJsonTemplate()
+    {
+        var template = new[]
+        {
+            new {
+                word = "hello",
+                phonetic = "/həˈləʊ/",
+                partOfSpeech = "interjection",
+                meaning = "xin chào",
+                definition = "used as a greeting or to begin a phone conversation",
+                difficultyLevel = 1,
+                categoryName = "Greetings"
+            },
+            new {
+                word = "computer",
+                phonetic = "/kəmˈpjuːtər/",
+                partOfSpeech = "noun", 
+                meaning = "máy tính",
+                definition = "an electronic device for storing and processing data",
+                difficultyLevel = 2,
+                categoryName = "Technology"
+            },
+            new {
+                word = "study",
+                phonetic = "/ˈstʌdi/",
+                partOfSpeech = "verb",
+                meaning = "học, nghiên cứu", 
+                definition = "to learn about something or acquire knowledge",
+                difficultyLevel = 1,
+                categoryName = "Education"
+            }
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(template, new System.Text.Json.JsonSerializerOptions 
+        { 
+            WriteIndented = true,
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        });
+
+        return Task.FromResult(Results.Text(json, "application/json", System.Text.Encoding.UTF8));
     }
 }

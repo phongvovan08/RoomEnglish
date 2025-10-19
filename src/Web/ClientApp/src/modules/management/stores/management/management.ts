@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed, reactive } from 'vue'
 import type { 
-  ManagementState,
   CategoryManagement, 
   VocabularyManagement, 
   ExampleManagement,
-  PaginationMeta,
   UploadProgress,
   GridState
 } from '../../types'

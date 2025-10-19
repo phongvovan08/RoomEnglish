@@ -1663,6 +1663,38 @@
         ]
       }
     },
+    "/api/vocabulary-words/import-json": {
+      "post": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Import from JSON",
+        "description": "Imports vocabulary words from JSON data",
+        "operationId": "ImportVocabularyWordsJson",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportJsonRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/vocabulary-words/template.xlsx": {
       "get": {
         "tags": [
@@ -1671,6 +1703,26 @@
         "summary": "Download Excel template",
         "description": "Downloads an Excel template for vocabulary words import",
         "operationId": "GetVocabularyWordsTemplate",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary-words/template.json": {
+      "get": {
+        "tags": [
+          "Vocabulary Words"
+        ],
+        "summary": "Download JSON template",
+        "description": "Downloads a JSON template for vocabulary words import",
+        "operationId": "GetVocabularyWordsJsonTemplate",
         "responses": {
           "200": {
             "description": ""
@@ -2263,6 +2315,15 @@
           "categoryId": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ImportJsonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jsonData": {
+            "type": "string"
           }
         }
       },

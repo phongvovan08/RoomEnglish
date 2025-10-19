@@ -2,7 +2,7 @@ import { usePromiseWrapper } from '@/modules/shared/composables/use-promise-wrap
 import { createAuthHeaders } from '@/utils/auth'
 import { useManagementStore } from '../../stores/management/management'
 import { MANAGEMENT_API_ENDPOINTS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants'
-import type { ExampleManagement, ExampleForm, GetExamplesQuery } from '../../types'
+import type { ExampleForm, GetExamplesQuery } from '../../types'
 
 export function useExamplesManagement() {
   const managementStore = useManagementStore()

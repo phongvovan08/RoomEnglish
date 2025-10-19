@@ -225,6 +225,60 @@ export function useVocabulariesManagement() {
     }
   }
 
+  // Import from JSON
+  const { execute: importFromJson, isLoading: isImportingJson } = usePromiseWrapper({
+    key: 'import-vocabularies-json',
+    promiseFn: async (jsonData: string) => {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.VOCABULARIES_IMPORT_JSON, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ jsonData })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return JSON.parse(errorText);
+      }
+
+      const result = await response.json()
+      
+      // Auto reload after successful import
+      setTimeout(() => {
+        refreshVocabularies()
+      }, 1000)
+      
+      return result
+    },
+    successMessage: SUCCESS_MESSAGES.IMPORT_JSON_SUCCESS
+  })
+
+  // Download JSON Template
+  const downloadJsonTemplate = async () => {
+    try {
+      const response = await fetch(MANAGEMENT_API_ENDPOINTS.VOCABULARIES_JSON_TEMPLATE, {
+        headers: createAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Không thể tải template JSON')
+      }
+
+      const jsonText = await response.text()
+      const blob = new Blob([jsonText], { type: 'application/json' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'VocabularyTemplate.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading JSON template:', error)
+      throw error
+    }
+  }
+
   // Search vocabularies
   const searchVocabularies = (term: string) => {
     managementStore.setVocabulariesSearch(term)
@@ -306,6 +360,7 @@ export function useVocabulariesManagement() {
     isUpdatingVocabulary: readonly(isUpdatingVocabulary),
     isDeletingVocabulary: readonly(isDeletingVocabulary),
     isUploadingExcel: readonly(isUploadingExcel),
+    isImportingJson: readonly(isImportingJson),
     
     // Grid state
     grid: computed(() => managementStore.vocabulariesGrid),
@@ -322,6 +377,8 @@ export function useVocabulariesManagement() {
     deleteVocabulary,
     uploadExcel,
     downloadExcelTemplate,
+    importFromJson,
+    downloadJsonTemplate,
     searchVocabularies,
     filterByCategory,
     filterByDifficulty,

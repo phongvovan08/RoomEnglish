@@ -172,6 +172,33 @@ export function useVocabularyWords() {
     successMessage: 'Upload file Excel thành công'
   })
 
+  // Upload JSON
+  const { execute: importJson, isLoading: isImportingJson } = usePromiseWrapper({
+    key: 'import-vocabulary-json',
+    promiseFn: async (jsonData: string) => {
+      const response = await fetch(VOCABULARY_API_ENDPOINTS.IMPORT_JSON, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ jsonData })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Không thể import JSON: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Reload current page after successful import
+      await loadWords({
+        pageNumber: vocabularyStore.currentPage,
+        pageSize: vocabularyStore.pageSize
+      })
+      
+      return result
+    },
+    successMessage: 'Import JSON thành công'
+  })
+
   // Download Excel template
   const downloadExcelTemplate = async () => {
     try {
@@ -194,6 +221,33 @@ export function useVocabularyWords() {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Error downloading template:', error)
+      throw error
+    }
+  }
+
+  // Download JSON template
+  const downloadJsonTemplate = async () => {
+    try {
+      const response = await fetch(VOCABULARY_API_ENDPOINTS.JSON_TEMPLATE, {
+        headers: createAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error('Không thể tải template JSON')
+      }
+
+      const jsonData = await response.text()
+      const blob = new Blob([jsonData], { type: 'application/json' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'VocabularyTemplate.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading JSON template:', error)
       throw error
     }
   }
@@ -267,6 +321,7 @@ export function useVocabularyWords() {
     isUpdatingWord: readonly(isUpdatingWord),
     isDeletingWord: readonly(isDeletingWord),
     isUploadingExcel: readonly(isUploadingExcel),
+    isImportingJson: readonly(isImportingJson),
     
     // Pagination
     currentPage: computed(() => vocabularyStore.currentPage),
@@ -290,7 +345,9 @@ export function useVocabularyWords() {
     updateWord,
     deleteWord,
     uploadExcel,
+    importJson,
     downloadExcelTemplate,
+    downloadJsonTemplate,
     searchWords,
     filterByCategory,
     filterByDifficulty,
