@@ -48,10 +48,6 @@
           
           <div class="example-stats">
             <div class="stat">
-              <Icon icon="mdi:volume-high" class="w-4 h-4" />
-              <span>{{ item.audioUrl ? 'Có âm thanh' : 'Không có âm thanh' }}</span>
-            </div>
-            <div class="stat">
               <Icon icon="mdi:star" class="w-4 h-4" />
               <span>Level {{ item.difficultyLevel || 1 }}</span>
             </div>
@@ -83,14 +79,6 @@
     <!-- Custom cell for grammar point -->
     <template #cell-grammar="{ value }">
       <span class="grammar-cell">{{ value || '—' }}</span>
-    </template>
-
-    <!-- Custom cell for audio -->
-    <template #cell-audioUrl="{ value }">
-      <div class="audio-cell">
-        <Icon v-if="value" icon="mdi:volume-high" class="w-4 h-4 text-green-500" />
-        <Icon v-else icon="mdi:volume-off" class="w-4 h-4 text-gray-400" />
-      </div>
     </template>
 
     <!-- Custom cell for difficulty level -->
@@ -194,12 +182,6 @@ const columns = computed<GridColumn[]>(() => [
     key: 'grammar',
     label: 'Ngữ pháp',
     sortable: false,
-    type: 'text'
-  },
-  {
-    key: 'audioUrl',
-    label: 'Âm thanh',
-    sortable: true,
     type: 'text'
   },
   {
@@ -416,12 +398,6 @@ const formatDate = (date: string | Date): string => {
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
   font-weight: 500;
-}
-
-.audio-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .difficulty-cell {
