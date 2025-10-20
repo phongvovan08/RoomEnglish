@@ -353,6 +353,11 @@ const sortOrder = ref<'asc' | 'desc'>('asc')
 const pageJumpValue = ref<number>()
 const internalSelectedItems = ref<any[]>([...props.selectedItems])
 
+// Watch for external changes to selectedItems prop
+watch(() => props.selectedItems, (newSelectedItems) => {
+  internalSelectedItems.value = [...newSelectedItems]
+}, { deep: true })
+
 // Computed properties
 const filteredData = computed(() => {
   // In server-side mode, filtering is handled by the server
