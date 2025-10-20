@@ -82,11 +82,8 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 return result;
             }
 
-            // Process each vocabulary word to generate examples
-            foreach (var vocabularyWord in existingVocabularyWords)
-            {
-                await ProcessVocabularyWord(vocabularyWord, result, request, cancellationToken);
-            }
+            // Process vocabulary words in batches with parallel ChatGPT calls
+            await ProcessVocabularyWordsInBatches(existingVocabularyWords, result, request, cancellationToken);
 
             // Check for words that weren't found in the database
             var foundWords = existingVocabularyWords.Select(v => v.Word).ToHashSet();
@@ -98,10 +95,22 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 result.ErrorCount++;
             }
 
-            result.Success = result.SuccessCount > 0;
-            result.Message = result.Success 
-                ? $"Successfully generated examples for {existingVocabularyWords.Count} words with {result.ErrorCount} errors"
-                : $"Failed to generate examples: {result.ErrorCount} errors";
+            // Batch save all examples at once for better performance
+            try
+            {
+                var savedCount = await _context.SaveChangesAsync(cancellationToken);
+                result.Success = result.SuccessCount > 0;
+                result.Message = result.Success 
+                    ? $"Successfully generated {result.SuccessCount} examples for {existingVocabularyWords.Count} words with {savedCount} database changes. {result.ErrorCount} errors occurred."
+                    : $"Failed to generate examples: {result.ErrorCount} errors";
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"Error saving to database: {ex.Message}");
+                result.ErrorCount++;
+                result.Success = false;
+                result.Message = "Import failed during database save operation.";
+            }
 
             return result;
         }
@@ -115,23 +124,53 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         }
     }
 
+    private async Task ProcessVocabularyWordsInBatches(List<VocabularyWord> vocabularyWords, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
+    {
+        // Get batch size from configuration or use default
+        var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 5);
+        var semaphore = new SemaphoreSlim(batchSize, batchSize);
+        
+        var tasks = vocabularyWords.Select(async word =>
+        {
+            await semaphore.WaitAsync(cancellationToken);
+            try
+            {
+                await ProcessVocabularyWord(word, result, request, cancellationToken);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+        
+        await Task.WhenAll(tasks);
+    }
+
     private async Task ProcessVocabularyWord(VocabularyWord vocabularyWord, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
     {
         try
         {
             var examplesData = await GetExamplesDataFromChatGPT(vocabularyWord.Word, request);
             
+            // Get existing examples for this word in one query
+            var existingExamples = await _context.VocabularyExamples
+                .Where(e => e.WordId == vocabularyWord.Id)
+                .Select(e => e.Sentence.ToLower())
+                .ToListAsync(cancellationToken);
+            
+            var examplesAddedCount = 0;
+            var examplesSkippedCount = 0;
+            
             foreach (var exampleData in examplesData)
             {
                 try
                 {
-                    // Check if similar example already exists
-                    var existingExample = await _context.VocabularyExamples
-                        .FirstOrDefaultAsync(e => e.WordId == vocabularyWord.Id && 
-                                                e.Sentence.ToLower().Contains(exampleData.Sentence.ToLower().Substring(0, Math.Min(20, exampleData.Sentence.Length))), 
-                                           cancellationToken);
+                    var sentencePrefix = exampleData.Sentence.ToLower().Substring(0, Math.Min(20, exampleData.Sentence.Length));
+                    
+                    // Check against in-memory list instead of database query
+                    var isDuplicate = existingExamples.Any(existing => existing.Contains(sentencePrefix));
 
-                    if (existingExample == null)
+                    if (!isDuplicate)
                     {
                         var newExample = new VocabularyExample
                         {
@@ -145,22 +184,37 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                         };
 
                         _context.VocabularyExamples.Add(newExample);
-                        result.SuccessCount++;
+                        existingExamples.Add(exampleData.Sentence.ToLower()); // Add to in-memory cache
+                        examplesAddedCount++;
                     }
                     else
                     {
-                        result.Errors.Add($"Similar example already exists for: {exampleData.Sentence.Substring(0, Math.Min(30, exampleData.Sentence.Length))}...");
-                        result.ErrorCount++;
+                        examplesSkippedCount++;
                     }
                 }
                 catch (Exception ex)
                 {
-                    result.Errors.Add($"Error processing example '{exampleData.Sentence}': {ex.Message}");
-                    result.ErrorCount++;
+                    lock (result.Errors)
+                    {
+                        result.Errors.Add($"Error processing example '{exampleData.Sentence}': {ex.Message}");
+                        result.ErrorCount++;
+                    }
+                }
+            }
+            
+            // Update counts in thread-safe manner
+            lock (result)
+            {
+                result.SuccessCount += examplesAddedCount;
+                result.ErrorCount += examplesSkippedCount;
+                
+                if (examplesSkippedCount > 0)
+                {
+                    result.Errors.Add($"Skipped {examplesSkippedCount} duplicate examples for word '{vocabularyWord.Word}'");
                 }
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
+            // Don't save changes here - batch save will be done later
         }
         catch (Exception ex)
         {
@@ -205,24 +259,54 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             throw new InvalidOperationException("OpenAI API key not configured");
         }
 
+        var timeoutSeconds = _configuration.GetValue<int>("ChatGPT:RequestTimeoutSeconds", 30);
+        var maxRetries = _configuration.GetValue<int>("ChatGPT:MaxRetries", 3);
+        
         var client = new ChatClient("gpt-4o", apiKey);
-        
         var prompt = CreatePromptForExamples(vocabularyWord, request);
-
-        var chatCompletion = await client.CompleteChatAsync(prompt);
-        var content = chatCompletion.Value.Content[0].Text;
         
-        // Clean up the response to ensure valid JSON
-        var jsonStart = content.IndexOf('[');
-        var jsonEnd = content.LastIndexOf(']');
+        Exception? lastException = null;
         
-        if (jsonStart >= 0 && jsonEnd > jsonStart)
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var jsonContent = content.Substring(jsonStart, jsonEnd - jsonStart + 1);
-            return JsonSerializer.Deserialize<List<ChatGPTExampleResponse>>(jsonContent) ?? new List<ChatGPTExampleResponse>();
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+                
+                var messages = new List<ChatMessage>
+                {
+                    new UserChatMessage(prompt)
+                };
+                
+                var chatCompletion = await client.CompleteChatAsync(messages, cancellationToken: cts.Token);
+                var content = chatCompletion.Value.Content[0].Text;
+                
+                // Clean up the response to ensure valid JSON
+                var jsonStart = content.IndexOf('[');
+                var jsonEnd = content.LastIndexOf(']');
+                
+                if (jsonStart >= 0 && jsonEnd > jsonStart)
+                {
+                    var jsonContent = content.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    return JsonSerializer.Deserialize<List<ChatGPTExampleResponse>>(jsonContent) ?? new List<ChatGPTExampleResponse>();
+                }
+                
+                throw new InvalidOperationException("Invalid JSON response from ChatGPT");
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                
+                if (attempt < maxRetries)
+                {
+                    // Exponential backoff: wait 1s, 2s, 4s...
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1));
+                    await Task.Delay(delay);
+                }
+            }
         }
         
-        throw new InvalidOperationException("Invalid JSON response from ChatGPT");
+        throw new InvalidOperationException($"ChatGPT failed after {maxRetries} attempts: {lastException?.Message}");
     }
 
     private List<ChatGPTExampleResponse> GenerateFallbackExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
