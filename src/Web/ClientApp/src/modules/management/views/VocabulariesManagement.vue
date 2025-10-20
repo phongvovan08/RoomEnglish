@@ -517,11 +517,23 @@ const generateExamplesForSelected = async () => {
 
     if (response.ok) {
       const result = await response.json()
+      console.log('Generate examples result:', result)
       
       if (result.successCount > 0) {
-        showSuccess(`Đã tạo thành công ${result.successCount} ví dụ cho ${words.length} từ vựng`)
+        let message = `Đã tạo thành công ${result.successCount} ví dụ cho ${words.length} từ vựng`
+        
+        if (result.errorCount > 0) {
+          message += `, ${result.errorCount} ví dụ bị trùng hoặc lỗi`
+          showWarning(message)
+        } else {
+          showSuccess(message)
+        }
       } else {
-        showWarning('Không thể tạo ví dụ cho các từ vựng đã chọn')
+        if (result.errorCount > 0) {
+          showWarning(`Không tạo được ví dụ mới. ${result.errorCount} ví dụ bị trùng hoặc lỗi`)
+        } else {
+          showWarning('Không thể tạo ví dụ cho các từ vựng đã chọn')
+        }
       }
       
       // Clear selection after generating examples
