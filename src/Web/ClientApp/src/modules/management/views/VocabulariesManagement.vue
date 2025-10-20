@@ -35,7 +35,7 @@
           Đã chọn {{ selectedVocabularies.length }} từ vựng
         </span>
         <button 
-          @click="generateExamplesForSelected" 
+          @click="showConfigModal" 
           :disabled="isGeneratingExamples"
           class="btn-ai"
         >
@@ -151,6 +151,15 @@
       @import-json="handleImportJson"
       @import-words="handleImportWords"
     />
+
+    <!-- Generate Examples Config Modal -->
+    <GenerateExamplesConfigModal 
+      :is-open="showGenerateConfigModal"
+      :selected-words="selectedWords"
+      :is-generating="isGeneratingExamples"
+      @close="showGenerateConfigModal = false"
+      @generate="handleGenerateExamples"
+    />
   </div>
 </template>
 
@@ -164,6 +173,7 @@ import { useVocabulariesManagement } from '../composables/use-vocabularies-manag
 import VocabularyUploadModal from '../components/VocabularyUploadModal.vue'
 import JsonUploadModal from '@/modules/vocabulary/components/JsonUploadModal.vue'
 import VocabularyDataGrid from '@/modules/vocabulary/components/VocabularyDataGrid.vue'
+import GenerateExamplesConfigModal from '../components/GenerateExamplesConfigModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -222,6 +232,10 @@ const sortOrder = ref<'asc' | 'desc'>('asc')
 // Selection state
 const selectedVocabularies = ref<Vocabulary[]>([])
 const isGeneratingExamples = ref(false)
+const showGenerateConfigModal = ref(false)
+
+// Computed property for selected words
+const selectedWords = computed(() => selectedVocabularies.value.map(v => v.word))
 
 // Methods
 const loadCategory = async () => {
@@ -485,6 +499,103 @@ const handleSelectionChange = (selected: Vocabulary[]) => {
 
 const clearSelection = () => {
   selectedVocabularies.value = []
+}
+
+const showConfigModal = () => {
+  if (selectedVocabularies.value.length === 0) {
+    showWarning('Vui lòng chọn ít nhất một từ vựng để tạo ví dụ')
+    return
+  }
+  showGenerateConfigModal.value = true
+}
+
+const handleGenerateExamples = async (config: any) => {
+  const startTime = performance.now()
+  console.log(`🚀 Started generating examples for ${selectedVocabularies.value.length} words with config:`, {
+    selectedWords: selectedVocabularies.value.map(v => v.word),
+    config
+  })
+
+  try {
+    isGeneratingExamples.value = true
+    showGenerateConfigModal.value = false
+    
+    // Prepare request payload
+    const requestPayload = {
+      Words: selectedVocabularies.value.map(v => v.word),
+      ExampleCount: config.exampleCount,
+      IncludeGrammar: config.includeGrammar,
+      IncludeContext: config.includeContext,
+      DifficultyLevel: config.difficultyLevel
+    }
+    
+    console.log('📤 Sending request payload:', requestPayload)
+    
+    // Call the import examples API with user configuration
+    const response = await fetch('/api/vocabulary-examples/import-words', {
+      method: 'POST',
+      headers: {
+        ...createAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestPayload)
+    })
+    
+    console.log('📥 Response status:', response.status, response.statusText)
+
+    if (response.ok) {
+      const endTime = performance.now()
+      const totalTime = Math.round(endTime - startTime)
+      
+      const result = await response.json()
+      console.log(`✅ Generate examples completed in ${totalTime}ms:`, result)
+      
+      if (result.successCount > 0) {
+        let message = `Đã tạo thành công ${result.successCount} ví dụ cho ${selectedVocabularies.value.length} từ vựng trong ${(totalTime/1000).toFixed(1)}s`
+        
+        if (result.errorCount > 0) {
+          message += `, ${result.errorCount} ví dụ bị trùng hoặc lỗi`
+          showWarning(message)
+        } else {
+          showSuccess(message)
+        }
+        
+        // Performance logging
+        const avgTimePerWord = totalTime / selectedVocabularies.value.length
+        console.log(`📊 Performance metrics:
+          - Total time: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)
+          - Average per word: ${avgTimePerWord.toFixed(0)}ms
+          - Success rate: ${((result.successCount / (result.successCount + result.errorCount)) * 100).toFixed(1)}%
+          - Words processed: ${selectedVocabularies.value.length}
+          - Configuration: ${JSON.stringify(config)}
+        `)
+      } else {
+        if (result.errorCount > 0) {
+          showWarning(`Không tạo được ví dụ mới. ${result.errorCount} ví dụ bị trùng hoặc lỗi`)
+        } else {
+          showWarning('Không thể tạo ví dụ cho các từ vựng đã chọn')
+        }
+      }
+      
+      // Clear selection after generating examples
+      clearSelection()
+      
+      // Refresh the vocabulary list to show updated example counts
+      setTimeout(() => {
+        loadVocabularies()
+      }, 1000)
+    } else {
+      const errorText = await response.text()
+      showError('Lỗi tạo ví dụ', `Không thể tạo ví dụ. ${errorText}`)
+    }
+  } catch (error) {
+    const endTime = performance.now()
+    const totalTime = Math.round(endTime - startTime)
+    console.error(`❌ Generate examples error after ${totalTime}ms:`, error)
+    showError('Lỗi', 'Có lỗi xảy ra khi tạo ví dụ')
+  } finally {
+    isGeneratingExamples.value = false
+  }
 }
 
 const generateExamplesForSelected = async () => {
