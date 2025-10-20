@@ -7,11 +7,32 @@
         <div class="instruction">
           Listen to the sentence and type what you hear
         </div>
+        <div v-if="example?.sentence && showSentence" class="example-sentence">
+          <div class="sentence-label">
+            <i class="mdi mdi-text"></i>
+            Example Sentence:
+          </div>
+          <div class="sentence-text">
+            {{ example.sentence }}
+          </div>
+          <button @click="showSentence = false" class="hide-sentence-btn">
+            <i class="mdi mdi-eye-off"></i>
+            Hide (Practice mode)
+          </button>
+        </div>
+        <button 
+          v-else-if="example?.sentence && !showSentence"
+          @click="showSentence = true" 
+          class="show-sentence-btn"
+        >
+          <i class="mdi mdi-eye"></i>
+          Show Sentence (Study mode)
+        </button>
       </div>
 
       <!-- Audio Player -->
       <AudioPlayer 
-        :has-audio="!!example?.audioUrl"
+        :has-audio="!!example?.sentence"
         :is-playing="isPlayingAudio"
         :playback-speed="playbackSpeed"
         :play-count="playCount"
@@ -55,7 +76,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { useDictation } from '../composables/useDictation'
-import type { VocabularyExample, DictationResult } from '../types/vocabulary.types'
+import type { VocabularyExample, VocabularyWord, DictationResult } from '../types/vocabulary.types'
 import AudioPlayer from './dictation/audio-player/AudioPlayer.vue'
 import InputSection from './dictation/input-section/InputSection.vue'
 import ResultDisplay from './dictation/result-display/ResultDisplay.vue'
@@ -92,6 +113,7 @@ const {
 // Local state
 const showResult = ref(false)
 const showHintModal = ref(false)
+const showSentence = ref(false)
 const playCount = ref(0)
 const playbackSpeed = ref(1)
 const speechRecognitionSupported = ref(false)
@@ -126,10 +148,11 @@ const formatTime = (seconds: number): string => {
 }
 
 const playAudio = async () => {
-  if (!props.example?.audioUrl) return
+  if (!props.example?.sentence) return
   
   try {
-    await playDictationAudio(props.example.audioUrl)
+    // Play the sentence text with current playback speed
+    await playDictationAudio(props.example.sentence, playbackSpeed.value)
     playCount.value++
     
     if (!startTime.value) {
@@ -141,7 +164,7 @@ const playAudio = async () => {
 }
 
 const playCorrectAudio = async () => {
-  if (props.example?.audioUrl) {
+  if (props.example?.sentence) {
     await playAudio()
   }
 }
@@ -196,6 +219,7 @@ const changePlaybackSpeed = () => {
 const resetComponent = () => {
   showResult.value = false
   showHintModal.value = false
+  showSentence.value = false
   playCount.value = 0
   playbackSpeed.value = 1
   elapsedTime.value = 0
@@ -215,6 +239,10 @@ onMounted(() => {
   
   if (props.example) {
     setExample(props.example)
+    // Auto play audio when component loads
+    setTimeout(() => {
+      playAudio()
+    }, 500)
   }
 })
 
@@ -285,6 +313,83 @@ watchEffect(() => {
   color: #b8b8b8;
   font-size: 1.1rem;
   font-style: italic;
+}
+
+.example-sentence {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.1), rgba(231, 94, 141, 0.1));
+  border: 2px solid rgba(116, 192, 252, 0.3);
+  border-radius: 15px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.sentence-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #74c0fc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sentence-text {
+  color: white;
+  font-size: 1.3rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.hide-sentence-btn,
+.show-sentence-btn {
+  background: rgba(231, 94, 141, 0.2);
+  color: #e75e8d;
+  border: 1px solid rgba(231, 94, 141, 0.5);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+}
+
+.hide-sentence-btn:hover,
+.show-sentence-btn:hover {
+  background: rgba(231, 94, 141, 0.3);
+  border-color: #e75e8d;
+  transform: translateY(-2px);
+}
+
+.show-sentence-btn {
+  margin-top: 1rem;
+  background: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+  border-color: rgba(116, 192, 252, 0.5);
+}
+
+.show-sentence-btn:hover {
+  background: rgba(116, 192, 252, 0.3);
+  border-color: #74c0fc;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {

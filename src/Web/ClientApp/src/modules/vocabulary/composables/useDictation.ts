@@ -1,5 +1,6 @@
 import { ref, computed, readonly } from 'vue'
 import { createAuthHeaders } from '@/utils/auth'
+import { ttsService } from '@/services/textToSpeechService'
 import type { 
   DictationResult,
   SubmitDictationCommand,
@@ -20,7 +21,6 @@ export const useDictation = () => {
 
   // Speech Recognition
   const recognition = ref<any>(null)
-  const audioPlayer = ref<HTMLAudioElement | null>(null)
 
   // Computed properties
   const timeElapsed = computed(() => {
@@ -66,38 +66,32 @@ export const useDictation = () => {
     }
   }
 
-  // Audio playback
-  const playAudio = async (audioUrl: string) => {
+  // Audio playback using TTS
+  const playAudio = async (text: string, rate: number = 1) => {
     try {
-      if (audioPlayer.value) {
-        audioPlayer.value.pause()
-        audioPlayer.value.currentTime = 0
-      }
-
-      audioPlayer.value = new Audio(audioUrl)
+      // Stop any current speech
+      ttsService.stop()
+      
       isPlaying.value = true
-
-      audioPlayer.value.onended = () => {
-        isPlaying.value = false
-      }
-
-      audioPlayer.value.onerror = () => {
-        error.value = 'Failed to play audio'
-        isPlaying.value = false
-      }
-
-      await audioPlayer.value.play()
+      
+      // Speak the text
+      await ttsService.speak(text, {
+        rate,
+        lang: 'en-US',
+        volume: 1,
+        pitch: 1
+      })
+      
+      isPlaying.value = false
     } catch (err) {
       error.value = 'Failed to play audio'
       isPlaying.value = false
+      throw err
     }
   }
 
   const stopAudio = () => {
-    if (audioPlayer.value) {
-      audioPlayer.value.pause()
-      audioPlayer.value.currentTime = 0
-    }
+    ttsService.stop()
     isPlaying.value = false
   }
 

@@ -2,6 +2,41 @@
 
 Các component được tách ra từ `DictationCard.vue` theo cấu trúc modular.
 
+## 🎯 Chức năng chính
+
+**Dictation Practice** cho phép người dùng:
+1. **Nghe câu tiếng Anh** - Sử dụng Text-to-Speech (TTS) để phát câu
+2. **Xem/Ẩn câu mẫu** - Toggle giữa Study mode và Practice mode
+3. **Viết chính tả** - Gõ hoặc dùng voice recognition
+4. **Kiểm tra kết quả** - So sánh với câu đúng và xem accuracy
+5. **Học thêm** - Xem translation và grammar
+
+## 🔊 Text-to-Speech (TTS)
+
+Sử dụng **Web Speech API** (browser native) để phát câu tiếng Anh:
+
+```typescript
+// textToSpeechService.ts
+- speak(text, options) - Phát văn bản với các tùy chọn
+- stop() - Dừng phát
+- pause() / resume() - Tạm dừng / tiếp tục
+- getVoices() - Lấy danh sách giọng nói
+- getBestVoice(lang) - Tìm giọng nói tốt nhất
+
+Options:
+- rate: 0.1 - 10 (tốc độ phát, default: 1)
+- pitch: 0 - 2 (cao độ, default: 1)
+- volume: 0 - 1 (âm lượng, default: 1)
+- lang: 'en-US' (ngôn ngữ)
+```
+
+**Lợi ích**:
+- ✅ Không cần file audio
+- ✅ Phát ngay lập tức
+- ✅ Tùy chỉnh tốc độ dễ dàng
+- ✅ Hỗ trợ nhiều giọng nói
+- ✅ Miễn phí, không cần API key
+
 ## 📁 Cấu trúc thư mục
 
 ```
@@ -109,11 +144,35 @@ dictation/
 <template>
   <div class="dictation-card">
     <div class="card-container">
+      <!-- Header với Example Sentence -->
       <div class="dictation-header">
         <h2>🎤 Dictation Practice</h2>
         <div class="instruction">
           Listen to the sentence and type what you hear
         </div>
+        
+        <!-- Example Sentence (có thể show/hide) -->
+        <div v-if="example?.sentence && showSentence" class="example-sentence">
+          <div class="sentence-label">
+            <i class="mdi mdi-text"></i>
+            Example Sentence:
+          </div>
+          <div class="sentence-text">
+            {{ example.sentence }}
+          </div>
+          <button @click="showSentence = false" class="hide-sentence-btn">
+            <i class="mdi mdi-eye-off"></i>
+            Hide (Practice mode)
+          </button>
+        </div>
+        <button 
+          v-else-if="example?.sentence && !showSentence"
+          @click="showSentence = true" 
+          class="show-sentence-btn"
+        >
+          <i class="mdi mdi-eye"></i>
+          Show Sentence (Study mode)
+        </button>
       </div>
 
       <AudioPlayer 
@@ -154,7 +213,61 @@ dictation/
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+// ... imports ...
+
+onMounted(() => {
+  if (props.example) {
+    setExample(props.example)
+    // Auto play audio khi component loads
+    setTimeout(() => {
+      playAudio()
+    }, 500)
+  }
+})
+</script>
 ```
+
+## 🎮 User Flow
+
+1. **Component loads** 
+   → TTS tự động phát câu sau 0.5s
+   → Sử dụng Web Speech API
+   
+2. **Study Mode** 
+   → User click "Show Sentence" để xem câu mẫu
+   → Có thể replay với tốc độ khác (0.5x - 1.5x)
+   
+3. **Practice Mode** 
+   → User click "Hide" để ẩn câu và luyện tập
+   → Nghe và viết chính tả
+   
+4. **Input** 
+   → User gõ hoặc dùng voice recognition
+   → Timer đếm thời gian
+   
+5. **Submit** 
+   → Hệ thống so sánh và hiển thị kết quả
+   → Accuracy percentage
+   
+6. **Review** 
+   → Xem translation, grammar, và performance stats
+   → Replay audio để nghe lại
+   
+7. **Next** 
+   → Chuyển bài tiếp theo
+
+## 🎵 Playback Speed Control
+
+Người dùng có thể điều chỉnh tốc độ phát:
+- **0.5x** - Rất chậm (dễ nghe từng âm)
+- **0.75x** - Chậm (dễ nghe)
+- **1.0x** - Bình thường (native speed)
+- **1.25x** - Nhanh
+- **1.5x** - Rất nhanh (thử thách)
+
+Thay đổi speed bằng cách click nút tốc độ trong AudioPlayer.
 
 ## ✨ Lợi ích của cấu trúc modular
 
