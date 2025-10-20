@@ -48,9 +48,17 @@
         :elapsed-time="elapsedTime"
         :speech-recognition-supported="speechRecognitionSupported"
         @toggle-recording="toggleRecording"
+        @check="checkAnswer"
         @submit="submitAnswer"
         @clear="clearInput"
         @show-hint="showHint"
+      />
+
+      <!-- Word Comparison (appears after check, before submit) -->
+      <WordComparison 
+        v-if="showComparison && !showResult && example?.sentence"
+        :user-input="userInput"
+        :correct-answer="example.sentence"
       />
 
       <!-- Result Display -->
@@ -81,6 +89,7 @@ import AudioPlayer from './dictation/audio-player/AudioPlayer.vue'
 import InputSection from './dictation/input-section/InputSection.vue'
 import ResultDisplay from './dictation/result-display/ResultDisplay.vue'
 import HintModal from './dictation/hint-modal/HintModal.vue'
+import WordComparison from './dictation/word-comparison/WordComparison.vue'
 
 interface Props {
   example: VocabularyExample | null
@@ -120,6 +129,7 @@ const speechRecognitionSupported = ref(false)
 const startTime = ref<number | null>(null)
 const elapsedTime = ref(0)
 const showTranslation = ref(false)
+const showComparison = ref(false)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -192,14 +202,23 @@ const submitAnswer = async () => {
     )
     
     showResult.value = true
+    showComparison.value = false // Hide comparison when showing full result
     emit('submit', result)
   } catch (err) {
     console.error('Failed to submit dictation:', err)
   }
 }
 
+const checkAnswer = () => {
+  // Show word comparison without submitting
+  if (userInput.value.trim()) {
+    showComparison.value = true
+  }
+}
+
 const clearInput = () => {
   userInput.value = ''
+  showComparison.value = false // Hide comparison when clearing
 }
 
 const showHint = () => {
@@ -220,6 +239,7 @@ const resetComponent = () => {
   showResult.value = false
   showHintModal.value = false
   showSentence.value = false
+  showComparison.value = false
   playCount.value = 0
   playbackSpeed.value = 1
   elapsedTime.value = 0

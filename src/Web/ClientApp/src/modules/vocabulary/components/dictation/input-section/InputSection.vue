@@ -14,7 +14,8 @@
           id="dictation-input"
           :value="userInput"
           @input="$emit('update:user-input', ($event.target as HTMLTextAreaElement).value)"
-          :placeholder="isRecording ? 'Listening...' : 'Start typing or use voice input'"
+          @keydown.enter.prevent="handleEnterKey"
+          :placeholder="isRecording ? 'Listening...' : 'Start typing or use voice input (Press Enter to check)'"
           :disabled="isRecording"
           class="dictation-input"
           rows="4"
@@ -45,11 +46,20 @@
 
     <div class="action-buttons">
       <button 
+        @click="$emit('check')" 
+        :disabled="!userInput.trim()"
+        class="check-btn"
+      >
+        <i class="mdi mdi-spellcheck"></i>
+        Check
+      </button>
+      
+      <button 
         @click="$emit('submit')" 
         :disabled="!userInput.trim()"
         class="submit-btn"
       >
-        <i class="mdi mdi-check"></i>
+        <i class="mdi mdi-send"></i>
         Submit
       </button>
       
@@ -76,13 +86,19 @@ interface Props {
 
 defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:user-input': [value: string]
   'toggle-recording': []
   submit: []
+  check: []
   clear: []
   'show-hint': []
 }>()
+
+const handleEnterKey = () => {
+  // Emit check event when Enter is pressed
+  emit('check')
+}
 
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60)
@@ -212,7 +228,7 @@ const formatTime = (seconds: number): string => {
   flex-wrap: wrap;
 }
 
-.submit-btn, .clear-btn, .hint-btn {
+.check-btn, .submit-btn, .clear-btn, .hint-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 25px;
   border: none;
@@ -222,6 +238,21 @@ const formatTime = (seconds: number): string => {
   gap: 0.5rem;
   transition: all 0.3s ease;
   font-size: 1rem;
+}
+
+.check-btn {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+}
+
+.check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.check-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
 }
 
 .submit-btn {

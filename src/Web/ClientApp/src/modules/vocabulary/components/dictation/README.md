@@ -47,8 +47,10 @@ dictation/
 │   └── InputSection.vue         # Nhập liệu văn bản và voice input
 ├── result-display/
 │   └── ResultDisplay.vue        # Hiển thị kết quả và so sánh
-└── hint-modal/
-    └── HintModal.vue            # Modal hiển thị gợi ý
+├── hint-modal/
+│   └── HintModal.vue            # Modal hiển thị gợi ý
+└── word-comparison/
+    └── WordComparison.vue       # So sánh từng từ real-time
 ```
 
 ## 🧩 Components
@@ -86,16 +88,19 @@ dictation/
 **Events**:
 - `update:user-input` - Cập nhật nội dung nhập
 - `toggle-recording` - Bật/tắt ghi âm
-- `submit` - Submit câu trả lời
+- `check` - Kiểm tra câu trả lời (hiện word comparison)
+- `submit` - Submit câu trả lời chính thức
 - `clear` - Xóa nội dung
 - `show-hint` - Hiển thị gợi ý
 
 **Features**:
-- Textarea cho nhập liệu
+- Textarea cho nhập liệu (hỗ trợ Enter để check)
 - Voice recognition button
 - Recording indicator với pulse animation
 - Timer hiển thị thời gian
-- Action buttons (Submit, Clear, Hint)
+- Check button (hiện word comparison)
+- Submit button (submit kết quả cuối cùng)
+- Clear và Hint buttons
 
 ---
 
@@ -135,6 +140,31 @@ dictation/
 - Số lượng từ trong câu
 - Chữ cái đầu tiên
 - Gợi ý chung về pronunciation
+
+---
+
+### 5. WordComparison.vue (MỚI!)
+**Mục đích**: So sánh từng từ real-time giữa input và câu đúng
+
+**Props**:
+- `userInput: string` - Câu user đã nhập
+- `correctAnswer: string` - Câu đúng
+
+**Features**:
+- ✅ **Từ đúng** (màu xanh) - Từ khớp hoàn toàn
+- ❌ **Từ sai** (màu đỏ) - Từ không khớp, hiện từ đúng bên dưới
+- ⚠️ **Từ thiếu** (màu vàng) - User không gõ từ này
+- 🟣 **Từ thừa** (màu tím) - User gõ thêm từ không cần
+- Animation fade-in từng từ với delay
+- Statistics badges: số từ đúng/sai/thiếu
+- Auto normalize text (lowercase, loại bỏ dấu câu)
+
+**Cách hoạt động**:
+1. User gõ câu vào textarea
+2. User nhấn **Enter** hoặc click **Check**
+3. WordComparison xuất hiện, hiện từng từ với màu tương ứng
+4. User có thể sửa lại dựa trên feedback
+5. User click **Submit** để nộp kết quả chính thức
 
 ---
 
@@ -191,9 +221,17 @@ dictation/
         :elapsed-time="elapsedTime"
         :speech-recognition-supported="speechRecognitionSupported"
         @toggle-recording="toggleRecording"
+        @check="checkAnswer"
         @submit="submitAnswer"
         @clear="clearInput"
         @show-hint="showHint"
+      />
+
+      <!-- Word Comparison (xuất hiện sau khi check) -->
+      <WordComparison 
+        v-if="showComparison && !showResult && example?.sentence"
+        :user-input="userInput"
+        :correct-answer="example.sentence"
       />
 
       <ResultDisplay
@@ -247,15 +285,21 @@ onMounted(() => {
    → User gõ hoặc dùng voice recognition
    → Timer đếm thời gian
    
-5. **Submit** 
-   → Hệ thống so sánh và hiển thị kết quả
+5. **Check (MỚI!)** 
+   → User nhấn **Enter** hoặc click **Check**
+   → WordComparison xuất hiện, hiện từng từ đúng/sai
+   → User có thể sửa lại input dựa trên feedback
+   
+6. **Submit** 
+   → User click **Submit** khi đã sẵn sàng
+   → Hệ thống so sánh và hiển thị kết quả đầy đủ
    → Accuracy percentage
    
-6. **Review** 
+7. **Review** 
    → Xem translation, grammar, và performance stats
    → Replay audio để nghe lại
    
-7. **Next** 
+8. **Next** 
    → Chuyển bài tiếp theo
 
 ## 🎵 Playback Speed Control
