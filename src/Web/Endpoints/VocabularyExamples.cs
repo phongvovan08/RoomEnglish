@@ -296,7 +296,7 @@ public class VocabularyExamples : EndpointGroupBase
 
     public record ImportJsonRequest(string JsonData, int VocabularyId);
     public record ImportWordsRequest(
-        int VocabularyId,
+        List<string> Words,
         int ExampleCount = 10,
         bool IncludeGrammar = true,
         bool IncludeContext = true,
@@ -332,7 +332,7 @@ public class VocabularyExamples : EndpointGroupBase
     {
         var command = new ImportExamplesFromWordsCommand 
         { 
-            VocabularyId = request.VocabularyId,
+            Words = request.Words ?? new List<string>(),
             ExampleCount = request.ExampleCount,
             IncludeGrammar = request.IncludeGrammar,
             IncludeContext = request.IncludeContext,

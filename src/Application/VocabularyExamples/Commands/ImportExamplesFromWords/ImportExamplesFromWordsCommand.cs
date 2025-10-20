@@ -17,7 +17,7 @@ public enum DifficultyLevel
 
 public record ImportExamplesFromWordsCommand : IRequest<ImportExamplesWordsResult>
 {
-    public int VocabularyId { get; init; }
+    public List<string> Words { get; init; } = new();
     public int ExampleCount { get; init; } = 10;
     public bool IncludeGrammar { get; init; } = true;
     public bool IncludeContext { get; init; } = true;
@@ -56,31 +56,52 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     {
         var result = new ImportExamplesWordsResult
         {
-            TotalProcessed = 1 // Processing one vocabulary word
+            TotalProcessed = request.Words.Count
         };
+
+        if (!request.Words.Any())
+        {
+            result.Errors.Add("No words provided");
+            result.Message = "No words to process";
+            return result;
+        }
 
         try
         {
-            // Get vocabulary word to ensure it exists
-            var vocabularyWord = await _context.VocabularyWords
-                .FirstOrDefaultAsync(v => v.Id == request.VocabularyId && v.IsActive, cancellationToken);
-            
-            if (vocabularyWord == null)
+            // Get vocabulary words that exist in the database
+            var existingVocabularyWords = await _context.VocabularyWords
+                .Where(v => request.Words.Contains(v.Word) && v.IsActive)
+                .ToListAsync(cancellationToken);
+
+            if (!existingVocabularyWords.Any())
             {
-                result.Errors.Add($"Vocabulary with ID {request.VocabularyId} not found or inactive");
-                result.ErrorCount = 1;
+                result.Errors.Add("No matching vocabulary words found in database");
+                result.ErrorCount = request.Words.Count;
                 result.Success = false;
-                result.Message = "Vocabulary not found";
+                result.Message = "No vocabulary words found";
                 return result;
             }
 
-            // Process the single vocabulary word to generate examples
-            await ProcessVocabularyWord(vocabularyWord, result, request, cancellationToken);
+            // Process each vocabulary word to generate examples
+            foreach (var vocabularyWord in existingVocabularyWords)
+            {
+                await ProcessVocabularyWord(vocabularyWord, result, request, cancellationToken);
+            }
 
-            result.Success = result.ErrorCount == 0;
+            // Check for words that weren't found in the database
+            var foundWords = existingVocabularyWords.Select(v => v.Word).ToHashSet();
+            var notFoundWords = request.Words.Where(word => !foundWords.Contains(word)).ToList();
+            
+            foreach (var notFoundWord in notFoundWords)
+            {
+                result.Errors.Add($"Vocabulary word '{notFoundWord}' not found in database");
+                result.ErrorCount++;
+            }
+
+            result.Success = result.SuccessCount > 0;
             result.Message = result.Success 
-                ? $"Successfully generated {result.SuccessCount} examples for '{vocabularyWord.Word}'"
-                : $"Generated examples with {result.ErrorCount} errors";
+                ? $"Successfully generated examples for {existingVocabularyWords.Count} words with {result.ErrorCount} errors"
+                : $"Failed to generate examples: {result.ErrorCount} errors";
 
             return result;
         }

@@ -58,6 +58,14 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th v-if="selectable" class="select-column">
+              <input 
+                type="checkbox" 
+                :checked="isAllSelected"
+                @change="isAllSelected ? clearSelection() : selectAllItems()"
+                class="select-checkbox"
+              />
+            </th>
             <th 
               v-for="column in columns" 
               :key="column.key"
@@ -80,9 +88,17 @@
           <tr 
             v-for="(item, index) in paginatedData" 
             :key="getItemKey(item, index)"
-            :class="{ clickable: clickable }"
+            :class="{ clickable: clickable, selected: selectable && isItemSelected(item) }"
             @click="clickable && handleRowClick(item)"
           >
+            <td v-if="selectable" class="select-column" @click.stop>
+              <input 
+                type="checkbox" 
+                :checked="isItemSelected(item)"
+                @change="toggleItemSelection(item)"
+                class="select-checkbox"
+              />
+            </td>
             <td v-for="column in columns" :key="column.key">
               <slot 
                 :name="`cell-${column.key}`" 
@@ -124,13 +140,22 @@
       <div 
         v-for="(item, index) in paginatedData" 
         :key="getItemKey(item, index)"
-        :class="['grid-item', { clickable: clickable }]"
+        :class="['grid-item', { clickable: clickable, selected: selectable && isItemSelected(item) }]"
         @click="clickable && handleRowClick(item)"
       >
         <slot name="grid-item" :item="item" :index="index">
           <!-- Default grid item layout -->
           <div class="grid-item-header">
-            <h3>{{ getNestedValue(item, columns[0]?.key) }}</h3>
+            <div class="grid-item-title">
+              <input 
+                v-if="selectable"
+                type="checkbox" 
+                :checked="isItemSelected(item)"
+                @change.stop="toggleItemSelection(item)"
+                class="select-checkbox"
+              />
+              <h3>{{ getNestedValue(item, columns[0]?.key) }}</h3>
+            </div>
             <div v-if="actions && actions.length > 0" class="grid-actions">
               <button
                 v-for="action in actions"
@@ -283,6 +308,9 @@ interface Props {
   totalPages?: number
   // View mode default
   defaultViewMode?: 'table' | 'grid'
+  // Multi-selection props
+  selectable?: boolean
+  selectedItems?: any[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -300,7 +328,9 @@ const props = withDefaults(defineProps<Props>(), {
   currentPage: 1,
   totalItems: 0,
   totalPages: 1,
-  defaultViewMode: 'table'
+  defaultViewMode: 'table',
+  selectable: false,
+  selectedItems: () => []
 })
 
 const emit = defineEmits<{
@@ -310,6 +340,7 @@ const emit = defineEmits<{
   'page-change': [page: number]
   'page-size-change': [pageSize: number]
   'sort-change': [sortBy: string, sortOrder: 'asc' | 'desc']
+  'selection-change': [selectedItems: any[]]
 }>()
 
 // Reactive state
@@ -320,6 +351,7 @@ const currentPageSize = ref(props.pageSize)
 const sortBy = ref<string>('')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const pageJumpValue = ref<number>()
+const internalSelectedItems = ref<any[]>([...props.selectedItems])
 
 // Computed properties
 const filteredData = computed(() => {
@@ -513,6 +545,50 @@ const formatNumber = (num: number): string => {
   if (typeof num !== 'number') return ''
   return num.toLocaleString('vi-VN')
 }
+
+// Selection methods
+const isItemSelected = (item: any) => {
+  return internalSelectedItems.value.some(selectedItem => 
+    selectedItem[props.keyField] === item[props.keyField]
+  )
+}
+
+const toggleItemSelection = (item: any) => {
+  if (!props.selectable) return
+  
+  const itemKey = item[props.keyField]
+  const selectedIndex = internalSelectedItems.value.findIndex(
+    selectedItem => selectedItem[props.keyField] === itemKey
+  )
+  
+  if (selectedIndex > -1) {
+    internalSelectedItems.value.splice(selectedIndex, 1)
+  } else {
+    internalSelectedItems.value.push(item)
+  }
+  
+  emit('selection-change', [...internalSelectedItems.value])
+}
+
+const selectAllItems = () => {
+  if (!props.selectable) return
+  
+  internalSelectedItems.value = [...paginatedData.value]
+  emit('selection-change', [...internalSelectedItems.value])
+}
+
+const clearSelection = () => {
+  if (!props.selectable) return
+  
+  internalSelectedItems.value = []
+  emit('selection-change', [])
+}
+
+const isAllSelected = computed(() => {
+  if (!props.selectable || paginatedData.value.length === 0) return false
+  
+  return paginatedData.value.every(item => isItemSelected(item))
+})
 
 // Keyboard navigation
 const handleKeydown = (event: KeyboardEvent) => {
@@ -769,6 +845,25 @@ onUnmounted(() => {
   text-align: right;
 }
 
+.select-column {
+  width: 2.5rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.select-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.data-table tr.selected {
+  background-color: #eff6ff;
+}
+
+.data-table tr.selected:hover {
+  background-color: #dbeafe;
+}
+
 .action-buttons {
   display: flex;
   justify-content: flex-end;
@@ -853,11 +948,22 @@ onUnmounted(() => {
   border-color: #93c5fd;
 }
 
+.grid-item.selected {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}
+
 .grid-item-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.75rem;
+}
+
+.grid-item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .grid-item-header h3 {

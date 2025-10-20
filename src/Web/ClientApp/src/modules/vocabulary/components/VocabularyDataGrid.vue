@@ -15,19 +15,32 @@
     :current-page="currentPage"
     :total-items="totalItems"
     :total-pages="totalPages"
+    :selectable="selectable"
+    :selected-items="selectedItems"
+    :default-view-mode="defaultViewMode"
     @row-click="handleRowClick"
     @action-click="handleActionClick"
     @search="handleSearch"
     @page-change="handlePageChange"
     @page-size-change="handlePageSizeChange"
     @sort-change="handleSortChange"
+    @selection-change="handleSelectionChange"
   >
     <!-- Custom grid item for vocabulary -->
     <template #grid-item="{ item }">
       <div class="vocabulary-card" >
         <div class="vocabulary-header">
           <div class="word-info">
-            <h3>{{ item.word }}</h3>
+            <div class="word-title">
+              <input 
+                v-if="selectable"
+                type="checkbox" 
+                :checked="selectedItems.some(selected => selected.id === item.id)"
+                @change.stop="toggleSelection(item)"
+                class="select-checkbox"
+              />
+              <h3>{{ item.word }}</h3>
+            </div>
             <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
           </div>
           <div class="vocabulary-actions">
@@ -125,6 +138,10 @@ interface Props {
   currentPage?: number
   totalItems?: number
   totalPages?: number
+  // Selection props
+  selectable?: boolean
+  selectedItems?: Vocabulary[]
+  defaultViewMode?: 'table' | 'grid'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -132,7 +149,10 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   currentPage: 1,
   totalItems: 0,
-  totalPages: 1
+  totalPages: 1,
+  selectable: false,
+  selectedItems: () => [],
+  defaultViewMode: 'grid'
 })
 
 const emit = defineEmits<{
@@ -145,6 +165,7 @@ const emit = defineEmits<{
   'page-change': [page: number]
   'page-size-change': [pageSize: number]
   'sort-change': [sortBy: string, sortOrder: 'asc' | 'desc']
+  'selection-change': [selectedVocabularies: Vocabulary[]]
 }>()
 
 // Define columns for table view
@@ -234,6 +255,23 @@ const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
   emit('sort-change', sortBy, sortOrder)
 }
 
+const handleSelectionChange = (selectedItems: Vocabulary[]) => {
+  emit('selection-change', selectedItems)
+}
+
+const toggleSelection = (vocabulary: Vocabulary) => {
+  const currentlySelected = [...props.selectedItems]
+  const index = currentlySelected.findIndex(item => item.id === vocabulary.id)
+  
+  if (index > -1) {
+    currentlySelected.splice(index, 1)
+  } else {
+    currentlySelected.push(vocabulary)
+  }
+  
+  emit('selection-change', currentlySelected)
+}
+
 // Utility functions
 const formatDate = (date: string | Date): string => {
   if (!date) return ''
@@ -265,11 +303,18 @@ const formatDate = (date: string | Date): string => {
   margin-bottom: 0.75rem;
 }
 
+.word-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
 .word-info h3 {
   font-size: 1.125rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 0.25rem 0;
+  margin: 0;
 }
 
 .pronunciation {

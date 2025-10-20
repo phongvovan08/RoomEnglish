@@ -2431,9 +2431,11 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "vocabularyId": {
-            "type": "integer",
-            "format": "int32"
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "exampleCount": {
             "type": "integer",

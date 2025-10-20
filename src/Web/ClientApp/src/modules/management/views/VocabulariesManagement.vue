@@ -29,6 +29,24 @@
           Import Words
         </button>
       </div>
+      
+      <div v-if="selectedVocabularies.length > 0" class="selection-actions">
+        <span class="selection-count">
+          Đã chọn {{ selectedVocabularies.length }} từ vựng
+        </span>
+        <button 
+          @click="generateExamplesForSelected" 
+          :disabled="isGeneratingExamples"
+          class="btn-ai"
+        >
+          <Icon icon="mdi:lightbulb-on" class="w-5 h-5 mr-2" />
+          {{ isGeneratingExamples ? 'Đang tạo...' : 'Tạo ví dụ AI' }}
+        </button>
+        <button @click="clearSelection" class="btn-secondary">
+          <Icon icon="mdi:close" class="w-5 h-5 mr-2" />
+          Hủy chọn
+        </button>
+      </div>
     </div>
 
     <!-- Vocabulary Data Grid -->
@@ -39,6 +57,9 @@
       :current-page="currentPage"
       :total-items="totalItems"
       :total-pages="totalPages"
+      :selectable="true"
+      :selected-items="selectedVocabularies"
+      :default-view-mode="'table'"
       @vocabulary-click="(vocab: Vocabulary) => navigateToExamples(vocab.id)"
       @edit-vocabulary="editVocabulary"
       @delete-vocabulary="(vocab: Vocabulary) => deleteVocabulary(vocab.id)"
@@ -48,6 +69,7 @@
       @page-change="handleGridPageChange"
       @page-size-change="handleGridPageSizeChange"
       @sort-change="handleSort"
+      @selection-change="handleSelectionChange"
     />
 
     <!-- Create/Edit Modal -->
@@ -196,6 +218,10 @@ const includeInactive = ref(false)
 const includeExamples = ref(true)
 const sortBy = ref<string>('')
 const sortOrder = ref<'asc' | 'desc'>('asc')
+
+// Selection state
+const selectedVocabularies = ref<Vocabulary[]>([])
+const isGeneratingExamples = ref(false)
 
 // Methods
 const loadCategory = async () => {
@@ -452,6 +478,71 @@ const handleSort = (sortByParam: string, sortOrderParam: 'asc' | 'desc') => {
   loadVocabularies()
 }
 
+// Selection methods
+const handleSelectionChange = (selected: Vocabulary[]) => {
+  selectedVocabularies.value = selected
+}
+
+const clearSelection = () => {
+  selectedVocabularies.value = []
+}
+
+const generateExamplesForSelected = async () => {
+  if (selectedVocabularies.value.length === 0) {
+    showWarning('Vui lòng chọn ít nhất một từ vựng để tạo ví dụ')
+    return
+  }
+
+  try {
+    isGeneratingExamples.value = true
+    
+    // Extract just the words from selected vocabularies
+    const words = selectedVocabularies.value.map(vocab => vocab.word)
+    
+    // Call the import examples API
+    const response = await fetch('/api/vocabulary-examples/import-words', {
+      method: 'POST',
+      headers: {
+        ...createAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        Words: words,
+        ExampleCount: 10,
+        IncludeGrammar: true,
+        IncludeContext: true,
+        DifficultyLevel: 1 // Easy level by default
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      
+      if (result.successCount > 0) {
+        showSuccess(`Đã tạo thành công ${result.successCount} ví dụ cho ${words.length} từ vựng`)
+      } else {
+        showWarning('Không thể tạo ví dụ cho các từ vựng đã chọn')
+      }
+      
+      // Clear selection after generating examples
+      clearSelection()
+      
+      // Refresh the vocabulary list to show updated example counts
+      setTimeout(() => {
+        loadVocabularies()
+      }, 1000)
+    } else {
+      const errorText = await response.text()
+      showError('Lỗi tạo ví dụ', `Không thể tạo ví dụ. ${errorText}`)
+    }
+  } catch (error) {
+    console.error('Error generating examples:', error)
+    showError('Lỗi', 'Có lỗi xảy ra khi tạo ví dụ')
+  } finally {
+    isGeneratingExamples.value = false
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   loadCategory()
@@ -696,6 +787,64 @@ onMounted(() => {
 .btn-primary:disabled:hover {
   transform: none;
   box-shadow: none;
+}
+
+/* Selection Actions */
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selection-count {
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, #845ec2, #b39bc8);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.btn-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(132, 94, 194, 0.4);
+}
+
+.btn-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
 }
 
 /* Mobile Responsiveness */
