@@ -434,11 +434,37 @@ onUnmounted(() => {
 .session-type-select {
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  min-width: 180px;
+}
+
+.session-type-select:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.session-type-select:focus {
+  outline: none;
+  border-color: #74c0fc;
+  box-shadow: 0 0 0 3px rgba(116, 192, 252, 0.2);
+}
+
+.session-type-select option {
+  background: #2d2d2d;
+  color: white;
+  padding: 0.5rem;
+  font-weight: 500;
 }
 
 .speech-settings-btn {
