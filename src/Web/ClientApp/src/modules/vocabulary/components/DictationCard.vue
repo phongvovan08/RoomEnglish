@@ -6,17 +6,20 @@
         <h2>🎤 Dictation Practice</h2>
         <div class="instruction">
           Listen to the sentence and type what you hear
+          <span class="keyboard-hint" :class="{ 'keyboard-hint-active': isPlayingAudio }">
+            <kbd>Ctrl</kbd> to replay audio
+          </span>
         </div>
         <div v-if="example?.sentence && showSentence" class="example-sentence">
           <div class="sentence-label">
-            <i class="mdi mdi-text"></i>
+            <Icon icon="mdi:text" class="w-5 h-5" />
             Example Sentence:
           </div>
           <div class="sentence-text">
             {{ example.sentence }}
           </div>
           <button @click="showSentence = false" class="hide-sentence-btn">
-            <i class="mdi mdi-eye-off"></i>
+            <Icon icon="mdi:eye-off" class="w-5 h-5" />
             Hide (Practice mode)
           </button>
         </div>
@@ -25,41 +28,115 @@
           @click="showSentence = true" 
           class="show-sentence-btn"
         >
-          <i class="mdi mdi-eye"></i>
+          <Icon icon="mdi:eye" class="w-5 h-5" />
           Show Sentence (Study mode)
         </button>
       </div>
 
-      <!-- Audio Player -->
-      <AudioPlayer 
-        :has-audio="!!example?.sentence"
-        :is-playing="isPlayingAudio"
-        :playback-speed="playbackSpeed"
-        :play-count="playCount"
-        @play="playAudio"
-        @change-speed="changePlaybackSpeed"
-      />
+      <!-- Audio Player - Using GlobalSpeechButton -->
+      <div class="audio-player-section" v-if="example?.sentence">
+        <GlobalSpeechButton 
+          :text="example.sentence"
+          instance-id="dictation-audio"
+          :show-text="true"
+          button-class="speech-btn large"
+          :custom-rate="playbackSpeed"
+        />
+        <div class="playback-controls">
+          <label>Speed: {{ playbackSpeed }}x</label>
+          <div class="speed-buttons">
+            <button @click="changePlaybackSpeed(0.5)" :class="{ active: playbackSpeed === 0.5 }">0.5x</button>
+            <button @click="changePlaybackSpeed(0.75)" :class="{ active: playbackSpeed === 0.75 }">0.75x</button>
+            <button @click="changePlaybackSpeed(1)" :class="{ active: playbackSpeed === 1 }">1x</button>
+            <button @click="changePlaybackSpeed(1.25)" :class="{ active: playbackSpeed === 1.25 }">1.25x</button>
+          </div>
+        </div>
+      </div>
 
-      <!-- Input Section -->
-      <InputSection
-        v-if="!showResult"
-        v-model:user-input="userInput"
-        :is-recording="isRecording"
-        :elapsed-time="elapsedTime"
-        :speech-recognition-supported="speechRecognitionSupported"
-        @toggle-recording="toggleRecording"
-        @check="checkAnswer"
-        @submit="submitAnswer"
-        @clear="clearInput"
-        @show-hint="showHint"
-      />
+      <!-- Input Section (textarea only, no buttons) -->
+      <div v-if="!showResult" class="input-section">
+        <div class="input-container">
+          <div class="input-header">
+            <label for="dictation-input">Type what you hear:</label>
+            <div class="header-controls">
+              <!-- Voice Input Icon Button -->
+              <button 
+                @click="toggleRecording"
+                :disabled="!speechRecognitionSupported"
+                class="voice-icon-btn"
+                :class="{ 
+                  'recording': isRecording,
+                  'disabled': !speechRecognitionSupported 
+                }"
+                :title="isRecording ? 'Stop Recording' : 'Voice Input'"
+              >
+                <Icon :icon="isRecording ? 'mdi:microphone' : 'mdi:microphone-outline'" class="icon-size" />
+              </button>
+              
+              <!-- Timer -->
+              <div class="timer" v-if="isRecording || userInput.length > 0">
+                <Icon icon="mdi:timer" class="w-4 h-4" />
+                {{ formatTime(elapsedTime) }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="input-wrapper">
+            <textarea
+              id="dictation-input"
+              v-model="userInput"
+              :placeholder="isRecording ? 'Listening...' : 'Start typing or click microphone for voice input'"
+              :disabled="isRecording"
+              class="dictation-input"
+              rows="4"
+            ></textarea>
+            
+            <!-- Recording Indicator -->
+            <div class="recording-indicator" v-if="isRecording">
+              <div class="pulse"></div>
+              <span>Listening...</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <!-- Word Comparison (appears after check, before submit) -->
+      <!-- Word Comparison (always show when user has input and not showing result) -->
       <WordComparison 
-        v-if="showComparison && !showResult && example?.sentence"
+        v-if="!showResult && example?.sentence && userInput.trim()"
         :user-input="userInput"
         :correct-answer="example.sentence"
       />
+
+      <!-- Action Buttons (below Word Comparison) -->
+      <div v-if="!showResult" class="action-buttons">
+        <button 
+          @click="checkAnswer" 
+          :disabled="!userInput.trim()"
+          class="check-btn"
+        >
+          <Icon icon="mdi:spellcheck" class="w-5 h-5" />
+          Check
+        </button>
+        
+        <button 
+          @click="submitAnswer" 
+          :disabled="!userInput.trim()"
+          class="submit-btn"
+        >
+          <Icon icon="mdi:send" class="w-5 h-5" />
+          Submit
+        </button>
+        
+        <button @click="clearInput" class="clear-btn" v-if="userInput">
+          <Icon icon="mdi:eraser" class="w-5 h-5" />
+          Clear
+        </button>
+        
+        <button @click="showHint" class="hint-btn">
+          <Icon icon="mdi:lightbulb" class="w-5 h-5" />
+          Hint
+        </button>
+      </div>
 
       <!-- Result Display -->
       <ResultDisplay
@@ -83,10 +160,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useDictation } from '../composables/useDictation'
+import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
+import { useSpeechSettings } from '@/composables/useSpeechSettings'
+import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
 import type { VocabularyExample, VocabularyWord, DictationResult } from '../types/vocabulary.types'
-import AudioPlayer from './dictation/audio-player/AudioPlayer.vue'
-import InputSection from './dictation/input-section/InputSection.vue'
 import ResultDisplay from './dictation/result-display/ResultDisplay.vue'
 import HintModal from './dictation/hint-modal/HintModal.vue'
 import WordComparison from './dictation/word-comparison/WordComparison.vue'
@@ -113,7 +192,6 @@ const {
   initSpeechRecognition,
   startRecording,
   stopRecording,
-  playAudio: playDictationAudio,
   submitDictation,
   setExample,
   reset
@@ -129,7 +207,6 @@ const speechRecognitionSupported = ref(false)
 const startTime = ref<number | null>(null)
 const elapsedTime = ref(0)
 const showTranslation = ref(false)
-const showComparison = ref(false)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -161,14 +238,20 @@ const playAudio = async () => {
   if (!props.example?.sentence) return
   
   try {
-    // Play the sentence text with current playback speed
-    await playDictationAudio(props.example.sentence, playbackSpeed.value)
+    const { speak } = useSpeechSynthesis()
+    const { getCurrentOptions } = useSpeechSettings()
+    
+    const options = await getCurrentOptions()
+    options.rate = playbackSpeed.value
+    options.provider = 'webspeech' // Force Web Speech to avoid autoplay policy
+    
+    await speak(props.example.sentence, 'dictation-audio', options)
     playCount.value++
     
     if (!startTime.value) {
       startTimer()
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to play audio:', err)
   }
 }
@@ -176,6 +259,13 @@ const playAudio = async () => {
 const playCorrectAudio = async () => {
   if (props.example?.sentence) {
     await playAudio()
+  }
+}
+
+// Trigger play audio from keyboard shortcut
+const triggerPlayFromKeyboard = () => {
+  if (!showResult.value && props.example?.sentence && !isPlayingAudio.value) {
+    playAudio()
   }
 }
 
@@ -202,7 +292,6 @@ const submitAnswer = async () => {
     )
     
     showResult.value = true
-    showComparison.value = false // Hide comparison when showing full result
     emit('submit', result)
   } catch (err) {
     console.error('Failed to submit dictation:', err)
@@ -210,15 +299,12 @@ const submitAnswer = async () => {
 }
 
 const checkAnswer = () => {
-  // Show word comparison without submitting
-  if (userInput.value.trim()) {
-    showComparison.value = true
-  }
+  // Word comparison is always visible when userInput has content
+  // This function can be used for additional actions if needed
 }
 
 const clearInput = () => {
   userInput.value = ''
-  showComparison.value = false // Hide comparison when clearing
 }
 
 const showHint = () => {
@@ -229,23 +315,39 @@ const closeHint = () => {
   showHintModal.value = false
 }
 
-const changePlaybackSpeed = () => {
-  const speeds = [0.5, 0.75, 1, 1.25, 1.5]
-  const currentIndex = speeds.indexOf(playbackSpeed.value)
-  playbackSpeed.value = speeds[(currentIndex + 1) % speeds.length]
+const changePlaybackSpeed = (speed: number) => {
+  playbackSpeed.value = speed
 }
 
 const resetComponent = () => {
   showResult.value = false
   showHintModal.value = false
   showSentence.value = false
-  showComparison.value = false
   playCount.value = 0
   playbackSpeed.value = 1
   elapsedTime.value = 0
   startTime.value = null
   stopTimer()
   reset()
+}
+
+// Keyboard shortcut handler
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Ctrl key to play audio
+  if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+    const target = event.target as HTMLElement
+    
+    // Don't trigger if typing in textarea or input
+    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+      return
+    }
+    
+    // Only trigger if not in result view and has audio
+    if (!showResult.value && props.example?.sentence && !isPlayingAudio.value) {
+      event.preventDefault()
+      triggerPlayFromKeyboard()
+    }
+  }
 }
 
 // Initialize component
@@ -264,11 +366,16 @@ onMounted(() => {
       playAudio()
     }, 500)
   }
+  
+  // Add keyboard event listener
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
   stopTimer()
   stopRecording()
+  // Remove keyboard event listener
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 // Watch for example changes
@@ -320,6 +427,56 @@ watchEffect(() => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.audio-player-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.playback-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.playback-controls label {
+  color: #74c0fc;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.speed-buttons button {
+  background: rgba(116, 192, 252, 0.2);
+  border: 2px solid rgba(116, 192, 252, 0.5);
+  color: #74c0fc;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.speed-buttons button:hover {
+  background: rgba(116, 192, 252, 0.3);
+  border-color: #74c0fc;
+  transform: translateY(-2px);
+}
+
+.speed-buttons button.active {
+  background: rgba(116, 192, 252, 0.4);
+  border-color: #74c0fc;
+  box-shadow: 0 0 10px rgba(116, 192, 252, 0.3);
+}
+
 .dictation-header h2 {
   color: transparent;
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
@@ -333,6 +490,67 @@ watchEffect(() => {
   color: #b8b8b8;
   font-size: 1.1rem;
   font-style: italic;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.keyboard-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #74c0fc;
+  font-style: normal;
+  transition: all 0.3s ease;
+}
+
+.keyboard-hint kbd {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(51, 154, 240, 0.2));
+  border: 1px solid rgba(116, 192, 252, 0.5);
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #74c0fc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.keyboard-hint-active {
+  animation: pulseHint 0.6s ease;
+}
+
+.keyboard-hint-active kbd {
+  animation: pressKbd 0.3s ease;
+}
+
+@keyframes pulseHint {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pressKbd {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: translateY(2px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(116, 192, 252, 0.4), rgba(51, 154, 240, 0.4));
+    border-color: rgba(116, 192, 252, 0.8);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
 }
 
 .example-sentence {
@@ -412,6 +630,217 @@ watchEffect(() => {
   }
 }
 
+/* Input Section Styles */
+.input-section {
+  margin-bottom: 1.5rem;
+}
+
+.input-container {
+  margin-bottom: 0;
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.input-header label {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.voice-icon-btn {
+  background: rgba(231, 94, 141, 0.2);
+  color: #e75e8d;
+  border: 2px solid rgba(231, 94, 141, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.voice-icon-btn .icon-size {
+  font-size: 1.3rem;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.voice-icon-btn:hover:not(:disabled) {
+  background: rgba(231, 94, 141, 0.3);
+  border-color: #e75e8d;
+  transform: scale(1.1);
+}
+
+.voice-icon-btn.recording {
+  background: rgba(231, 94, 141, 0.4);
+  border-color: #e75e8d;
+  animation: recordingPulse 2s infinite;
+  box-shadow: 0 0 15px rgba(231, 94, 141, 0.5);
+}
+
+.voice-icon-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.timer {
+  color: #74c0fc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.dictation-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 1rem;
+  color: white;
+  font-size: 1rem;
+  resize: vertical;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.dictation-input:focus {
+  outline: none;
+  border-color: #e75e8d;
+  box-shadow: 0 0 0 3px rgba(231, 94, 141, 0.2);
+}
+
+.dictation-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dictation-input::placeholder {
+  color: #888;
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #e75e8d;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.pulse {
+  width: 12px;
+  height: 12px;
+  background: #e75e8d;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+/* Action Buttons Styles */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.check-btn, .submit-btn, .clear-btn, .hint-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.check-btn {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+}
+
+.check-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.check-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.clear-btn {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.clear-btn:hover {
+  background: rgba(244, 67, 54, 0.3);
+}
+
+.hint-btn {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+.hint-btn:hover {
+  background: rgba(255, 193, 7, 0.3);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(231, 94, 141, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(231, 94, 141, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(231, 94, 141, 0); }
+}
+
+@keyframes recordingPulse {
+  0% { border-color: rgba(231, 94, 141, 0.5); }
+  50% { border-color: #e75e8d; }
+  100% { border-color: rgba(231, 94, 141, 0.5); }
+}
+
 @media (max-width: 768px) {
   .card-container {
     padding: 1.5rem;
@@ -419,6 +848,11 @@ watchEffect(() => {
   
   .dictation-header h2 {
     font-size: 1.5rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
   }
 }
 </style>

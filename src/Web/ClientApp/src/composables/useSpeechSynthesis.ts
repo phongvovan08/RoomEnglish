@@ -167,20 +167,28 @@ export const useSpeechSynthesis = () => {
 
   // Main speak function with provider selection
   const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
-    if (playingInstances.value.has(instanceId)) {
-      return Promise.reject('Instance already playing')
-    }
-
+    console.log('🎙️ speak() called for instance:', instanceId)
+    
     // Ensure voices are loaded
     await loadWebSpeechVoices()
     
     const allVoices = getAllVoices()
     const selectedVoice = allVoices[options.voiceIndex || 0]
     const provider = options.provider || selectedVoice?.provider || currentTTSProvider.value
+    
+    console.log('🎤 Provider:', provider, 'Voice:', selectedVoice?.name)
+
+    // Stop any existing audio for this instance first
+    if (playingInstances.value.has(instanceId)) {
+      console.log('⏹️ Stopping existing instance:', instanceId)
+      stop(instanceId)
+      // Wait a bit for cleanup
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
 
     try {
-      stop(instanceId) // Stop any existing audio
       playingInstances.value.add(instanceId)
+      console.log('📝 Added instance to playing set:', instanceId)
 
       // Route to appropriate TTS provider
       if (provider === 'openai') {
@@ -188,34 +196,88 @@ export const useSpeechSynthesis = () => {
           const audioBuffer = await speakWithOpenAI(text, instanceId, options)
           
           // Play audio from buffer
-          const blob = new Blob([audioBuffer], { type: 'audio/mp3' })
+          const blob = new Blob([audioBuffer], { type: 'audio/mpeg' })
           const audioUrl = URL.createObjectURL(blob)
+          console.log('🎧 Created audio URL:', audioUrl, 'Blob size:', blob.size)
+          
+          // Create audio element and set src directly
           const audio = new Audio(audioUrl)
+          console.log('🎧 Created Audio element with src:', audio.src)
           
           audioInstances.value.set(instanceId, audio)
           audio.volume = options.volume || 1.0
+          audio.autoplay = false // Don't autoplay, we'll control it
+          
+          console.log('🎧 Audio volume:', audio.volume)
 
           return new Promise<void>((resolve, reject) => {
-            audio.onended = () => {
+            const cleanup = () => {
+              console.log('🧹 Cleaning up audio instance:', instanceId)
               playingInstances.value.delete(instanceId)
               audioInstances.value.delete(instanceId)
               URL.revokeObjectURL(audioUrl)
+            }
+
+            audio.onended = () => {
+              console.log('🏁 Audio ended')
+              cleanup()
               resolve()
             }
 
             audio.onerror = (event) => {
-              playingInstances.value.delete(instanceId)
-              audioInstances.value.delete(instanceId)
-              URL.revokeObjectURL(audioUrl)
-              reject(event)
+              console.error('❌ Audio error:', event, audio.error)
+              if (audio.error) {
+                console.error('   Error code:', audio.error.code, 'Message:', audio.error.message)
+              }
+              cleanup()
+              reject(audio.error || new Error('Audio loading failed'))
+            }
+            
+            audio.onloadeddata = () => {
+              console.log('📊 Audio data loaded. Duration:', audio.duration, 'readyState:', audio.readyState)
+              // Try to play as soon as data is loaded
+              attemptPlay()
+            }
+            
+            audio.onplaying = () => {
+              console.log('🔊 Audio is now playing!')
+            }
+            
+            audio.onpause = () => {
+              console.log('⏸️ Audio paused')
             }
 
-            audio.play().catch((error) => {
-              playingInstances.value.delete(instanceId)
-              audioInstances.value.delete(instanceId)
-              URL.revokeObjectURL(audioUrl)
-              reject(error)
-            })
+            // Wait for audio to be ready before playing
+            const attemptPlay = () => {
+              console.log('▶️ Attempting to play audio...')
+              console.log('   readyState:', audio.readyState, 'paused:', audio.paused)
+              
+              const playPromise = audio.play()
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    console.log('✅ Audio.play() promise resolved - audio should be playing')
+                  })
+                  .catch((error) => {
+                    console.error('❌ Audio.play() failed:', error.name, error.message)
+                    cleanup()
+                    // Only reject if it's not an abort error from stopping
+                    if (error.name !== 'AbortError') {
+                      reject(error)
+                    } else {
+                      // Silently handle abort errors
+                      console.log('ℹ️ AbortError - audio was stopped')
+                      resolve()
+                    }
+                  })
+              } else {
+                console.warn('⚠️ audio.play() returned undefined')
+              }
+            }
+            
+            console.log('⏳ Loading audio...')
+            // Audio with src in constructor should auto-load, but let's be explicit
+            audio.load()
           })
         } catch (error) {
           console.warn('OpenAI TTS failed, falling back to Web Speech API:', error)
@@ -234,27 +296,53 @@ export const useSpeechSynthesis = () => {
   }
 
   const stop = (instanceId?: string) => {
-    // Stop Web Speech API
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-    }
-    
     if (instanceId) {
       const audio = audioInstances.value.get(instanceId)
       if (audio) {
-        audio.pause()
-        audio.currentTime = 0
+        try {
+          // Remove event listeners to prevent errors
+          audio.onended = null
+          audio.onerror = null
+          
+          // Stop audio safely
+          if (!audio.paused) {
+            audio.pause()
+          }
+          audio.currentTime = 0
+          audio.src = '' // Clear source to fully stop
+        } catch (e) {
+          console.warn('Error stopping audio:', e)
+        }
         audioInstances.value.delete(instanceId)
       }
       playingInstances.value.delete(instanceId)
+      
+      // Only stop Web Speech API if no OpenAI audio instances are active
+      if (audioInstances.value.size === 0 && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
     } else {
       // Stop all instances
       audioInstances.value.forEach((audio) => {
-        audio.pause()
-        audio.currentTime = 0
+        try {
+          audio.onended = null
+          audio.onerror = null
+          if (!audio.paused) {
+            audio.pause()
+          }
+          audio.currentTime = 0
+          audio.src = ''
+        } catch (e) {
+          console.warn('Error stopping audio:', e)
+        }
       })
       audioInstances.value.clear()
       playingInstances.value.clear()
+      
+      // Stop Web Speech API when stopping all
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
     }
   }
 

@@ -88,7 +88,7 @@ dictation/
 **Events**:
 - `update:user-input` - Cập nhật nội dung nhập
 - `toggle-recording` - Bật/tắt ghi âm
-- `check` - Kiểm tra câu trả lời (hiện word comparison)
+- `check` - Kiểm tra câu trả lời (optional, comparison luôn hiện)
 - `submit` - Submit câu trả lời chính thức
 - `clear` - Xóa nội dung
 - `show-hint` - Hiển thị gợi ý
@@ -98,7 +98,7 @@ dictation/
 - Voice recognition button
 - Recording indicator với pulse animation
 - Timer hiển thị thời gian
-- Check button (hiện word comparison)
+- Check button (optional - comparison tự động hiện)
 - Submit button (submit kết quả cuối cùng)
 - Clear và Hint buttons
 
@@ -161,10 +161,12 @@ dictation/
 
 **Cách hoạt động**:
 1. User gõ câu vào textarea
-2. User nhấn **Enter** hoặc click **Check**
-3. WordComparison xuất hiện, hiện từng từ với màu tương ứng
-4. User có thể sửa lại dựa trên feedback
+2. **WordComparison tự động hiện** khi user bắt đầu gõ
+3. Từng từ được highlight real-time với màu tương ứng
+4. User có thể sửa lại dựa trên feedback ngay lập tức
 5. User click **Submit** để nộp kết quả chính thức
+
+**Lưu ý**: Component hiện **mặc định** (không cần nhấn Check button)
 
 ---
 
@@ -227,9 +229,9 @@ dictation/
         @show-hint="showHint"
       />
 
-      <!-- Word Comparison (xuất hiện sau khi check) -->
+      <!-- Word Comparison (tự động hiện khi user gõ) -->
       <WordComparison 
-        v-if="showComparison && !showResult && example?.sentence"
+        v-if="!showResult && example?.sentence && userInput.trim()"
         :user-input="userInput"
         :correct-answer="example.sentence"
       />
@@ -284,11 +286,12 @@ onMounted(() => {
 4. **Input** 
    → User gõ hoặc dùng voice recognition
    → Timer đếm thời gian
+   → **WordComparison tự động hiện** khi bắt đầu gõ
    
-5. **Check (MỚI!)** 
-   → User nhấn **Enter** hoặc click **Check**
-   → WordComparison xuất hiện, hiện từng từ đúng/sai
-   → User có thể sửa lại input dựa trên feedback
+5. **Real-time Feedback (MỚI!)** 
+   → Từng từ được highlight ngay khi gõ
+   → Màu xanh (đúng), đỏ (sai), vàng (thiếu)
+   → User sửa lại ngay lập tức dựa trên feedback
    
 6. **Submit** 
    → User click **Submit** khi đã sẵn sàng

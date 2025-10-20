@@ -1,6 +1,7 @@
 import { ref, computed, readonly } from 'vue'
 import { createAuthHeaders } from '@/utils/auth'
-import { ttsService } from '@/services/textToSpeechService'
+import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
+import { useSpeechSettings } from '@/composables/useSpeechSettings'
 import type { 
   DictationResult,
   SubmitDictationCommand,
@@ -9,11 +10,13 @@ import type {
 
 const API_BASE = '/api/vocabulary-learning'
 
+// Create unique instance ID for dictation audio
+const DICTATION_INSTANCE_ID = 'dictation-practice'
+
 export const useDictation = () => {
   const currentExample = ref<VocabularyExample | null>(null)
   const userInput = ref('')
   const isRecording = ref(false)
-  const isPlaying = ref(false)
   const startTime = ref<number | null>(null)
   const dictationResult = ref<DictationResult | null>(null)
   const isLoading = ref(false)
@@ -21,6 +24,13 @@ export const useDictation = () => {
 
   // Speech Recognition
   const recognition = ref<any>(null)
+  
+  // Use the global speech synthesis system
+  const { speak, isPlaying: checkIsPlaying, stop } = useSpeechSynthesis()
+  const { getCurrentOptions } = useSpeechSettings()
+  
+  // Check if dictation audio is playing
+  const isPlaying = computed(() => checkIsPlaying(DICTATION_INSTANCE_ID))
 
   // Computed properties
   const timeElapsed = computed(() => {
@@ -69,30 +79,53 @@ export const useDictation = () => {
   // Audio playback using TTS
   const playAudio = async (text: string, rate: number = 1) => {
     try {
-      // Stop any current speech
-      ttsService.stop()
+      console.log('🎵 Dictation playAudio called:', { text: text.substring(0, 50), rate })
       
-      isPlaying.value = true
+      // Get current speech settings (voice, pitch, provider)
+      const options = await getCurrentOptions()
+      console.log('🔧 Speech options from settings:', options)
       
-      // Speak the text
-      await ttsService.speak(text, {
-        rate,
-        lang: 'en-US',
-        volume: 1,
-        pitch: 1
-      })
+      // Override rate with the playback speed
+      options.rate = rate
       
-      isPlaying.value = false
-    } catch (err) {
+      // FORCE Web Speech API for Dictation
+      // Web Speech API doesn't have autoplay restrictions
+      // and works reliably with keyboard shortcuts
+      options.provider = 'webspeech'
+      
+      // Use first Web Speech voice if current selection is OpenAI
+      const { getAllVoices } = useSpeechSynthesis()
+      const allVoices = getAllVoices()
+      const webSpeechVoices = allVoices.filter(v => v.provider === 'webspeech')
+      
+      if (webSpeechVoices.length > 0) {
+        // Find index of first web speech voice in all voices
+        const webSpeechVoiceIndex = allVoices.findIndex(v => v.provider === 'webspeech')
+        options.voiceIndex = webSpeechVoiceIndex
+        console.log('🎤 Using Web Speech API for Dictation. Voice:', webSpeechVoices[0].name)
+      }
+      
+      console.log('▶️ About to call speak with:', { instanceId: DICTATION_INSTANCE_ID, options })
+      
+      // Speak the text using the global speech synthesis system
+      await speak(text, DICTATION_INSTANCE_ID, options)
+      
+      console.log('✅ Speak completed successfully')
+    } catch (err: any) {
+      // Ignore AbortError - it's expected when stopping audio
+      if (err?.name === 'AbortError') {
+        console.log('Audio playback was interrupted (expected)')
+        return
+      }
+      
+      console.error('❌ Failed to play audio:', err)
       error.value = 'Failed to play audio'
-      isPlaying.value = false
       throw err
     }
   }
 
   const stopAudio = () => {
-    ttsService.stop()
-    isPlaying.value = false
+    stop(DICTATION_INSTANCE_ID)
   }
 
   // Speech recognition controls

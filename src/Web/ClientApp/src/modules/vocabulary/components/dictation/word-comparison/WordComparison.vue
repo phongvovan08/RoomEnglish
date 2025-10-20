@@ -26,7 +26,8 @@
           <i v-else-if="word.isMissing" class="mdi mdi-help status-icon"></i>
         </div>
         
-        <div v-if="!word.isCorrect" class="correct-word">
+        <!-- Only show correct word for incorrect words, NOT for missing words -->
+        <div v-if="!word.isCorrect && word.userWord && word.correctWord" class="correct-word">
           <i class="mdi mdi-arrow-down"></i>
           {{ word.correctWord }}
         </div>

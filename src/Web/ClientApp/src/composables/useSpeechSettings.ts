@@ -6,6 +6,7 @@ const speechRate = ref(0.8)
 const speechPitch = ref(1.0)
 const selectedVoiceIndex = ref(0)
 const selectedTTSProvider = ref<'openai' | 'webspeech'>('webspeech')
+const isInitialized = ref(false)
 
 export const useSpeechSettings = () => {
   const { getAllVoices, loadVoices: loadSpeechVoices, initializeVoices } = useSpeechSynthesis()
@@ -31,30 +32,49 @@ export const useSpeechSettings = () => {
   }
 
   // Get current speech options
-  const getCurrentOptions = () => {
+  const getCurrentOptions = async () => {
+    // Auto-initialize if not already done
+    if (!isInitialized.value) {
+      console.log('🔄 Auto-initializing speech settings...')
+      await ensureInitialized()
+    }
+    
     const allVoices = getAllVoices()
     const selectedVoice = allVoices[selectedVoiceIndex.value]
     const provider = selectedVoice?.provider || selectedTTSProvider.value
     
-    // Calculate voice index for specific provider
-    let providerVoiceIndex = 0
-    if (provider === 'webspeech' && selectedVoice) {
-      const webSpeechVoices = allVoices.filter(v => v.provider === 'webspeech')
-      providerVoiceIndex = webSpeechVoices.findIndex(v => v.voiceName === selectedVoice.voiceName)
-      console.log(`Web Speech: Selected ${selectedVoice.name}, provider index: ${providerVoiceIndex}`)
-    } else if (provider === 'openai' && selectedVoice) {
-      const openaiVoices = allVoices.filter(v => v.provider === 'openai')  
-      providerVoiceIndex = openaiVoices.findIndex(v => v.voiceName === selectedVoice.voiceName)
-      console.log(`OpenAI: Selected ${selectedVoice.name}, provider index: ${providerVoiceIndex}`)
+    console.log(`📋 getCurrentOptions: voiceIndex=${selectedVoiceIndex.value}, provider=${provider}`)
+    if (selectedVoice) {
+      console.log(`   Selected voice: ${selectedVoice.name} (${selectedVoice.voiceName})`)
+    } else {
+      console.warn(`   ⚠️ No voice found at index ${selectedVoiceIndex.value}. Available voices: ${allVoices.length}`)
     }
     
     return {
       lang: 'en-US',
       rate: speechRate.value,
       pitch: speechPitch.value,
-      voiceIndex: Math.max(0, providerVoiceIndex),
+      voiceIndex: selectedVoiceIndex.value, // Use global index, not provider-specific
       provider: provider
     }
+  }
+  
+  // Ensure voices are initialized
+  const ensureInitialized = async () => {
+    if (isInitialized.value) return
+    
+    await initializeVoices()
+    loadSettings()
+    
+    const allVoices = getAllVoices()
+    if (allVoices.length > 0 && selectedVoiceIndex.value >= allVoices.length) {
+      // Reset to first voice if saved index is invalid
+      selectedVoiceIndex.value = 0
+      saveSettings()
+    }
+    
+    isInitialized.value = true
+    console.log(`✅ Speech settings initialized with ${allVoices.length} voices`)
   }
 
   // Initialize default voice
@@ -130,6 +150,7 @@ export const useSpeechSettings = () => {
     // Initialization
     loadVoices,
     initializeDefaultVoice,
+    ensureInitialized,
     loadSettings,
     saveSettings
   }

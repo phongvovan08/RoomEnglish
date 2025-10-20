@@ -22,6 +22,7 @@ interface Props {
   instanceId: string
   showText?: boolean
   buttonClass?: string
+  customRate?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,7 +39,13 @@ const handlePlay = async () => {
   if (isPlaying.value) return
   
   try {
-    const options = getCurrentOptions()
+    const options = await getCurrentOptions()
+    
+    // Override rate if customRate is provided
+    if (props.customRate !== undefined) {
+      options.rate = props.customRate
+    }
+    
     await speak(props.text, props.instanceId, options)
   } catch (error) {
     console.error('Failed to play audio:', error)
