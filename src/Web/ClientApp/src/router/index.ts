@@ -106,13 +106,19 @@ const router = createRouter({
     {
       path: Routes.Users.children.Profile.path,
       name: Routes.Users.children.Profile.name,
-      component: () => import("../modules/users/views/UserProfileView.vue"),
+      component: () => import("../modules/user/views/ProfileManagement.vue"),
       meta: { requiresAuth: true },
     },
     {
       path: Routes.Users.children.Settings.path,
       name: Routes.Users.children.Settings.name,
       component: () => import("../modules/users/views/UserSettingsView.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.Users.children.ProfileManagement.path,
+      name: Routes.Users.children.ProfileManagement.name,
+      component: () => import("../modules/user/views/ProfileManagement.vue"),
       meta: { requiresAuth: true },
     },
     

@@ -79,6 +79,10 @@
                 <Icon icon="mdi:account" class="w-4 h-4 mr-2" />
                 {{ $t('menu.profile') }}
               </router-link>
+              <router-link :to="Routes.Users.children.ProfileManagement.path" class="dropdown-link" @click="closeUserMenu">
+                <Icon icon="mdi:account-edit" class="w-4 h-4 mr-2" />
+                Quản lý Profile
+              </router-link>
               <router-link :to="Routes.Users.children.Settings.path" class="dropdown-link" @click="closeUserMenu">
                 <Icon icon="mdi:cog" class="w-4 h-4 mr-2" />
                 {{ $t('menu.settings') }}
@@ -174,6 +178,10 @@
           <router-link :to="Routes.Users.children.Profile.path" class="mobile-link" @click="closeMobileMenu">
             <Icon icon="mdi:account" class="w-5 h-5 mr-3" />
             {{ $t('menu.profile') }}
+          </router-link>
+          <router-link :to="Routes.Users.children.ProfileManagement.path" class="mobile-link" @click="closeMobileMenu">
+            <Icon icon="mdi:account-edit" class="w-5 h-5 mr-3" />
+            Quản lý Profile
           </router-link>
           <router-link :to="Routes.Users.children.Settings.path" class="mobile-link" @click="closeMobileMenu">
             <Icon icon="mdi:cog" class="w-5 h-5 mr-3" />

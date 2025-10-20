@@ -106,6 +106,10 @@ export const Routes = {
         name: "UserSettings",
         path: "/users/settings",
       },
+      ProfileManagement: {
+        name: "ProfileManagement",
+        path: "/users/profile/manage",
+      },
     },
   },
   
