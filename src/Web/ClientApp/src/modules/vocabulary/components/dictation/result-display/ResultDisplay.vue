@@ -1,0 +1,399 @@
+<template>
+  <div class="result-section">
+    <div class="result-header" :class="{ 'correct': result.isCorrect, 'incorrect': !result.isCorrect }">
+      <div class="result-icon">
+        <i class="mdi" :class="result.isCorrect ? 'mdi-check-circle' : 'mdi-close-circle'"></i>
+      </div>
+      <div class="result-message">
+        <h3>{{ result.isCorrect ? 'Excellent!' : 'Good try!' }}</h3>
+        <div class="accuracy">
+          Accuracy: {{ result.accuracyPercentage }}%
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison-section">
+      <div class="your-answer">
+        <h4>Your Answer:</h4>
+        <div class="answer-text user-text">{{ result.userInput }}</div>
+      </div>
+      
+      <div class="correct-answer">
+        <h4>Correct Answer:</h4>
+        <div class="answer-text correct-text">{{ result.correctAnswer }}</div>
+        <button @click="$emit('replay')" class="replay-btn">
+          <i class="mdi mdi-replay"></i>
+          Listen Again
+        </button>
+      </div>
+    </div>
+
+    <div class="translation-section" v-if="translation">
+      <div 
+        class="translation-flip-card"
+        :class="{ 'flipped': showTranslation }"
+        @click="toggleTranslation"
+      >
+        <div class="flip-content">
+          <!-- Front side -->
+          <div class="flip-front">
+            <div class="flip-icon">
+              <i class="mdi mdi-translate"></i>
+            </div>
+            <h4>Click to see Vietnamese translation</h4>
+            <div class="flip-hint">
+              <i class="mdi mdi-flip-horizontal"></i>
+              <span>Tap to flip</span>
+            </div>
+          </div>
+          
+          <!-- Back side -->
+          <div class="flip-back">
+            <h4>Vietnamese Translation:</h4>
+            <div class="translation-content">{{ translation }}</div>
+            <div class="flip-hint">
+              <i class="mdi mdi-flip-horizontal"></i>
+              <span>Tap to flip back</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grammar-section" v-if="grammar">
+      <h4>📚 Grammar:</h4>
+      <div class="grammar-text">{{ grammar }}</div>
+    </div>
+
+    <div class="performance-stats">
+      <div class="stat-item">
+        <i class="mdi mdi-clock"></i>
+        <span>Time: {{ formatTime(result.timeTakenSeconds) }}</span>
+      </div>
+      <div class="stat-item">
+        <i class="mdi mdi-target"></i>
+        <span>Accuracy: {{ result.accuracyPercentage }}%</span>
+      </div>
+      <div class="stat-item" v-if="result.isCorrect">
+        <i class="mdi mdi-trophy"></i>
+        <span>Perfect!</span>
+      </div>
+    </div>
+
+    <button @click="$emit('next')" class="next-btn">
+      <span>Next Exercise</span>
+      <i class="mdi mdi-arrow-right"></i>
+    </button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { DictationResult } from '../../../types/vocabulary.types'
+
+interface Props {
+  result: DictationResult
+  translation?: string
+  grammar?: string
+}
+
+defineProps<Props>()
+
+defineEmits<{
+  replay: []
+  next: []
+}>()
+
+const showTranslation = ref(false)
+
+const toggleTranslation = () => {
+  showTranslation.value = !showTranslation.value
+}
+
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+</script>
+
+<style scoped>
+.result-section {
+  text-align: center;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.result-header.correct {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.result-header.incorrect {
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+.result-icon {
+  font-size: 3rem;
+}
+
+.result-header.correct .result-icon {
+  color: #4caf50;
+}
+
+.result-header.incorrect .result-icon {
+  color: #ffc107;
+}
+
+.result-message h3 {
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.accuracy {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.result-header.correct .accuracy {
+  color: #4caf50;
+}
+
+.result-header.incorrect .accuracy {
+  color: #ffc107;
+}
+
+.comparison-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.your-answer, .correct-answer {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.your-answer h4, .correct-answer h4 {
+  color: #74c0fc;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.answer-text {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-text {
+  color: #fff;
+}
+
+.correct-text {
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.replay-btn {
+  background: rgba(116, 192, 252, 0.2);
+  color: #74c0fc;
+  border: 1px solid rgba(116, 192, 252, 0.5);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+}
+
+.replay-btn:hover {
+  background: rgba(116, 192, 252, 0.3);
+}
+
+.translation-section {
+  margin-bottom: 2rem;
+}
+
+.translation-flip-card {
+  perspective: 1000px;
+  height: 150px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.translation-flip-card:hover {
+  transform: translateY(-2px);
+}
+
+.flip-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.8s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+.translation-flip-card.flipped .flip-content {
+  transform: rotateY(180deg);
+}
+
+.flip-front,
+.flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 15px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.flip-front {
+  background: linear-gradient(135deg, rgba(231, 94, 141, 0.2), rgba(231, 94, 141, 0.1));
+  border: 1px solid rgba(231, 94, 141, 0.3);
+  color: white;
+}
+
+.flip-back {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
+  border: 1px solid rgba(116, 192, 252, 0.3);
+  color: white;
+  transform: rotateY(180deg);
+}
+
+.flip-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #e75e8d;
+}
+
+.flip-front h4 {
+  color: #e75e8d;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.flip-back h4 {
+  color: #74c0fc;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.translation-content {
+  color: white;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.flip-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.flip-hint i {
+  font-size: 1rem;
+}
+
+.grammar-section {
+  background: rgba(116, 192, 252, 0.1);
+  border: 1px solid rgba(116, 192, 252, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.grammar-section h4 {
+  color: #74c0fc;
+  margin-bottom: 1rem;
+}
+
+.grammar-section .grammar-text {
+  color: white;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.performance-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #b8b8b8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem 1rem;
+  border-radius: 20px;
+}
+
+.stat-item i {
+  color: #74c0fc;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, #e75e8d, #74c0fc);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.next-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(231, 94, 141, 0.4);
+}
+
+@media (max-width: 768px) {
+  .comparison-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-stats {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>
