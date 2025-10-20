@@ -141,7 +141,7 @@
         v-for="(item, index) in paginatedData" 
         :key="getItemKey(item, index)"
         :class="['grid-item', { clickable: clickable, selected: selectable && isItemSelected(item) }]"
-        @click="clickable && handleRowClick(item)"
+        @click="handleGridItemClick(item)"
       >
         <slot name="grid-item" :item="item" :index="index">
           <!-- Default grid item layout -->
@@ -156,11 +156,12 @@
               />
               <h3>{{ getNestedValue(item, columns[0]?.key) }}</h3>
             </div>
-            <div v-if="actions && actions.length > 0" class="grid-actions">
+            <!-- Hide detail action in grid view, keep only edit/delete -->
+            <div v-if="actions && actions.length > 0" class="grid-actions" @click.stop>
               <button
-                v-for="action in actions"
+                v-for="action in actions.filter(a => a.key !== 'detail')"
                 :key="action.key"
-                @click.stop="handleAction(action.key, item)"
+                @click="handleAction(action.key, item)"
                 :class="['action-btn', action.variant || 'default']"
                 :title="action.tooltip"
               >
@@ -176,6 +177,15 @@
             >
               <label>{{ column.label }}:</label>
               <span>{{ getNestedValue(item, column.key) }}</span>
+            </div>
+          </div>
+          
+          <!-- Add visual indicator for clickable grid items -->
+          <div class="grid-item-footer">
+            <div class="click-indicator">
+              <Icon icon="mdi:eye" class="w-4 h-4" />
+              <span>Click để xem chi tiết</span>
+              <Icon icon="mdi:arrow-right" class="w-4 h-4 arrow-icon" />
             </div>
           </div>
         </slot>
@@ -511,6 +521,16 @@ const getSortIcon = (columnKey: string): string => {
 
 const handleRowClick = (item: any) => {
   emit('row-click', item)
+}
+
+const handleGridItemClick = (item: any) => {
+  // Check if there's a detail action, if so, trigger it; otherwise use row-click
+  const detailAction = props.actions?.find(action => action.key === 'detail')
+  if (detailAction) {
+    emit('action-click', 'detail', item)
+  } else {
+    emit('row-click', item)
+  }
 }
 
 const handleAction = (actionKey: string, item: any) => {
@@ -939,10 +959,14 @@ onUnmounted(() => {
   border-radius: 0.5rem;
   padding: 1rem;
   transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
 }
 
 .grid-item:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+  transform: translateY(-2px);
 }
 
 .grid-item.clickable {
@@ -950,7 +974,7 @@ onUnmounted(() => {
 }
 
 .grid-item.clickable:hover {
-  border-color: #93c5fd;
+  border-color: #3b82f6;
 }
 
 .grid-item.selected {
@@ -987,6 +1011,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .grid-field {
@@ -1001,6 +1026,33 @@ onUnmounted(() => {
 
 .grid-field span {
   color: #111827;
+}
+
+.grid-item-footer {
+  padding-top: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.click-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #2563eb;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.click-indicator .arrow-icon {
+  transition: transform 0.2s;
+}
+
+.grid-item:hover .click-indicator {
+  color: #1d4ed8;
+}
+
+.grid-item:hover .click-indicator .arrow-icon {
+  transform: translateX(4px);
 }
 
 /* Empty State */

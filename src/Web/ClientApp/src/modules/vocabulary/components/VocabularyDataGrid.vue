@@ -5,7 +5,7 @@
     :actions="actions"
     :pagination="true"
     :searchable="true"
-    :clickable="false"
+    :clickable="true"
     :server-side="true"
     :loading="loading"
     :page-size="pageSize"
@@ -28,7 +28,7 @@
   >
     <!-- Custom grid item for vocabulary -->
     <template #grid-item="{ item }">
-      <div class="vocabulary-card" >
+      <div class="vocabulary-card">
         <div class="vocabulary-header">
           <div class="word-info">
             <div class="word-title">
@@ -42,17 +42,6 @@
               <h3>{{ item.word }}</h3>
             </div>
             <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
-          </div>
-          <div class="vocabulary-actions">
-            <button @click.stop="$emit('vocabulary-click', item)" class="action-btn detail">
-              <Icon icon="mdi:eye" class="w-4 h-4" />
-            </button>
-            <button @click.stop="$emit('edit-vocabulary', item)" class="action-btn edit">
-              <Icon icon="mdi:pencil" class="w-4 h-4" />
-            </button>
-            <button @click.stop="$emit('delete-vocabulary', item)" class="action-btn delete">
-              <Icon icon="mdi:delete" class="w-4 h-4" />
-            </button>
           </div>
         </div>
         
@@ -72,7 +61,7 @@
         </div>
 
         <div class="vocabulary-footer">
-          <span class="view-examples">Xem ví dụ →</span>
+          <span class="view-examples">{{ item.exampleCount || 0 }} ví dụ</span>
         </div>
       </div>
     </template>
@@ -287,7 +276,6 @@ const formatDate = (date: string | Date): string => {
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1rem;
-  cursor: pointer;
   transition: all 0.2s;
 }
 

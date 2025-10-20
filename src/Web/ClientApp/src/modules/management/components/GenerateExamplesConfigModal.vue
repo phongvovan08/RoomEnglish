@@ -373,6 +373,7 @@ watch(() => props.isOpen, (newValue) => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  color: #1f2937;
 }
 
 .form-input {
