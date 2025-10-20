@@ -41,7 +41,7 @@
               />
               <h3>{{ item.word }}</h3>
             </div>
-            <span v-if="item.pronunciation" class="pronunciation">{{ item.pronunciation }}</span>
+            <span v-if="item.phonetic" class="pronunciation">{{ item.phonetic }}</span>
           </div>
         </div>
         
@@ -66,8 +66,8 @@
       </div>
     </template>
 
-    <!-- Custom cell for pronunciation in table view -->
-    <template #cell-pronunciation="{ value }">
+    <!-- Custom cell for phonetic in table view -->
+    <template #cell-phonetic="{ value }">
       <span class="pronunciation-cell">{{ value || '—' }}</span>
     </template>
 
@@ -114,7 +114,7 @@ interface Vocabulary {
   id: number
   word: string
   definition: string
-  pronunciation?: string
+  phonetic?: string
   exampleCount: number
   createdAt: string
 }
@@ -172,7 +172,7 @@ const columns = computed<GridColumn[]>(() => [
     type: 'text'
   },
   {
-    key: 'pronunciation',
+    key: 'phonetic',
     label: 'Phát âm',
     sortable: false,
     type: 'text'

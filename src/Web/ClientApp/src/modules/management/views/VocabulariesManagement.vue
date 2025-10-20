@@ -108,12 +108,12 @@
           </div>
           
           <div class="form-group">
-            <label for="pronunciation">Phát âm</label>
+            <label for="phonetic">Phát âm</label>
             <input 
-              id="pronunciation"
-              v-model="vocabularyForm.pronunciation" 
+              id="phonetic"
+              v-model="vocabularyForm.phonetic" 
               type="text" 
-              placeholder="/pronunciation/"
+              placeholder="/phonetic/"
               class="form-input"
             />
           </div>
@@ -190,7 +190,7 @@ interface Vocabulary {
   id: number
   word: string
   definition: string
-  pronunciation?: string
+  phonetic?: string
   exampleCount: number
   createdAt: string
 }
@@ -198,7 +198,7 @@ interface Vocabulary {
 interface VocabularyForm {
   word: string
   definition: string
-  pronunciation: string
+  phonetic: string
 }
 
 // Props from route
@@ -216,7 +216,7 @@ const editingVocabulary = ref<Vocabulary | null>(null)
 const vocabularyForm = ref<VocabularyForm>({
   word: '',
   definition: '',
-  pronunciation: ''
+  phonetic: ''
 })
 
 // Pagination state
@@ -289,6 +289,12 @@ const loadVocabularies = async (page: number = currentPage.value) => {
       totalItems.value = data.totalCount || 0
       totalPages.value = data.totalPages || 0
       currentPage.value = data.pageNumber || 1
+      
+      // Debug: Log first vocabulary to check structure
+      if (vocabularies.value.length > 0) {
+        console.log('📊 Vocabulary data structure:', vocabularies.value[0])
+        console.log('📊 Phonetic field:', vocabularies.value[0].phonetic)
+      }
     } else {
       showError('Lỗi tải từ vựng', `Không thể tải danh sách từ vựng. Mã lỗi: ${response.status}`)
     }
@@ -309,7 +315,7 @@ const editVocabulary = (vocabulary: Vocabulary) => {
   vocabularyForm.value = {
     word: vocabulary.word,
     definition: vocabulary.definition,
-    pronunciation: vocabulary.pronunciation || ''
+    phonetic: vocabulary.phonetic || ''
   }
 }
 
@@ -342,8 +348,10 @@ const saveVocabulary = async () => {
   
   const method = isEdit ? 'PUT' : 'POST'
   const payload = {
-    ...vocabularyForm.value,
-    categoryId: categoryId.value
+    Word: vocabularyForm.value.word,
+    Definition: vocabularyForm.value.definition,
+    Pronunciation: vocabularyForm.value.phonetic,
+    CategoryId: categoryId.value
   }
   
   try {
@@ -369,7 +377,7 @@ const saveVocabulary = async () => {
 const closeModal = () => {
   showCreateModal.value = false
   editingVocabulary.value = null
-  vocabularyForm.value = { word: '', definition: '', pronunciation: '' }
+  vocabularyForm.value = { word: '', definition: '', phonetic: '' }
 }
 
 const closeUploadModal = () => {
