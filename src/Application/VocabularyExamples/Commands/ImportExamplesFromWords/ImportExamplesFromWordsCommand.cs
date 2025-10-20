@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using OpenAI.Chat;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace RoomEnglish.Application.VocabularyExamples.Commands.ImportExamplesFromWords;
 
@@ -45,19 +47,25 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
 {
     private readonly IApplicationDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<ImportExamplesFromWordsCommandHandler> _logger;
 
-    public ImportExamplesFromWordsCommandHandler(IApplicationDbContext context, IConfiguration configuration)
+    public ImportExamplesFromWordsCommandHandler(IApplicationDbContext context, IConfiguration configuration, ILogger<ImportExamplesFromWordsCommandHandler> logger)
     {
         _context = context;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<ImportExamplesWordsResult> Handle(ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
     {
+        var totalStopwatch = Stopwatch.StartNew();
         var result = new ImportExamplesWordsResult
         {
             TotalProcessed = request.Words.Count
         };
+
+        _logger.LogInformation("Starting example generation for {WordCount} words: {Words}", 
+            request.Words.Count, string.Join(", ", request.Words));
 
         if (!request.Words.Any())
         {
@@ -69,9 +77,14 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         try
         {
             // Get vocabulary words that exist in the database
+            var dbQueryStopwatch = Stopwatch.StartNew();
             var existingVocabularyWords = await _context.VocabularyWords
                 .Where(v => request.Words.Contains(v.Word) && v.IsActive)
                 .ToListAsync(cancellationToken);
+            dbQueryStopwatch.Stop();
+
+            _logger.LogInformation("Database query completed in {ElapsedMs}ms. Found {FoundCount}/{TotalCount} vocabulary words", 
+                dbQueryStopwatch.ElapsedMilliseconds, existingVocabularyWords.Count, request.Words.Count);
 
             if (!existingVocabularyWords.Any())
             {
@@ -79,11 +92,17 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 result.ErrorCount = request.Words.Count;
                 result.Success = false;
                 result.Message = "No vocabulary words found";
+                _logger.LogWarning("No vocabulary words found for generation request");
                 return result;
             }
 
             // Process vocabulary words in batches with parallel ChatGPT calls
+            var processingStopwatch = Stopwatch.StartNew();
             await ProcessVocabularyWordsInBatches(existingVocabularyWords, result, request, cancellationToken);
+            processingStopwatch.Stop();
+
+            _logger.LogInformation("Parallel processing completed in {ElapsedMs}ms for {WordCount} words", 
+                processingStopwatch.ElapsedMilliseconds, existingVocabularyWords.Count);
 
             // Check for words that weren't found in the database
             var foundWords = existingVocabularyWords.Select(v => v.Word).ToHashSet();
@@ -96,30 +115,50 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             }
 
             // Batch save all examples at once for better performance
+            var saveStopwatch = Stopwatch.StartNew();
             try
             {
                 var savedCount = await _context.SaveChangesAsync(cancellationToken);
+                saveStopwatch.Stop();
+                totalStopwatch.Stop();
+
                 result.Success = result.SuccessCount > 0;
                 result.Message = result.Success 
                     ? $"Successfully generated {result.SuccessCount} examples for {existingVocabularyWords.Count} words with {savedCount} database changes. {result.ErrorCount} errors occurred."
                     : $"Failed to generate examples: {result.ErrorCount} errors";
+
+                _logger.LogInformation("Database save completed in {SaveMs}ms. Total operation time: {TotalMs}ms. " +
+                    "Generated {SuccessCount} examples with {ErrorCount} errors", 
+                    saveStopwatch.ElapsedMilliseconds, totalStopwatch.ElapsedMilliseconds, 
+                    result.SuccessCount, result.ErrorCount);
             }
             catch (Exception ex)
             {
+                saveStopwatch.Stop();
+                totalStopwatch.Stop();
+                
                 result.Errors.Add($"Error saving to database: {ex.Message}");
                 result.ErrorCount++;
                 result.Success = false;
                 result.Message = "Import failed during database save operation.";
+                
+                _logger.LogError(ex, "Database save failed after {TotalMs}ms. Error: {ErrorMessage}", 
+                    totalStopwatch.ElapsedMilliseconds, ex.Message);
             }
 
             return result;
         }
         catch (Exception ex)
         {
+            totalStopwatch.Stop();
             result.Errors.Add($"Unexpected error: {ex.Message}");
             result.ErrorCount++;
             result.Success = false;
             result.Message = "Processing failed";
+            
+            _logger.LogError(ex, "Unexpected error during example generation after {TotalMs}ms: {ErrorMessage}", 
+                totalStopwatch.ElapsedMilliseconds, ex.Message);
+            
             return result;
         }
     }
@@ -130,6 +169,9 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 5);
         var semaphore = new SemaphoreSlim(batchSize, batchSize);
         
+        _logger.LogInformation("Starting parallel processing with batch size: {BatchSize} for {WordCount} words", 
+            batchSize, vocabularyWords.Count);
+
         var tasks = vocabularyWords.Select(async word =>
         {
             await semaphore.WaitAsync(cancellationToken);
@@ -144,13 +186,23 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         });
         
         await Task.WhenAll(tasks);
+        
+        _logger.LogInformation("Parallel processing completed for all {WordCount} words", vocabularyWords.Count);
     }
 
     private async Task ProcessVocabularyWord(VocabularyWord vocabularyWord, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
     {
+        var wordStopwatch = Stopwatch.StartNew();
+        _logger.LogDebug("Starting processing for word: {Word}", vocabularyWord.Word);
+        
         try
         {
+            var chatGptStopwatch = Stopwatch.StartNew();
             var examplesData = await GetExamplesDataFromChatGPT(vocabularyWord.Word, request);
+            chatGptStopwatch.Stop();
+            
+            _logger.LogDebug("ChatGPT API call completed for '{Word}' in {ElapsedMs}ms. Generated {ExampleCount} examples", 
+                vocabularyWord.Word, chatGptStopwatch.ElapsedMilliseconds, examplesData.Count);
             
             // Get existing examples for this word in one query
             var existingExamples = await _context.VocabularyExamples
@@ -214,10 +266,18 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 }
             }
 
+            wordStopwatch.Stop();
+            _logger.LogDebug("Completed processing for '{Word}' in {ElapsedMs}ms. Added: {AddedCount}, Skipped: {SkippedCount}", 
+                vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, examplesAddedCount, examplesSkippedCount);
+
             // Don't save changes here - batch save will be done later
         }
         catch (Exception ex)
         {
+            wordStopwatch.Stop();
+            _logger.LogWarning(ex, "ChatGPT processing failed for '{Word}' after {ElapsedMs}ms. Using fallback data. Error: {ErrorMessage}", 
+                vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, ex.Message);
+            
             // If ChatGPT fails, use fallback mock data
             var fallbackExamples = GenerateFallbackExamples(vocabularyWord.Word, request);
             
@@ -265,12 +325,18 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         var client = new ChatClient("gpt-4o", apiKey);
         var prompt = CreatePromptForExamples(vocabularyWord, request);
         
+        _logger.LogDebug("Starting ChatGPT API call for '{Word}' with {MaxRetries} max retries and {TimeoutSeconds}s timeout", 
+            vocabularyWord, maxRetries, timeoutSeconds);
+        
         Exception? lastException = null;
         
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
+            var attemptStopwatch = Stopwatch.StartNew();
             try
             {
+                _logger.LogDebug("ChatGPT API attempt {Attempt}/{MaxRetries} for '{Word}'", attempt, maxRetries, vocabularyWord);
+                
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
                 
                 var messages = new List<ChatMessage>
@@ -279,6 +345,10 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 };
                 
                 var chatCompletion = await client.CompleteChatAsync(messages, cancellationToken: cts.Token);
+                attemptStopwatch.Stop();
+                
+                _logger.LogDebug("ChatGPT API success on attempt {Attempt} for '{Word}' in {ElapsedMs}ms", 
+                    attempt, vocabularyWord, attemptStopwatch.ElapsedMilliseconds);
                 var content = chatCompletion.Value.Content[0].Text;
                 
                 // Clean up the response to ensure valid JSON
@@ -295,16 +365,24 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             }
             catch (Exception ex)
             {
+                attemptStopwatch.Stop();
                 lastException = ex;
+                
+                _logger.LogWarning("ChatGPT API attempt {Attempt}/{MaxRetries} failed for '{Word}' after {ElapsedMs}ms. Error: {ErrorMessage}", 
+                    attempt, maxRetries, vocabularyWord, attemptStopwatch.ElapsedMilliseconds, ex.Message);
                 
                 if (attempt < maxRetries)
                 {
                     // Exponential backoff: wait 1s, 2s, 4s...
                     var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1));
+                    _logger.LogDebug("Retrying ChatGPT API call for '{Word}' after {DelaySeconds}s delay", vocabularyWord, delay.TotalSeconds);
                     await Task.Delay(delay);
                 }
             }
         }
+        
+        _logger.LogError("ChatGPT API failed for '{Word}' after all {MaxRetries} attempts. Final error: {ErrorMessage}", 
+            vocabularyWord, maxRetries, lastException?.Message);
         
         throw new InvalidOperationException($"ChatGPT failed after {maxRetries} attempts: {lastException?.Message}");
     }

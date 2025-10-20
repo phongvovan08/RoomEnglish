@@ -70,6 +70,7 @@ npm run dev
 ## 📚 Detailed Documentation
 
 - **Performance Optimization Details**: [`PERFORMANCE_OPTIMIZATION_README.md`](PERFORMANCE_OPTIMIZATION_README.md)
+- **Performance Logging Implementation**: [`PERFORMANCE_LOGGING_README.md`](PERFORMANCE_LOGGING_README.md)
 - **Frontend Documentation**: [`Web/ClientApp/README.md`](Web/ClientApp/README.md)
 
 ## 🎯 Key Features
@@ -102,13 +103,30 @@ npm run dev
 - **AI Integration**: OpenAI ChatGPT API
 - **Architecture**: Clean Architecture, CQRS pattern
 
-## 📈 Performance Monitoring
+## 📈 Performance Monitoring & Logging
 
-Monitor application performance with:
-- API response times for ChatGPT requests
-- Database query execution counts
-- Memory usage during parallel processing
-- Success/failure rates for example generation
+### Real-time Performance Tracking:
+- **Backend Logging**: Comprehensive timing for all operations (database, API calls, parallel processing)
+- **Frontend Metrics**: User experience timing and success rate tracking
+- **API Performance**: ChatGPT request timing with retry logic monitoring
+- **Database Metrics**: Query performance and batch operation efficiency
+
+### Sample Log Output:
+```log
+[INFO] Starting example generation for 5 words: computer, programming, software...
+[INFO] Database query completed in 45ms. Found 5/5 vocabulary words  
+[INFO] Parallel processing completed in 13250ms for 5 words
+[INFO] Database save completed in 156ms. Total operation time: 13451ms
+```
+
+### Frontend Console Metrics:
+```javascript
+📊 Performance metrics:
+  - Total time: 13451ms (13.5s)
+  - Average per word: 2690ms  
+  - Success rate: 94.0%
+  - Words processed: 5
+```
 
 ## 🎉 Results
 
