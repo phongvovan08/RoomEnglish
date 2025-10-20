@@ -1,7 +1,17 @@
 using OfficeOpenXml;
 using RoomEnglish.Infrastructure.Data;
+using RoomEnglish.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Create Logs directory
+var logsPath = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
+Directory.CreateDirectory(logsPath);
+
+// Configure built-in logging with file output
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddProvider(new FileLoggerProvider(logsPath));
 
 // Configure EPPlus for noncommercial organizational use as required by EPPlus 8+ licensing.
 ExcelPackage.License.SetNonCommercialOrganization("RoomEnglish");
