@@ -350,6 +350,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
+import { AuthService } from '@/services/authService'
 
 // Types
 interface UserProfile {
@@ -436,9 +437,16 @@ const preferences = reactive<Preferences>({
 const loadUserProfile = async () => {
   try {
     isLoading.value = true
+    const token = AuthService.getToken()
+    
+    if (!token) {
+      showError('Chưa đăng nhập', 'Vui lòng đăng nhập để xem profile')
+      return
+    }
+    
     const response = await fetch('/api/users/me', {
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
@@ -485,10 +493,17 @@ const cancelEditPersonal = () => {
 const savePersonalInfo = async () => {
   try {
     isLoading.value = true
+    const token = AuthService.getToken()
+    
+    if (!token) {
+      showError('Chưa đăng nhập', 'Vui lòng đăng nhập để cập nhật profile')
+      return
+    }
+    
     const response = await fetch('/api/users/me', {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(personalForm)
@@ -518,10 +533,17 @@ const changePassword = async () => {
   
   try {
     isLoading.value = true
+    const token = AuthService.getToken()
+    
+    if (!token) {
+      showError('Chưa đăng nhập', 'Vui lòng đăng nhập để đổi mật khẩu')
+      return
+    }
+    
     const response = await fetch('/api/users/change-password', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -553,10 +575,17 @@ const changePassword = async () => {
 const savePreferences = async () => {
   try {
     isLoading.value = true
+    const token = AuthService.getToken()
+    
+    if (!token) {
+      showError('Chưa đăng nhập', 'Vui lòng đăng nhập để lưu tùy chọn')
+      return
+    }
+    
     const response = await fetch('/api/users/preferences', {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(preferences)
@@ -591,13 +620,20 @@ const uploadAvatar = async () => {
   
   try {
     isLoading.value = true
+    const token = AuthService.getToken()
+    
+    if (!token) {
+      showError('Chưa đăng nhập', 'Vui lòng đăng nhập để tải ảnh đại diện')
+      return
+    }
+    
     const formData = new FormData()
     formData.append('avatar', selectedFile.value)
     
     const response = await fetch('/api/users/avatar', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`
+        'Authorization': `Bearer ${token}`
       },
       body: formData
     })

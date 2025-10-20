@@ -750,6 +750,24 @@
         ]
       }
     },
+    "/api/Users/me": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetApiUsersMe",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/vocabulary-learning/sessions/start": {
       "post": {
         "tags": [
