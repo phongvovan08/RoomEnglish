@@ -23,11 +23,22 @@ DataGrid là component Vue 3 với TypeScript hỗ trợ hai chế độ hiển 
 - **Table View**: Hiển thị dữ liệu dạng bảng truyền thống với cột và hàng
 - **Grid View**: Hiển thị dữ liệu dạng card layout linh hoạt
 
+### Use Cases Chính
+- 📊 **Vocabulary Management**: Quản lý từ vựng với multi-selection và AI example generation
+- 📋 **Data Tables**: Bảng dữ liệu truyền thống với pagination và sorting
+- 🎯 **Bulk Operations**: Chọn nhiều items và thực hiện actions hàng loạt
+- 🔍 **Content Browse**: Duyệt nội dung dạng card layout với search và filter
+
 ## Tính năng chính
 
 - ✅ Chuyển đổi giữa view Table và Grid
 - ✅ Tìm kiếm và lọc dữ liệu
 - ✅ Sắp xếp theo cột (sortable columns)
+- ✅ **Multi-Selection Support** 🆕
+  - Checkbox selection trong cả Table và Grid view
+  - Select all/clear all functionality
+  - External selection state management
+  - Selection change events với complete item data
 - ✅ **Server-side Pagination mặc định** với các tính năng:
   - Navigation buttons (First, Previous, Next, Last)
   - Page numbers với ellipsis (...) cho nhiều trang
@@ -88,6 +99,10 @@ interface GridAction {
 | `emptyStateTitle` | `string` | `'Không có dữ liệu'` | Tiêu đề empty state |
 | `emptyStateMessage` | `string` | `'Chưa có dữ liệu để hiển thị'` | Thông báo empty state |
 | `keyField` | `string` | `'id'` | Field làm key cho v-for |
+| **Multi-Selection Props** 🆕 |
+| `selectable` | `boolean` | `false` | Bật/tắt multi-selection |
+| `selectedItems` | `any[]` | `[]` | Danh sách items đã chọn |
+| `defaultViewMode` | `'table'\|'grid'` | `'table'` | Chế độ hiển thị mặc định |
 | **Server-side Pagination (Default)** |
 | `serverSide` | `boolean` | `true` | Server-side pagination (mặc định) |
 | `currentPage` | `number` | `1` | Trang hiện tại (required cho server-side) |
@@ -104,6 +119,7 @@ interface GridAction {
 | `page-change` | `page: number` | Khi chuyển trang |
 | `page-size-change` | `pageSize: number` | Khi thay đổi page size |
 | `sort-change` | `sortBy: string, sortOrder: 'asc'\|'desc'` | Khi sort |
+| `selection-change` | `selectedItems: any[]` | 🆕 Khi thay đổi selection |
 
 ## Slots
 
@@ -582,5 +598,133 @@ The `_DataGridTemplate.vue` includes:
 - ✅ Action buttons and tooltips
 - ✅ Responsive design
 - ✅ Comprehensive styling
+
+## Multi-Selection Usage 🆕
+
+**Tính năng mới cho phép chọn nhiều items và thực hiện bulk operations:**
+
+### Cách sử dụng Multi-Selection
+
+```vue
+<template>
+  <div>
+    <!-- Action bar hiển thị khi có items được chọn -->
+    <div v-if="selectedVocabularies.length > 0" class="selection-actions">
+      <span class="selection-count">
+        Đã chọn {{ selectedVocabularies.length }} từ vựng
+      </span>
+      <button @click="generateExamples" :disabled="isGenerating" class="btn-ai">
+        {{ isGenerating ? 'Đang tạo...' : 'Tạo ví dụ AI' }}
+      </button>
+      <button @click="clearSelection" class="btn-clear">
+        Hủy chọn
+      </button>
+    </div>
+
+    <!-- DataGrid với multi-selection -->
+    <DataGrid
+      :data="vocabularies"
+      :columns="columns"
+      :selectable="true"
+      :selected-items="selectedVocabularies"
+      :default-view-mode="'table'"
+      @selection-change="handleSelectionChange"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import DataGrid from '@/components/ui/DataGrid.vue'
+
+interface Vocabulary {
+  id: number
+  word: string
+  definition: string
+  // ... other fields
+}
+
+// Selection state
+const selectedVocabularies = ref<Vocabulary[]>([])
+const isGenerating = ref(false)
+
+// Selection handlers
+const handleSelectionChange = (selected: Vocabulary[]) => {
+  selectedVocabularies.value = selected
+}
+
+const clearSelection = () => {
+  selectedVocabularies.value = []
+}
+
+const generateExamples = async () => {
+  if (selectedVocabularies.value.length === 0) return
+  
+  isGenerating.value = true
+  try {
+    const words = selectedVocabularies.value.map(vocab => vocab.word)
+    
+    const response = await fetch('/api/vocabulary-examples/import-words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        Words: words,
+        ExampleCount: 10,
+        IncludeGrammar: true,
+        IncludeContext: true,
+        DifficultyLevel: 1
+      })
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      // Hiển thị thông báo chi tiết
+      if (result.successCount > 0) {
+        let message = `Đã tạo thành công ${result.successCount} ví dụ`
+        if (result.errorCount > 0) {
+          message += `, ${result.errorCount} ví dụ bị trùng hoặc lỗi`
+        }
+        alert(message)
+      }
+      
+      clearSelection()
+    }
+  } catch (error) {
+    console.error('Error:', error)
+  } finally {
+    isGenerating.value = false
+  }
+}
+</script>
+```
+
+### Key Features của Multi-Selection
+
+- ✅ **Checkbox Selection**: Checkbox trong cả Table và Grid view
+- ✅ **External State Management**: Selection state được quản lý bởi parent component
+- ✅ **Select All/Clear All**: Chọn tất cả hoặc bỏ chọn tất cả trong trang hiện tại
+- ✅ **Reactive Updates**: Checkbox tự động cập nhật khi external state thay đổi
+- ✅ **Bulk Operations**: Thực hiện operations trên nhiều items cùng lúc
+- ✅ **AI Integration**: Tích hợp với ChatGPT API để tạo examples cho nhiều từ vựng
+
+### Tích hợp với VocabulariesManagement
+
+```vue
+<!-- VocabulariesManagement.vue -->
+<VocabularyDataGrid
+  :vocabularies="vocabularies"
+  :selectable="true"
+  :selected-items="selectedVocabularies"
+  :default-view-mode="'table'"
+  @selection-change="handleSelectionChange"
+/>
+```
+
+### Advanced Selection Features
+
+1. **Persistent Selection**: Selection state được duy trì khi chuyển trang
+2. **Detailed Notifications**: Thông báo chi tiết về kết quả operations
+3. **Loading States**: UI feedback trong quá trình xử lý bulk operations
+4. **Error Handling**: Xử lý và hiển thị lỗi một cách thân thiện
 
 **Thư viện được phát triển cho dự án RoomEnglish - Quản lý từ vựng tiếng Anh**
