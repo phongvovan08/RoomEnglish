@@ -1,0 +1,15 @@
+# Build outputs - these folders cause Static Web Assets errors
+bin/
+obj/
+wwwroot/
+
+# Static Web Assets cache files
+*.StaticWebAssets.xml
+*.StaticWebAssets.json
+staticwebassets/
+staticwebassets.build.json
+staticwebassets.development.json
+
+# User settings
+*.user
+appsettings.Development.json

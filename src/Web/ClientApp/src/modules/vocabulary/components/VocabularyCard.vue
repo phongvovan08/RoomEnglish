@@ -31,92 +31,37 @@
               <p class="definition">{{ word.definition }}</p>
               <p class="vietnamese-meaning">{{ word.vietnameseMeaning }}</p>
           </div>
+          
+          <!-- Meaning Display -->
+          <div class="meaning-card">
+              <h3>Meaning (Vietnamese)</h3>
+              <p class="meaning-display">{{ word.meaning }}</p>
+          </div>
       </div>
 
-      <!-- Answer Section -->
-      <div class="answer-section" v-if="!showAnswer">
-        <div class="question-prompt">
-          <h3>What does "{{ word.word }}" mean?</h3>
-          <div class="difficulty-indicator">
-            <span class="difficulty-label">Difficulty:</span>
-            <div class="difficulty-stars">
-              <i 
-                v-for="n in 3" 
-                :key="n"
-                class="mdi mdi-star"
-                :class="{ 'active': n <= word.difficultyLevel }"
-              ></i>
-            </div>
+      <!-- Progress Info -->
+      <div class="progress-info" v-if="word.userProgress">
+        <h4>Your Progress</h4>
+        <div class="progress-stats">
+          <div class="stat">
+            <span class="stat-label">Accuracy:</span>
+            <span class="stat-value">{{ Math.round(word.userProgress.accuracyRate) }}%</span>
           </div>
-        </div>
-
-        <div class="answer-options">
-          <button 
-            v-for="option in answerOptions" 
-            :key="option.id"
-            @click="selectAnswer(option)"
-            class="answer-option"
-            :class="{ 'selected': selectedOption?.id === option.id }"
-          >
-            {{ option.text }}
-          </button>
-        </div>
-
-        <div class="action-buttons">
-          <button 
-            @click="submitAnswer" 
-            :disabled="!selectedOption"
-            class="submit-btn"
-          >
-            Submit Answer
-          </button>
-          <button @click="showHint" class="hint-btn">
-            <i class="mdi mdi-lightbulb"></i>
-            Hint
-          </button>
+          <div class="stat">
+            <span class="stat-label">Studied:</span>
+            <span class="stat-value">{{ word.userProgress.studiedTimes }} times</span>
+          </div>
+          <div class="stat" v-if="word.userProgress.isMastered">
+            <span class="mastery-badge">🏆 Mastered</span>
+          </div>
         </div>
       </div>
 
-      <!-- Result Section -->
-      <div class="result-section" v-if="showAnswer">
-        <div class="result-feedback" :class="{ 'correct': isCorrectAnswer, 'incorrect': !isCorrectAnswer }">
-          <div class="result-icon">
-            <i class="mdi" :class="isCorrectAnswer ? 'mdi-check-circle' : 'mdi-close-circle'"></i>
-          </div>
-          <div class="result-message">
-            <h3>{{ isCorrectAnswer ? 'Excellent!' : 'Not quite right' }}</h3>
-            <p>{{ isCorrectAnswer ? 'You got it correct!' : 'The correct answer is:' }}</p>
-          </div>
-        </div>
-
-        <div class="correct-answer">
-          <div class="meaning-display">
-            <strong>{{ word.meaning }}</strong>
-          </div>
-        </div>
-
-        <div class="progress-info" v-if="word.userProgress">
-          <h4>Your Progress</h4>
-          <div class="progress-stats">
-            <div class="stat">
-              <span class="stat-label">Accuracy:</span>
-              <span class="stat-value">{{ Math.round(word.userProgress.accuracyRate) }}%</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Studied:</span>
-              <span class="stat-value">{{ word.userProgress.studiedTimes }} times</span>
-            </div>
-            <div class="stat" v-if="word.userProgress.isMastered">
-              <span class="mastery-badge">🏆 Mastered</span>
-            </div>
-          </div>
-        </div>
-
-        <button @click="$emit('next')" class="next-btn">
-          Next Word
-          <i class="mdi mdi-arrow-right"></i>
-        </button>
-      </div>
+      <!-- Next Button -->
+      <button @click="$emit('next')" class="next-btn">
+        Next Word
+        <i class="mdi mdi-arrow-right"></i>
+      </button>
 
       <!-- Hint Modal -->
       <div v-if="showHintModal" class="hint-modal" @click="closeHint">
@@ -143,71 +88,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, readonly } from 'vue'
 import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
-import { Icon } from '@iconify/vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
   word: VocabularyWord
-  showAnswer: boolean
-}
-
-interface AnswerOption {
-  id: number
-  text: string
-  isCorrect: boolean
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  answer: [isCorrect: boolean]
   next: []
-  'play-audio': [url: string]
 }>()
 
-const selectedOption = ref<AnswerOption | null>(null)
-const isCorrectAnswer = ref(false)
 const showHintModal = ref(false)
-const answerOptions = ref<AnswerOption[]>([])
 
 // Instance ID for word audio  
 const WORD_AUDIO_ID = 'word-audio'
-
-// Generate answer options
-const generateAnswerOptions = () => {
-  // Create correct answer option
-  const correctOption: AnswerOption = {
-    id: 1,
-    text: props.word.meaning,
-    isCorrect: true
-  }
-
-  // Generate fake options (in real app, these would come from other words)
-  const fakeOptions: AnswerOption[] = [
-    { id: 2, text: "to run quickly", isCorrect: false },
-    { id: 3, text: "a large building", isCorrect: false },
-    { id: 4, text: "something very cold", isCorrect: false }
-  ]
-
-  // Combine and shuffle
-  const allOptions = [correctOption, ...fakeOptions.slice(0, 3)]
-  answerOptions.value = allOptions.sort(() => Math.random() - 0.5)
-}
-
-const selectAnswer = (option: AnswerOption) => {
-  selectedOption.value = option
-}
-
-const submitAnswer = () => {
-  if (!selectedOption.value) return
-  
-  isCorrectAnswer.value = selectedOption.value.isCorrect
-  emit('answer', isCorrectAnswer.value)
-}
-
-const showHint = () => {
-  showHintModal.value = true
-}
 
 const closeHint = () => {
   showHintModal.value = false
@@ -221,12 +117,6 @@ const getHintText = (): string => {
   ]
   return hints[Math.floor(Math.random() * hints.length)]
 }
-
-
-
-onMounted(() => {
-  generateAnswerOptions()
-})
 </script>
 
 <style scoped>
@@ -345,200 +235,49 @@ onMounted(() => {
 
 .definition-section {
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
 }
 
-.definition-card {
+.definition-card, .meaning-card {
   background: rgba(116, 192, 252, 0.1);
   border: 1px solid rgba(116, 192, 252, 0.3);
   border-radius: 15px;
   padding: 1.5rem;
 }
 
-.definition-card h3 {
+.definition-card h3, .meaning-card h3 {
   color: #74c0fc;
   margin-bottom: 1rem;
   font-size: 1.2rem;
 }
 
-.definition-card p {
+.definition-card p, .meaning-card p {
   color: white;
   font-size: 1.1rem;
   line-height: 1.6;
-}.definition-card .vietnamese-meaning {
+}
+
+.definition-card .vietnamese-meaning {
   color: #74c0fc;
+  margin-top: 0.5rem;
 }
 
-
-.answer-section {
-  margin-bottom: 2rem;
-}
-
-.question-prompt {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.question-prompt h3 {
-  color: white;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.difficulty-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.difficulty-label {
-  color: #b8b8b8;
-  font-size: 0.9rem;
-}
-
-.difficulty-stars {
-  display: flex;
-  gap: 0.2rem;
-}
-
-.difficulty-stars .mdi-star {
-  color: #444;
-  font-size: 1.2rem;
-}
-
-.difficulty-stars .mdi-star.active {
-  color: #ffd700;
-}
-
-.answer-options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.answer-option {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  text-align: left;
-}
-
-.answer-option:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(231, 94, 141, 0.5);
-  transform: translateY(-2px);
-}
-
-.answer-option.selected {
-  background: rgba(231, 94, 141, 0.3);
-  border-color: #e75e8d;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.submit-btn, .hint-btn {
-  padding: 0.75rem 2rem;
-  border-radius: 25px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.submit-btn {
-  background: linear-gradient(135deg, #e75e8d, #74c0fc);
-  color: white;
-}
-
-.submit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(231, 94, 141, 0.4);
-}
-
-.hint-btn {
-  background: rgba(116, 192, 252, 0.2);
-  color: #74c0fc;
-  border: 1px solid rgba(116, 192, 252, 0.5);
-}
-
-.hint-btn:hover {
-  background: rgba(116, 192, 252, 0.3);
-}
-
-.result-section {
+.meaning-card {
+  background: rgba(231, 94, 141, 0.1);
+  border-color: rgba(231, 94, 141, 0.3);
   text-align: center;
 }
 
-.result-feedback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 15px;
-  margin-bottom: 1.5rem;
+.meaning-card h3 {
+  color: #e75e8d;
 }
 
-.result-feedback.correct {
-  background: rgba(76, 175, 80, 0.2);
-  border: 1px solid rgba(76, 175, 80, 0.5);
-}
-
-.result-feedback.incorrect {
-  background: rgba(244, 67, 54, 0.2);
-  border: 1px solid rgba(244, 67, 54, 0.5);
-}
-
-.result-icon {
-  font-size: 3rem;
-}
-
-.result-feedback.correct .result-icon {
-  color: #4caf50;
-}
-
-.result-feedback.incorrect .result-icon {
-  color: #f44336;
-}
-
-.result-message h3 {
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
-.result-message p {
-  color: #b8b8b8;
-}
-
-.correct-answer {
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.meaning-display {
-  color: white;
-  font-size: 1.2rem;
+.meaning-card .meaning-display {
+  font-weight: 500;
+  font-size: 2rem; 
 }
 
 .progress-info {

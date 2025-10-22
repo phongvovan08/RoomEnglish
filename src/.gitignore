@@ -1,0 +1,42 @@
+# Artifacts directory - causes Static Web Assets duplicate key errors
+../artifacts/
+
+# Build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# Static Web Assets cache - causes duplicate key errors
+*.StaticWebAssets.xml
+*.StaticWebAssets.json
+staticwebassets/
+staticwebassets.build.json
+staticwebassets.development.json
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# ReSharper
+_ReSharper*/
+*.ReSharper
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]rtifacts/

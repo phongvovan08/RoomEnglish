@@ -24,6 +24,11 @@ dist-ssr
 coverage
 *.local
 
+# IMPORTANT: These folders cause Static Web Assets duplicate key errors
+public
+.vite
+node_modules/.vite
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
