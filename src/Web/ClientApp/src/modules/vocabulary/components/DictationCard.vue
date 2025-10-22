@@ -4,10 +4,23 @@
       <!-- Header -->
       <div class="dictation-header">
         <h2>🎤 Dictation Practice</h2>
+        
+        <!-- Word Info -->
+        <div v-if="word" class="word-info">
+          <div class="word-badge">
+            <Icon icon="mdi:book-alphabet" class="w-4 h-4" />
+            <span class="word-text">{{ word.word }}</span>
+            <span class="word-meaning">{{ word.meaning }}</span>
+          </div>
+        </div>
+        
         <div class="instruction">
           Listen to the sentence and type what you hear
           <span class="keyboard-hint" :class="{ 'keyboard-hint-active': isPlayingAudio }">
             <kbd>Ctrl</kbd> to replay audio
+          </span>
+          <span class="keyboard-hint" v-if="userInput.trim()">
+            • <kbd>Enter</kbd> to submit
           </span>
         </div>
         <div v-if="example?.sentence && showSentence" class="example-sentence">
@@ -89,6 +102,7 @@
               :disabled="isRecording"
               class="dictation-input"
               rows="4"
+              @keydown.enter.exact="handleEnterKey"
             ></textarea>
             
             <!-- Recording Indicator -->
@@ -172,6 +186,7 @@ import WordComparison from './dictation/word-comparison/WordComparison.vue'
 
 interface Props {
   example: VocabularyExample | null
+  word?: VocabularyWord | null
 }
 
 const props = defineProps<Props>()
@@ -281,26 +296,52 @@ const toggleRecording = () => {
 }
 
 const submitAnswer = async () => {
-  if (!props.example || !userInput.value.trim()) return
+  console.log('📝 Submit button clicked')
+  console.log('📝 Example:', props.example)
+  console.log('📝 User input:', userInput.value)
+  
+  if (!props.example) {
+    console.error('❌ No example provided')
+    return
+  }
+  
+  if (!userInput.value.trim()) {
+    console.error('❌ No user input')
+    return
+  }
   
   try {
     stopTimer()
     
+    console.log('📤 Submitting dictation...')
     const result = await submitDictation(
       props.example.id,
       userInput.value.trim()
     )
     
+    console.log('✅ Dictation result:', result)
     showResult.value = true
     emit('submit', result)
   } catch (err) {
-    console.error('Failed to submit dictation:', err)
+    console.error('❌ Failed to submit dictation:', err)
+    // Show error to user
+    alert(`Failed to submit: ${err instanceof Error ? err.message : 'Unknown error'}`)
   }
 }
 
 const checkAnswer = () => {
   // Word comparison is always visible when userInput has content
   // This function can be used for additional actions if needed
+}
+
+const handleEnterKey = (event: KeyboardEvent) => {
+  // Prevent default Enter behavior (new line in textarea)
+  event.preventDefault()
+  
+  // Only submit if there's user input
+  if (userInput.value.trim()) {
+    submitAnswer()
+  }
 }
 
 const clearInput = () => {
@@ -371,6 +412,12 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
 
+// Watch dictationResult for debugging
+watchEffect(() => {
+  console.log('👀 DictationResult changed:', dictationResult.value)
+  console.log('👀 showResult:', showResult.value)
+})
+
 onUnmounted(() => {
   stopTimer()
   stopRecording()
@@ -425,6 +472,48 @@ watchEffect(() => {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.word-info {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.word-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(231, 94, 141, 0.2), rgba(116, 192, 252, 0.2));
+  border: 1px solid rgba(231, 94, 141, 0.4);
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  animation: fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.word-text {
+  color: #e75e8d;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.word-meaning {
+  color: #74c0fc;
+  font-size: 0.95rem;
+  font-style: italic;
+  padding-left: 0.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .audio-player-section {

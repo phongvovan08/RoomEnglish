@@ -12,7 +12,12 @@
         <div class="session-stats">
           <div class="stat-item">
             <i class="mdi mdi-target"></i>
-            <span>{{ currentIndex + 1 }} / {{ totalWords }}</span>
+            <span v-if="sessionType === 'dictation'">
+              Example {{ currentExampleNumber }} / {{ totalExamples }}
+            </span>
+            <span v-else>
+              Word {{ currentIndex + 1 }} / {{ totalWords }}
+            </span>
           </div>
           <div class="stat-item">
             <i class="mdi mdi-check-circle"></i>
@@ -69,6 +74,7 @@
       <DictationCard 
         v-if="sessionType === 'dictation'"
         :example="currentExample"
+        :word="currentWord"
         @submit="handleDictationSubmit"
         @next="nextWord"
       />
@@ -77,7 +83,7 @@
       <component 
         v-if="sessionType === 'mixed'"
         :is="currentMode === 'vocabulary' ? 'VocabularyCard' : 'DictationCard'"
-        :word="currentMode === 'vocabulary' ? currentWord : undefined"
+        :word="currentWord"
         :example="currentMode === 'dictation' ? currentExample : undefined"
         :show-answer="showAnswer"
         @answer="handleAnswer"
@@ -181,6 +187,7 @@ const {
 // Session state
 const sessionWords = ref<VocabularyWord[]>([])
 const currentIndex = ref(0)
+const currentExampleIndex = ref(0) // Track current example index
 const correctCount = ref(0)
 const totalAttempts = ref(0)
 const startTime = ref<number>(Date.now())
@@ -198,13 +205,37 @@ let timer: number | null = null
 const currentWord = computed(() => sessionWords.value[currentIndex.value])
 const currentExample = computed(() => {
   const word = currentWord.value
-  return word?.examples?.[0] || null
+  if (!word?.examples || word.examples.length === 0) return null
+  return word.examples[currentExampleIndex.value] || null
 })
 
 const totalWords = computed(() => sessionWords.value.length)
+
+const totalExamples = computed(() => {
+  return sessionWords.value.reduce((total, word) => {
+    return total + (word.examples?.length || 0)
+  }, 0)
+})
+
+const currentExampleNumber = computed(() => {
+  let count = 0
+  for (let i = 0; i < currentIndex.value; i++) {
+    count += sessionWords.value[i]?.examples?.length || 0
+  }
+  count += currentExampleIndex.value + 1
+  return count
+})
+
 const progress = computed(() => {
-  if (totalWords.value === 0) return 0
-  return (currentIndex.value / totalWords.value) * 100
+  if (currentSessionType.value === 'dictation') {
+    // For dictation mode, calculate based on examples
+    if (totalExamples.value === 0) return 0
+    return (currentExampleNumber.value / totalExamples.value) * 100
+  } else {
+    // For vocabulary mode, calculate based on words
+    if (totalWords.value === 0) return 0
+    return (currentIndex.value / totalWords.value) * 100
+  }
 })
 
 const accuracy = computed(() => {
@@ -288,24 +319,32 @@ const handleDictationSubmit = (result: any) => {
     correctCount.value++
   }
   
-  // Auto advance after showing result
-  setTimeout(() => {
-    nextWord()
-  }, 3000)
+  // Don't auto advance - user will click Next button in ResultDisplay
 }
 
 const nextWord = () => {
   showAnswer.value = false
   
-  if (currentIndex.value < sessionWords.value.length - 1) {
-    currentIndex.value++
-    
-    // Switch mode for mixed sessions
-    if (currentSessionType.value === 'mixed') {
-      currentMode.value = Math.random() > 0.5 ? 'vocabulary' : 'dictation'
-    }
+  const word = currentWord.value
+  
+  // Check if there are more examples for current word
+  if (word?.examples && currentExampleIndex.value < word.examples.length - 1) {
+    // Move to next example of current word
+    currentExampleIndex.value++
   } else {
-    finishSession()
+    // Move to next word
+    currentExampleIndex.value = 0 // Reset example index
+    
+    if (currentIndex.value < sessionWords.value.length - 1) {
+      currentIndex.value++
+      
+      // Switch mode for mixed sessions
+      if (currentSessionType.value === 'mixed') {
+        currentMode.value = Math.random() > 0.5 ? 'vocabulary' : 'dictation'
+      }
+    } else {
+      finishSession()
+    }
   }
 }
 
