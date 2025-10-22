@@ -14,7 +14,8 @@
         class="word-item"
         :class="{
           'correct': word.isCorrect,
-          'incorrect': !word.isCorrect && word.userWord,
+          'typing': word.isTypingCorrectly,
+          'incorrect': !word.isCorrect && !word.isTypingCorrectly && word.userWord && word.correctWord,
           'missing': word.isMissing,
           'extra': word.isExtra
         }"
@@ -22,12 +23,13 @@
         <div class="word-display">
           <span class="user-word">{{ word.userWord || '___' }}</span>
           <i v-if="word.isCorrect" class="mdi mdi-check status-icon"></i>
-          <i v-else-if="!word.isCorrect && word.userWord" class="mdi mdi-close status-icon"></i>
+          <i v-else-if="word.isTypingCorrectly" class="mdi mdi-pencil status-icon"></i>
+          <i v-else-if="!word.isCorrect && word.userWord && word.correctWord" class="mdi mdi-close status-icon"></i>
           <i v-else-if="word.isMissing" class="mdi mdi-help status-icon"></i>
         </div>
         
-        <!-- Only show correct word for incorrect words, NOT for missing words -->
-        <div v-if="!word.isCorrect && word.userWord && word.correctWord" class="correct-word">
+        <!-- Only show correct word if user typed wrong (not typing correctly) and has enough characters -->
+        <div v-if="!word.isCorrect && !word.isTypingCorrectly && word.userWord && word.correctWord && word.userWord.length >= word.correctWord.length" class="correct-word">
           <i class="mdi mdi-arrow-down"></i>
           {{ word.correctWord }}
         </div>
@@ -60,6 +62,7 @@ interface WordComparison {
   isCorrect: boolean
   isMissing: boolean
   isExtra: boolean
+  isTypingCorrectly?: boolean
 }
 
 interface Props {
@@ -99,12 +102,22 @@ const comparisonWords = computed((): WordComparison[] => {
     const isMissing = !!(userWord === '' && correctWord) // User didn't type this word
     const isExtra = !!(userWord && correctWord === '') // User typed extra word
     
+    // Check if user is typing correctly (userWord is a prefix of correctWord)
+    const isTypingCorrectly = !!(
+      userWord && 
+      correctWord && 
+      !isCorrect && 
+      userWord.length < correctWord.length &&
+      correctWord.startsWith(userWord)
+    )
+    
     result.push({
       userWord,
       correctWord,
       isCorrect,
       isMissing,
-      isExtra
+      isExtra,
+      isTypingCorrectly
     })
   }
   
@@ -144,6 +157,11 @@ const missingCount = computed(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 .comparison-header {
@@ -199,6 +217,11 @@ const missingCount = computed(() => {
   border-color: rgba(76, 175, 80, 0.5);
 }
 
+.word-item.typing {
+  background: rgba(116, 192, 252, 0.2);
+  border-color: rgba(116, 192, 252, 0.5);
+}
+
 .word-item.incorrect {
   background: rgba(244, 67, 54, 0.2);
   border-color: rgba(244, 67, 54, 0.5);
@@ -239,6 +262,11 @@ const missingCount = computed(() => {
 
 .word-item.correct .status-icon {
   color: #4caf50;
+}
+
+.word-item.typing .status-icon {
+  color: #74c0fc;
+  animation: pulse 1.5s infinite;
 }
 
 .word-item.incorrect .status-icon {
