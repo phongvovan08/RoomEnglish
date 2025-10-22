@@ -49,6 +49,7 @@
       <!-- Audio Player - Using GlobalSpeechButton -->
       <div class="audio-player-section" v-if="example?.sentence">
         <GlobalSpeechButton 
+          ref="listenButton"
           :text="example.sentence"
           instance-id="dictation-audio"
           :show-text="true"
@@ -222,6 +223,7 @@ const speechRecognitionSupported = ref(false)
 const startTime = ref<number | null>(null)
 const elapsedTime = ref(0)
 const showTranslation = ref(false)
+const listenButton = ref<InstanceType<typeof GlobalSpeechButton> | null>(null)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -250,24 +252,17 @@ const formatTime = (seconds: number): string => {
 }
 
 const playAudio = async () => {
-  if (!props.example?.sentence) return
+  if (!props.example?.sentence || !listenButton.value) return
   
-  try {
-    const { speak } = useSpeechSynthesis()
-    const { getCurrentOptions } = useSpeechSettings()
-    
-    const options = await getCurrentOptions()
-    options.rate = playbackSpeed.value
-    options.provider = 'webspeech' // Force Web Speech to avoid autoplay policy
-    
-    await speak(props.example.sentence, 'dictation-audio', options)
+  // Programmatically click the Listen button
+  const buttonElement = listenButton.value.$el as HTMLButtonElement
+  if (buttonElement && !buttonElement.disabled) {
+    buttonElement.click()
     playCount.value++
     
     if (!startTime.value) {
       startTimer()
     }
-  } catch (err: any) {
-    console.error('Failed to play audio:', err)
   }
 }
 
@@ -277,12 +272,12 @@ const playCorrectAudio = async () => {
   }
 }
 
-// Trigger play audio from keyboard shortcut
-const triggerPlayFromKeyboard = () => {
-  if (!showResult.value && props.example?.sentence && !isPlayingAudio.value) {
-    playAudio()
-  }
-}
+// No longer needed - using button click directly
+// const triggerPlayFromKeyboard = () => {
+//   if (!showResult.value && props.example?.sentence && !isPlayingAudio.value) {
+//     playAudio()
+//   }
+// }
 
 const toggleRecording = () => {
   if (isRecording.value) {
@@ -383,10 +378,15 @@ const handleKeyDown = (event: KeyboardEvent) => {
       return
     }
     
-    // Only trigger if not in result view and has audio
-    if (!showResult.value && props.example?.sentence && !isPlayingAudio.value) {
+    // Only trigger if not in result view and has audio button
+    if (!showResult.value && props.example?.sentence && listenButton.value) {
       event.preventDefault()
-      triggerPlayFromKeyboard()
+      
+      // Programmatically click the Listen button
+      const buttonElement = listenButton.value.$el as HTMLButtonElement
+      if (buttonElement && !buttonElement.disabled) {
+        buttonElement.click()
+      }
     }
   }
 }
