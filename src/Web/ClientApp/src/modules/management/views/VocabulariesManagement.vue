@@ -108,6 +108,17 @@
           </div>
           
           <div class="form-group">
+            <label for="vietnameseMeaning">Nghĩa tiếng Việt</label>
+            <textarea 
+              id="vietnameseMeaning"
+              v-model="vocabularyForm.vietnameseMeaning" 
+              placeholder="Nhập nghĩa tiếng Việt của định nghĩa..."
+              rows="3"
+              class="form-textarea"
+            ></textarea>
+          </div>
+          
+          <div class="form-group">
             <label for="phonetic">Phát âm</label>
             <input 
               id="phonetic"
@@ -190,6 +201,7 @@ interface Vocabulary {
   id: number
   word: string
   definition: string
+  vietnameseMeaning?: string
   phonetic?: string
   exampleCount: number
   createdAt: string
@@ -198,6 +210,7 @@ interface Vocabulary {
 interface VocabularyForm {
   word: string
   definition: string
+  vietnameseMeaning: string
   phonetic: string
 }
 
@@ -216,6 +229,7 @@ const editingVocabulary = ref<Vocabulary | null>(null)
 const vocabularyForm = ref<VocabularyForm>({
   word: '',
   definition: '',
+  vietnameseMeaning: '',
   phonetic: ''
 })
 
@@ -315,6 +329,7 @@ const editVocabulary = (vocabulary: Vocabulary) => {
   vocabularyForm.value = {
     word: vocabulary.word,
     definition: vocabulary.definition,
+    vietnameseMeaning: vocabulary.vietnameseMeaning || '',
     phonetic: vocabulary.phonetic || ''
   }
 }
@@ -350,6 +365,7 @@ const saveVocabulary = async () => {
   const payload = {
     Word: vocabularyForm.value.word,
     Definition: vocabularyForm.value.definition,
+    VietnameseMeaning: vocabularyForm.value.vietnameseMeaning,
     Pronunciation: vocabularyForm.value.phonetic,
     CategoryId: categoryId.value
   }
@@ -377,7 +393,7 @@ const saveVocabulary = async () => {
 const closeModal = () => {
   showCreateModal.value = false
   editingVocabulary.value = null
-  vocabularyForm.value = { word: '', definition: '', phonetic: '' }
+  vocabularyForm.value = { word: '', definition: '', vietnameseMeaning: '', phonetic: '' }
 }
 
 const closeUploadModal = () => {
@@ -413,8 +429,9 @@ const handleImportJson = async (jsonData: string) => {
       // Check if there were any errors
       if (result.errorCount > 0 && result.errors && Array.isArray(result.errors)) {
         // Show errors if any
-        const errorTitle = `Import completed with ${result.successCount} success ${result.errorCount} errors`
-        showWarning(errorTitle) // Longer duration for error messages
+         const errorTitle = `Import completed with ${result.errorCount} errors`
+        const errorDetails = `${result.errors.join(', ')}\n\n`
+        showError(errorTitle, errorDetails, 8000) // Longer duration for error messages
       } else {
         // Show success if no errors
         showSuccess(`Import successful: ${result.successCount} words imported`)

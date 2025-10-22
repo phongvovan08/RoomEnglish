@@ -206,6 +206,18 @@ Edit `Web/appsettings.json`:
 
 ## 🚀 Quick Start
 
+### **⚠️ Nếu gặp lỗi build Static Web Assets**
+
+```powershell
+# Chạy script tự động clean & build
+.\clean-build.ps1
+
+# Xem hướng dẫn chi tiết
+Get-Content CLEAN_BUILD_README.md
+```
+
+📘 **Lỗi "duplicate key" là lỗi phổ biến nhất!** Xem [CLEAN_BUILD_README.md](./CLEAN_BUILD_README.md) để hiểu nguyên nhân và cách phòng ngừa.
+
 ### **Backend (.NET 8)**
 ```bash
 cd src/Web
@@ -366,7 +378,26 @@ src/
 
 ---
 
-## 👥 Developer Notes
+## � Documentation
+
+### **📖 Main Guides**
+- **[CLEAN_BUILD_README.md](./CLEAN_BUILD_README.md)** - Fix Static Web Assets errors (lỗi phổ biến nhất!)
+- **[GUIDE_ADD_DATABASE_COLUMN.md](./GUIDE_ADD_DATABASE_COLUMN.md)** - Step-by-step guide để thêm database column
+- **[Frontend Mapping](./Web/ClientApp/FRONTEND_MAPPING.md)** - Frontend architecture & component mapping
+- **[OpenAI TTS Guide](./Web/ClientApp/OPENAI_TTS_GUIDE.md)** - Text-to-Speech integration guide
+
+### **🛠️ Common Tasks**
+
+| Task | Script/Command | Guide |
+|------|----------------|-------|
+| Fix build errors | `.\clean-build.ps1` | [CLEAN_BUILD_README.md](./CLEAN_BUILD_README.md) |
+| Add database column | Manual steps | [GUIDE_ADD_DATABASE_COLUMN.md](./GUIDE_ADD_DATABASE_COLUMN.md) |
+| Create migration | `dotnet ef migrations add [Name]` | [GUIDE_ADD_DATABASE_COLUMN.md](./GUIDE_ADD_DATABASE_COLUMN.md#step-2) |
+| Update database | `dotnet ef database update` | [GUIDE_ADD_DATABASE_COLUMN.md](./GUIDE_ADD_DATABASE_COLUMN.md#step-3) |
+
+---
+
+## �👥 Developer Notes
 
 ### **Getting Started**
 1. Clone the repository
@@ -391,6 +422,18 @@ src/
 
 ## 🔍 Troubleshooting
 
+### **❌ Build Error: Static Web Assets duplicate key** (PHỔ BIẾN NHẤT)
+
+```powershell
+# Fix tự động bằng script
+.\clean-build.ps1
+
+# Xem chi tiết tại:
+Get-Content CLEAN_BUILD_README.md
+```
+
+📘 **80% các lỗi build là do lỗi này!** Script tự động sẽ xóa tất cả cache và build lại.
+
 ### **API Rate Limiting**
 - Reduce `ConcurrentRequests` to 3-5
 
@@ -403,6 +446,10 @@ src/
 ### **Audio Not Playing (Keyboard)**
 - Using Web Speech API (bypasses autoplay policy)
 - Check browser compatibility
+
+### **Migration Errors**
+
+Xem chi tiết trong [GUIDE_ADD_DATABASE_COLUMN.md](./GUIDE_ADD_DATABASE_COLUMN.md#-xử-lý-lỗi-thường-gặp)
 
 ---
 

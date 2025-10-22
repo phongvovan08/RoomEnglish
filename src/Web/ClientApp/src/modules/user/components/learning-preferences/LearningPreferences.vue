@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { Preferences } from '../composables/useUserProfile'
+import type { Preferences } from '../../composables/useUserProfile'
 
 interface Props {
   preferences: Preferences

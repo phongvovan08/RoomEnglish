@@ -95,7 +95,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
-import type { PersonalForm, UserProfile } from '../composables/useUserProfile'
+import type { PersonalForm, UserProfile } from '../../composables/useUserProfile'
 
 interface Props {
   personalForm: PersonalForm

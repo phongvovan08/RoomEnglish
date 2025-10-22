@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { PasswordForm } from '../composables/useUserProfile'
+import type { PasswordForm } from '../../composables/useUserProfile'
 
 interface Props {
   show: boolean

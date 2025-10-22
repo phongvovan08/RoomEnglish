@@ -3,6 +3,9 @@ import { AuthService } from '@/services/authService'
 import { useToast } from '@/composables/useToast'
 import type { UserProfile, PersonalForm, PasswordForm, Preferences } from '../types/user.types'
 
+// Re-export types for convenience
+export type { UserProfile, PersonalForm, PasswordForm, Preferences }
+
 export function useUserProfile() {
   const { showSuccess, showError, showWarning } = useToast()
   const isLoading = ref(false)

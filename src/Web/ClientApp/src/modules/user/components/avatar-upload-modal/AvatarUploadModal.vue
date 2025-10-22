@@ -17,7 +17,7 @@
             accept="image/*"
             hidden
           />
-          <div @click="$refs.fileInput?.click()" class="upload-placeholder">
+          <div @click="fileInput?.click()" class="upload-placeholder">
             <Icon icon="mdi:cloud-upload" class="w-12 h-12" />
             <p>Click để chọn ảnh hoặc kéo thả vào đây</p>
             <small>Hỗ trợ: JPG, PNG (tối đa 2MB)</small>

@@ -26,6 +26,7 @@ public class VocabularyWordDto : IMapFrom<VocabularyWord>
     public string PartOfSpeech { get; init; } = string.Empty;
     public string Meaning { get; init; } = string.Empty;
     public string Definition { get; init; } = string.Empty;
+    public string VietnameseMeaning { get; init; } = string.Empty;
     public string? AudioUrl { get; init; }
     public int DifficultyLevel { get; init; }
     public bool IsActive { get; init; }

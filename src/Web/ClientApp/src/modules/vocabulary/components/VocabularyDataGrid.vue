@@ -167,7 +167,13 @@ const columns = computed<GridColumn[]>(() => [
   },
   {
     key: 'definition',
-    label: 'Định nghĩa',
+    label: 'Định nghĩa (EN)',
+    sortable: false,
+    type: 'text'
+  },
+  {
+    key: 'vietnameseMeaning',
+    label: 'Nghĩa (VI)',
     sortable: false,
     type: 'text'
   },

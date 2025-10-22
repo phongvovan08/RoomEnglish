@@ -2499,6 +2499,10 @@
           "definition": {
             "type": "string"
           },
+          "vietnameseMeaning": {
+            "type": "string",
+            "nullable": true
+          },
           "pronunciation": {
             "type": "string",
             "nullable": true

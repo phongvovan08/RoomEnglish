@@ -26,10 +26,11 @@
 
       <!-- Definition Section -->
       <div class="definition-section">
-        <div class="definition-card">
-          <h3>Definition</h3>
-          <p>{{ word.definition }}</p>
-        </div>
+          <div class="definition-card">
+              <h3>Definition (English)</h3>
+              <p class="definition">{{ word.definition }}</p>
+              <p class="vietnamese-meaning">{{ word.vietnameseMeaning }}</p>
+          </div>
       </div>
 
       <!-- Answer Section -->
@@ -363,7 +364,10 @@ onMounted(() => {
   color: white;
   font-size: 1.1rem;
   line-height: 1.6;
+}.definition-card .vietnamese-meaning {
+  color: #74c0fc;
 }
+
 
 .answer-section {
   margin-bottom: 2rem;

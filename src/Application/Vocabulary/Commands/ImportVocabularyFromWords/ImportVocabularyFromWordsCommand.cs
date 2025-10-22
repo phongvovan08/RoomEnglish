@@ -31,6 +31,7 @@ public class ChatGPTVocabularyResponse
     public string PartOfSpeech { get; set; } = string.Empty;
     public string Meaning { get; set; } = string.Empty;
     public string Definition { get; set; } = string.Empty;
+    public string VietnameseMeaning { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
 }
 
@@ -109,6 +110,7 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
                     PartOfSpeech = vocabData.PartOfSpeech,
                     Meaning = vocabData.Meaning,
                     Definition = vocabData.Definition,
+                    VietnameseMeaning = vocabData.VietnameseMeaning,
                     CategoryId = categoryId,
                     DifficultyLevel = 1, // Easy
                     IsActive = true,
@@ -217,7 +219,8 @@ public class ImportVocabularyFromWordsCommandHandler : IRequestHandler<ImportVoc
                 Phonetic = $"/{word}/", // Mock phonetic
                 PartOfSpeech = "noun", // Mock part of speech
                 Meaning = $"Nghĩa của từ {word}", // Mock Vietnamese meaning
-                Definition = $"Definition of {word} in English" // Mock English definition
+                Definition = $"Definition of {word} in English", // Mock English definition
+                VietnameseMeaning = $"Định nghĩa tiếng Việt của {word}" // Mock Vietnamese meaning of definition
             });
         }
 
@@ -234,6 +237,7 @@ Each object must include:
 - PartOfSpeech (string)
 - Meaning (some meanings used)
 - Definition (English)
+- VietnameseMeaning (Vietnamese translation of the Definition)
 - CategoryName (level of Word)
 Return ONLY a valid JSON array with this exact format:
 [
@@ -242,7 +246,8 @@ Return ONLY a valid JSON array with this exact format:
     ""Phonetic"": ""/həˈloʊ/"",
     ""PartOfSpeech"": ""Interjection"",
     ""Meaning"": ""Xin chào"",
-    ""Definition"": ""Used as a greeting or to begin a phone conversation""
+    ""Definition"": ""Used as a greeting or to begin a phone conversation"",
+    ""VietnameseMeaning"": ""Được sử dụng như một lời chào hoặc để bắt đầu cuộc trò chuyện điện thoại"",
     ""CategoryName"": ""A1""
   }}
 ]";

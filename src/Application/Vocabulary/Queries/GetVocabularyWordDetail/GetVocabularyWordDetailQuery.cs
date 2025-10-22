@@ -46,6 +46,7 @@ public class GetVocabularyWordDetailQueryHandler : IRequestHandler<GetVocabulary
             PartOfSpeech = word.PartOfSpeech,
             Meaning = word.Meaning,
             Definition = word.Definition,
+            VietnameseMeaning = word.VietnameseMeaning,
             AudioUrl = word.AudioUrl,
             DifficultyLevel = word.DifficultyLevel,
             IsActive = word.IsActive,

@@ -7,6 +7,7 @@ public class VocabularyWord : BaseAuditableEntity
     public string PartOfSpeech { get; set; } = string.Empty; // noun, verb, adjective, etc.
     public string Meaning { get; set; } = string.Empty; // Vietnamese meaning
     public string Definition { get; set; } = string.Empty; // English definition
+    public string VietnameseMeaning { get; set; } = string.Empty; // Vietnamese meaning of Definition
     public string? AudioUrl { get; set; } // URL to audio pronunciation file
     public int DifficultyLevel { get; set; } = 1; // 1 = Beginner, 2 = Intermediate, 3 = Advanced
     public bool IsActive { get; set; } = true;

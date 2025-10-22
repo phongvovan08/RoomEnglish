@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import type { UserProfile } from '../composables/useUserProfile'
+import type { UserProfile } from '../../composables/useUserProfile'
 
 interface Props {
   userProfile: UserProfile

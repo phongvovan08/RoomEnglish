@@ -18,6 +18,7 @@ export interface VocabularyWord {
   partOfSpeech: string
   meaning: string
   definition: string
+  vietnameseMeaning: string
   audioUrl?: string
   difficultyLevel: number
   isActive: boolean

@@ -230,7 +230,7 @@ const testSpeech = async () => {
   if (isTesting.value) return
   
   try {
-    const options = getCurrentOptions()
+    const options = await getCurrentOptions()
     await speak('Hello! This is a test of your speech settings.', 'speech-test', options)
   } catch (error) {
     console.error('Failed to test speech:', error)

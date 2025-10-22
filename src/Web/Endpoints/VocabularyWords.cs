@@ -86,6 +86,7 @@ public class VocabularyWords : EndpointGroupBase
     public record UpsertWordRequest(
         string Word,
         string Definition,
+        string? VietnameseMeaning,
         string? Pronunciation,
         int CategoryId);
 
@@ -106,6 +107,7 @@ public class VocabularyWords : EndpointGroupBase
         {
             Word = request.Word.Trim(),
             Definition = request.Definition.Trim(),
+            VietnameseMeaning = request.VietnameseMeaning?.Trim() ?? string.Empty,
             Phonetic = request.Pronunciation?.Trim() ?? string.Empty,
             CategoryId = request.CategoryId,
             IsActive = true
@@ -128,6 +130,7 @@ public class VocabularyWords : EndpointGroupBase
 
         if (!string.IsNullOrWhiteSpace(request.Word)) entity.Word = request.Word.Trim();
         if (!string.IsNullOrWhiteSpace(request.Definition)) entity.Definition = request.Definition.Trim();
+        if (!string.IsNullOrWhiteSpace(request.VietnameseMeaning)) entity.VietnameseMeaning = request.VietnameseMeaning.Trim();
         entity.Phonetic = request.Pronunciation?.Trim() ?? entity.Phonetic;
         if (request.CategoryId != 0) entity.CategoryId = request.CategoryId;
 
