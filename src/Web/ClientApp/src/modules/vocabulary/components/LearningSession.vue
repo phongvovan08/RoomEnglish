@@ -60,9 +60,18 @@
 
     <!-- Learning Content -->
     <div class="learning-content" v-if="currentWord">
+      <!-- Example Grid -->
+      <ExampleGrid
+        v-if="showExampleGrid"
+        :word="currentWord"
+        :examples="currentWord.examples || []"
+        @select="selectExample"
+        @back="backToVocabulary"
+      />
+
       <!-- Vocabulary Mode -->
       <VocabularyCard 
-        v-if="currentSessionType === 'vocabulary'"
+        v-else-if="currentSessionType === 'vocabulary'"
         :word="currentWord"
         @next="nextWord"
         @learn-example="switchToDictation"
@@ -70,7 +79,7 @@
 
       <!-- Dictation Mode -->
       <DictationCard 
-        v-if="currentSessionType === 'dictation'"
+        v-else-if="currentSessionType === 'dictation'"
         :example="currentExample"
         :word="currentWord"
         @submit="handleDictationSubmit"
@@ -79,7 +88,7 @@
 
       <!-- Mixed Mode -->
       <component 
-        v-if="currentSessionType === 'mixed'"
+        v-else-if="currentSessionType === 'mixed'"
         :is="currentMode === 'vocabulary' ? 'VocabularyCard' : 'DictationCard'"
         :word="currentWord"
         :example="currentMode === 'dictation' ? currentExample : undefined"
@@ -153,6 +162,7 @@ import { useVocabulary } from '../composables/useVocabulary'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
+import ExampleGrid from '../components/ExampleGrid.vue'
 import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
 import { Icon } from '@iconify/vue'
 
@@ -192,6 +202,7 @@ const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
 const showSpeechSettings = ref(false)
 const originalSessionType = ref(props.sessionType) // Remember original type
+const showExampleGrid = ref(false) // Show example grid
 
 // Timer
 let timer: number | null = null
@@ -312,19 +323,19 @@ const nextWord = () => {
   const word = currentWord.value
   console.log('Current word:', word?.word)
   
-  // Only cycle through examples in dictation mode
+  // If we were in dictation mode for a single example (from grid), go back to vocabulary
+  if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
+    console.log('Finished example, returning to vocabulary mode')
+    currentSessionType.value = 'vocabulary'
+    currentExampleIndex.value = 0
+    return
+  }
+  
+  // Only cycle through examples in pure dictation mode
   if (currentSessionType.value === 'dictation' && word?.examples && currentExampleIndex.value < word.examples.length - 1) {
     console.log('Moving to next example of current word (dictation mode)')
     currentExampleIndex.value++
   } else {
-    // If we were in temporary dictation mode (learning examples), go back to vocabulary
-    if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
-      console.log('Finished examples, returning to vocabulary mode')
-      currentSessionType.value = 'vocabulary'
-      currentExampleIndex.value = 0
-      return
-    }
-    
     // Move to next word
     console.log('Moving to next word...')
     currentExampleIndex.value = 0 // Reset example index
@@ -358,12 +369,28 @@ const switchToDictation = () => {
   console.log('Current word:', word.word)
   console.log('Examples count:', word.examples.length)
   
-  // Switch to dictation mode temporarily for this word
-  currentMode.value = 'dictation'
-  currentSessionType.value = 'dictation'
-  currentExampleIndex.value = 0
+  // Show example grid instead of going directly to dictation
+  showExampleGrid.value = true
   
-  console.log('Switched to dictation mode')
+  console.log('Showing example grid')
+}
+
+const selectExample = (index: number) => {
+  console.log('=== Example selected:', index, '===')
+  
+  // Hide grid and show dictation card for selected example
+  showExampleGrid.value = false
+  currentExampleIndex.value = index
+  currentSessionType.value = 'dictation'
+  
+  console.log('Switched to dictation mode for example', index)
+}
+
+const backToVocabulary = () => {
+  console.log('=== Going back to vocabulary ===')
+  showExampleGrid.value = false
+  currentSessionType.value = originalSessionType.value
+  currentExampleIndex.value = 0
 }
 
 const finishSession = () => {

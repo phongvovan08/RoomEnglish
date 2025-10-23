@@ -15,7 +15,6 @@
         </div>
         
         <div class="instruction">
-          Listen to the sentence and type what you hear
           <span class="keyboard-hint" :class="{ 'keyboard-hint-active': isPlayingAudio }">
             <kbd>Ctrl</kbd> to replay audio
           </span>
@@ -56,15 +55,6 @@
           button-class="speech-btn large"
           :custom-rate="playbackSpeed"
         />
-        <div class="playback-controls">
-          <label>Speed: {{ playbackSpeed }}x</label>
-          <div class="speed-buttons">
-            <button @click="changePlaybackSpeed(0.5)" :class="{ active: playbackSpeed === 0.5 }">0.5x</button>
-            <button @click="changePlaybackSpeed(0.75)" :class="{ active: playbackSpeed === 0.75 }">0.75x</button>
-            <button @click="changePlaybackSpeed(1)" :class="{ active: playbackSpeed === 1 }">1x</button>
-            <button @click="changePlaybackSpeed(1.25)" :class="{ active: playbackSpeed === 1.25 }">1.25x</button>
-          </div>
-        </div>
       </div>
 
       <!-- Input Section (textarea only, no buttons) -->
