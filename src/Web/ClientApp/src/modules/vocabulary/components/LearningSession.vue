@@ -65,7 +65,8 @@
         v-if="showExampleGrid"
         :word="currentWord"
         :examples="currentWord.examples || []"
-        @select="selectExample"
+        :completed-examples="completedExamples"
+        @select-group="selectExampleGroup"
         @back="backToVocabulary"
       />
 
@@ -82,8 +83,10 @@
         v-else-if="currentSessionType === 'dictation'"
         :example="currentExample"
         :word="currentWord"
+        :show-back-to-grid="selectedGroupIndex !== null"
         @submit="handleDictationSubmit"
         @next="nextWord"
+        @back-to-grid="backToExampleGrid"
       />
 
       <!-- Mixed Mode -->
@@ -203,6 +206,8 @@ const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
 const showSpeechSettings = ref(false)
 const originalSessionType = ref(props.sessionType) // Remember original type
 const showExampleGrid = ref(false) // Show example grid
+const completedExamples = ref<number[]>([]) // Track completed example indices
+const selectedGroupIndex = ref<number | null>(null) // Track selected group
 
 // Timer
 let timer: number | null = null
@@ -311,6 +316,11 @@ const handleDictationSubmit = (result: any) => {
     correctCount.value++
   }
   
+  // Mark current example as completed
+  if (!completedExamples.value.includes(currentExampleIndex.value)) {
+    completedExamples.value.push(currentExampleIndex.value)
+  }
+  
   // Don't auto advance - user will click Next button in ResultDisplay
 }
 
@@ -322,6 +332,28 @@ const nextWord = () => {
   
   const word = currentWord.value
   console.log('Current word:', word?.word)
+  
+  // If we were in dictation mode from a group selection
+  if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary' && selectedGroupIndex.value !== null) {
+    const groupSize = 10
+    const groupStartIndex = selectedGroupIndex.value * groupSize
+    const groupEndIndex = Math.min(groupStartIndex + groupSize - 1, (word?.examples?.length || 0) - 1)
+    
+    // Check if we're still within the selected group
+    if (currentExampleIndex.value < groupEndIndex) {
+      console.log('Moving to next example in group')
+      currentExampleIndex.value++
+      return
+    } else {
+      console.log('Finished group, returning to example grid')
+      // Return to example grid to show updated progress
+      currentSessionType.value = 'vocabulary'
+      showExampleGrid.value = true
+      selectedGroupIndex.value = null
+      currentExampleIndex.value = 0
+      return
+    }
+  }
   
   // If we were in dictation mode for a single example (from grid), go back to vocabulary
   if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
@@ -375,21 +407,35 @@ const switchToDictation = () => {
   console.log('Showing example grid')
 }
 
-const selectExample = (index: number) => {
-  console.log('=== Example selected:', index, '===')
+const selectExampleGroup = (groupIndex: number) => {
+  console.log('=== Example group selected:', groupIndex, '===')
   
-  // Hide grid and show dictation card for selected example
+  // Hide grid and show dictation card for first example in group
   showExampleGrid.value = false
-  currentExampleIndex.value = index
+  selectedGroupIndex.value = groupIndex
+  
+  // Calculate start index of the group (each group has 10 examples)
+  const startIndex = groupIndex * 10
+  currentExampleIndex.value = startIndex
   currentSessionType.value = 'dictation'
   
-  console.log('Switched to dictation mode for example', index)
+  console.log('Switched to dictation mode for group', groupIndex, 'starting at example', startIndex)
 }
 
 const backToVocabulary = () => {
   console.log('=== Going back to vocabulary ===')
   showExampleGrid.value = false
   currentSessionType.value = originalSessionType.value
+  currentExampleIndex.value = 0
+  selectedGroupIndex.value = null
+}
+
+const backToExampleGrid = () => {
+  console.log('=== Going back to example grid ===')
+  // Return to example grid from dictation
+  showExampleGrid.value = true
+  currentSessionType.value = 'vocabulary'
+  selectedGroupIndex.value = null
   currentExampleIndex.value = 0
 }
 

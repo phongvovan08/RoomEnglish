@@ -114,14 +114,7 @@
 
       <!-- Action Buttons (below Word Comparison) -->
       <div v-if="!showResult" class="action-buttons">
-        <button 
-          @click="checkAnswer" 
-          :disabled="!userInput.trim()"
-          class="check-btn"
-        >
-          <Icon icon="mdi:spellcheck" class="w-5 h-5" />
-          Check
-        </button>
+       
         
         <button 
           @click="submitAnswer" 
@@ -137,9 +130,13 @@
           Clear
         </button>
         
-        <button @click="showHint" class="hint-btn">
-          <Icon icon="mdi:lightbulb" class="w-5 h-5" />
-          Hint
+        <button 
+          v-if="showBackToGrid"
+          @click="$emit('backToGrid')" 
+          class="back-to-grid-btn"
+        >
+          <Icon icon="mdi:arrow-left" class="w-5 h-5" />
+          Back to Groups
         </button>
       </div>
 
@@ -178,13 +175,17 @@ import WordComparison from './dictation/word-comparison/WordComparison.vue'
 interface Props {
   example: VocabularyExample | null
   word?: VocabularyWord | null
+  showBackToGrid?: boolean // Show back to grid button
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showBackToGrid: false
+})
 
 const emit = defineEmits<{
   submit: [result: DictationResult]
   next: []
+  backToGrid: []
 }>()
 
 const {
@@ -906,6 +907,24 @@ watchEffect(() => {
 
 .hint-btn:hover {
   background: rgba(255, 193, 7, 0.3);
+}
+.back-to-grid-btn{
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.back-to-grid-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes pulse {
