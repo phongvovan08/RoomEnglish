@@ -57,11 +57,21 @@
         </div>
       </div>
 
-      <!-- Next Button -->
-      <button @click="handleNext" class="next-btn">
-        Next Word
-        <i class="mdi mdi-arrow-right"></i>
-      </button>
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button 
+          v-if="word.examples && word.examples.length > 0"
+          @click="handleLearnExample" 
+          class="example-btn"
+        >
+          <i class="mdi mdi-book-open-variant"></i>
+          Learn with Example
+        </button>
+        <button @click="handleNext" class="next-btn">
+          Next Word
+          <i class="mdi mdi-arrow-right"></i>
+        </button>
+      </div>
 
       <!-- Hint Modal -->
       <div v-if="showHintModal" class="hint-modal" @click="closeHint">
@@ -98,6 +108,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   next: []
+  learnExample: []
 }>()
 
 const showHintModal = ref(false)
@@ -107,6 +118,13 @@ const handleNext = () => {
   console.log('Current word:', props.word.word)
   console.log('Emitting next event...')
   emit('next')
+}
+
+const handleLearnExample = () => {
+  console.log('Learn Example button clicked!')
+  console.log('Current word:', props.word.word)
+  console.log('Examples count:', props.word.examples?.length || 0)
+  emit('learnExample')
 }
 
 // Instance ID for word audio  
@@ -333,7 +351,15 @@ const getHintText = (): string => {
   font-size: 0.9rem;
 }
 
-.next-btn {
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.example-btn, .next-btn {
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
   color: white;
   border: none;
@@ -344,13 +370,20 @@ const getHintText = (): string => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0 auto;
   transition: all 0.3s ease;
 }
 
-.next-btn:hover {
+.example-btn {
+  background: linear-gradient(135deg, #74c0fc, #667eea);
+}
+
+.example-btn:hover, .next-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(231, 94, 141, 0.4);
+}
+
+.example-btn:hover {
+  box-shadow: 0 10px 25px rgba(116, 192, 252, 0.4);
 }
 
 .hint-modal {

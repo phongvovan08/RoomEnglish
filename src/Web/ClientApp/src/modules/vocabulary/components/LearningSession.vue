@@ -12,7 +12,7 @@
         <div class="session-stats">
           <div class="stat-item">
             <i class="mdi mdi-target"></i>
-            <span v-if="sessionType === 'dictation'">
+            <span v-if="currentSessionType === 'dictation'">
               Example {{ currentExampleNumber }} / {{ totalExamples }}
             </span>
             <span v-else>
@@ -62,14 +62,15 @@
     <div class="learning-content" v-if="currentWord">
       <!-- Vocabulary Mode -->
       <VocabularyCard 
-        v-if="sessionType === 'vocabulary'"
+        v-if="currentSessionType === 'vocabulary'"
         :word="currentWord"
         @next="nextWord"
+        @learn-example="switchToDictation"
       />
 
       <!-- Dictation Mode -->
       <DictationCard 
-        v-if="sessionType === 'dictation'"
+        v-if="currentSessionType === 'dictation'"
         :example="currentExample"
         :word="currentWord"
         @submit="handleDictationSubmit"
@@ -78,7 +79,7 @@
 
       <!-- Mixed Mode -->
       <component 
-        v-if="sessionType === 'mixed'"
+        v-if="currentSessionType === 'mixed'"
         :is="currentMode === 'vocabulary' ? 'VocabularyCard' : 'DictationCard'"
         :word="currentWord"
         :example="currentMode === 'dictation' ? currentExample : undefined"
@@ -190,6 +191,7 @@ const isSessionComplete = ref(false)
 const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
 const showSpeechSettings = ref(false)
+const originalSessionType = ref(props.sessionType) // Remember original type
 
 // Timer
 let timer: number | null = null
@@ -315,6 +317,14 @@ const nextWord = () => {
     console.log('Moving to next example of current word (dictation mode)')
     currentExampleIndex.value++
   } else {
+    // If we were in temporary dictation mode (learning examples), go back to vocabulary
+    if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
+      console.log('Finished examples, returning to vocabulary mode')
+      currentSessionType.value = 'vocabulary'
+      currentExampleIndex.value = 0
+      return
+    }
+    
     // Move to next word
     console.log('Moving to next word...')
     currentExampleIndex.value = 0 // Reset example index
@@ -334,6 +344,26 @@ const nextWord = () => {
   }
   
   console.log('After nextWord - currentIndex:', currentIndex.value)
+}
+
+const switchToDictation = () => {
+  console.log('=== Switching to dictation mode ===')
+  const word = currentWord.value
+  
+  if (!word?.examples || word.examples.length === 0) {
+    console.log('No examples available for this word')
+    return
+  }
+  
+  console.log('Current word:', word.word)
+  console.log('Examples count:', word.examples.length)
+  
+  // Switch to dictation mode temporarily for this word
+  currentMode.value = 'dictation'
+  currentSessionType.value = 'dictation'
+  currentExampleIndex.value = 0
+  
+  console.log('Switched to dictation mode')
 }
 
 const finishSession = () => {
