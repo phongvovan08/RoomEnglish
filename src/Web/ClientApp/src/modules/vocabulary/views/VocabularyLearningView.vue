@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useVocabulary } from '../composables/useVocabulary'
+import { useUserProgress } from '../composables/useUserProgress'
 import type { VocabularyCategory, LearningSession } from '../types/vocabulary.types'
 import LearningSessionComponent from '../components/LearningSession.vue'
 import SessionResult from '../components/SessionResult.vue'
@@ -101,6 +102,13 @@ const {
   getCategories,
   clearError 
 } = useVocabulary()
+
+const {
+  progress,
+  getUserProgress,
+  getCategoryProgress: getCategoryProgressFromAPI,
+  recalculateCategoryProgress
+} = useUserProgress()
 
 const selectedCategory = ref<VocabularyCategory | null>(null)
 const sessionType = ref<'vocabulary' | 'dictation' | 'mixed'>('vocabulary')
@@ -135,17 +143,13 @@ const goBack = () => {
   sessionResult.value = null
 }
 
-const handleSessionComplete = (result: LearningSession) => {
+const handleSessionComplete = async (result: LearningSession) => {
   sessionResult.value = result
   isCompleted.value = true
   
-  // Update category progress based on session results
+  // Update category progress via API
   if (selectedCategory.value) {
-    const currentProgress = getCategoryProgress(selectedCategory.value.id)
-    const sessionProgress = Math.round((result.correctAnswers / result.totalWords) * 100)
-    // Calculate weighted average (70% current, 30% new session)
-    const newProgress = Math.min(100, Math.round(currentProgress * 0.7 + sessionProgress * 0.3))
-    updateCategoryProgress(selectedCategory.value.id, newProgress)
+    await recalculateCategoryProgress(selectedCategory.value.id)
   }
 }
 
@@ -164,29 +168,13 @@ const loadCategories = async () => {
 }
 
 const getCategoryProgress = (categoryId: number): number => {
-  // Get progress from localStorage
-  const key = `category_progress_${categoryId}`
-  const progressData = localStorage.getItem(key)
-  
-  if (progressData) {
-    try {
-      const data = JSON.parse(progressData)
-      return Math.round(data.progress || 0)
-    } catch {
-      return 0
-    }
-  }
-  
-  return 0
+  const categoryProgress = getCategoryProgressFromAPI(categoryId)
+  return categoryProgress ? categoryProgress.completionPercentage : 0
 }
 
-const updateCategoryProgress = (categoryId: number, progress: number) => {
-  const key = `category_progress_${categoryId}`
-  localStorage.setItem(key, JSON.stringify({ progress, updatedAt: new Date().toISOString() }))
-}
-
-onMounted(() => {
-  loadCategories()
+onMounted(async () => {
+  await loadCategories()
+  await getUserProgress()
 })
 </script>
 

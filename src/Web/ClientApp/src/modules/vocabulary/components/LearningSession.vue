@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVocabulary } from '../composables/useVocabulary'
+import { useUserProgress } from '../composables/useUserProgress'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
@@ -191,6 +192,11 @@ const {
   completeLearningSession,
   clearError
 } = useVocabulary()
+
+const {
+  updateWordProgress,
+  updateExampleProgress
+} = useUserProgress()
 
 // Session state
 const sessionWords = ref<VocabularyWord[]>([])
@@ -310,13 +316,23 @@ const loadSessionWords = async () => {
   }
 }
 
-const handleDictationSubmit = (result: any) => {
+const handleDictationSubmit = async (result: any) => {
   totalAttempts.value++
   if (result.isCorrect) {
     correctCount.value++
   }
   
-  // Mark current example as completed
+  // Update example progress in database
+  if (currentExample.value) {
+    await updateExampleProgress(currentExample.value.id, result.accuracyPercentage)
+  }
+  
+  // Update word progress in database
+  if (currentWord.value) {
+    await updateWordProgress(currentWord.value.id, result.isCorrect)
+  }
+  
+  // Mark current example as completed locally
   if (!completedExamples.value.includes(currentExampleIndex.value)) {
     completedExamples.value.push(currentExampleIndex.value)
   }

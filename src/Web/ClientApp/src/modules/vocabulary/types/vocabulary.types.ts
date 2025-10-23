@@ -85,6 +85,33 @@ export interface LearningSession {
   accuracyRate: number
 }
 
+// User Progress Types
+export interface UserCategoryProgress {
+  categoryId: number
+  categoryName: string
+  completionPercentage: number
+  wordsStudied: number
+  wordsMastered: number
+  averageAccuracy: number
+  lastStudiedAt?: string
+}
+
+export interface UserExampleProgress {
+  exampleId: number
+  wordId: number
+  isCompleted: boolean
+  totalAttempts: number
+  bestAccuracy: number
+  lastAttemptedAt?: string
+}
+
+export interface UserProgress {
+  userId: string
+  categoryProgress: UserCategoryProgress[]
+  wordProgress: UserWordProgress[]
+  exampleProgress: UserExampleProgress[]
+}
+
 // API Request/Response Types
 export interface GetVocabularyCategoriesQuery {
   pageNumber?: number
