@@ -12,30 +12,19 @@
       </div>
     </div>
 
-    <div class="translation-section" v-if="translation">
-      <div class="translation-card">
-        <h4>Vietnamese Translation:</h4>
-        <div class="translation-content">{{ translation }}</div>
+    <div class="sentence-section" v-if="sentence">
+      <div class="sentence-card">
+        <h4>📝 Sentence:</h4>
+        <p class="sentence-content">{{ sentence }}</p>
+        <p class="translation-content">{{ translation }}</p>
+        <p class="grammar-text">{{ grammar }}</p>
       </div>
-    </div>
-
-    <div class="grammar-section" v-if="grammar">
-      <h4>📚 Grammar:</h4>
-      <div class="grammar-text">{{ grammar }}</div>
     </div>
 
     <div class="performance-stats">
       <div class="stat-item">
         <i class="mdi mdi-clock"></i>
         <span>Time: {{ formatTime(result.timeTakenSeconds) }}</span>
-      </div>
-      <div class="stat-item">
-        <i class="mdi mdi-target"></i>
-        <span>Accuracy: {{ result.accuracyPercentage }}%</span>
-      </div>
-      <div class="stat-item" v-if="result.isCorrect">
-        <i class="mdi mdi-trophy"></i>
-        <span>Perfect!</span>
       </div>
     </div>
 
@@ -51,6 +40,7 @@ import type { DictationResult } from '../../../types/vocabulary.types'
 
 interface Props {
   result: DictationResult
+  sentence?: string
   translation?: string
   grammar?: string
 }
@@ -181,16 +171,59 @@ const formatTime = (seconds: number): string => {
   background: rgba(116, 192, 252, 0.3);
 }
 
-.translation-section {
+.sentence-section {
   margin-bottom: 2rem;
 }
 
-.translation-card {
+.sentence-card {
   background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
   border: 1px solid rgba(116, 192, 252, 0.3);
   border-radius: 15px;
   padding: 1.5rem;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sentence-card h4 {
+  color: #e75e8d;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+.sentence-card p{
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.sentence-content {
+  color: white;
+  font-size: 1.3rem;
+  line-height: 1.6;
+  font-weight: 500;
+  text-align: center;
+}
+
+.info-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.translation-section,
+.grammar-section {
+  height: 100%;
+}
+
+.translation-card,
+.grammar-card {
+  height: 100%;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.translation-card {
+  background: linear-gradient(135deg, rgba(116, 192, 252, 0.2), rgba(116, 192, 252, 0.1));
+  border: 1px solid rgba(116, 192, 252, 0.3);
 }
 
 .translation-card h4 {
@@ -201,29 +234,28 @@ const formatTime = (seconds: number): string => {
 
 .translation-content {
   color: white;
-  font-size: 1.2rem;
-  line-height: 1.5;
+  font-size: 1.1rem;
+  line-height: 1.6;
   font-style: italic;
-  text-align: center;
 }
 
-.grammar-section {
-  background: rgba(116, 192, 252, 0.1);
-  border: 1px solid rgba(116, 192, 252, 0.3);
-  border-radius: 15px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+.grammar-card {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.1));
+  border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
-.grammar-section h4 {
-  color: #74c0fc;
+.grammar-card h4 {
+  color: #ffc107;
   margin-bottom: 1rem;
+  font-size: 1.1rem;
 }
 
-.grammar-section .grammar-text {
-  color: white;
+.grammar-text {
+  color: #ffc107;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.6;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(255, 193, 7, 0.5);
 }
 
 .performance-stats {
@@ -270,6 +302,10 @@ const formatTime = (seconds: number): string => {
 
 @media (max-width: 768px) {
   .comparison-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-sections {
     grid-template-columns: 1fr;
   }
   

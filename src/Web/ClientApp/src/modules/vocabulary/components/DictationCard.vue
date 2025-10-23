@@ -10,6 +10,7 @@
           <div class="word-badge">
             <Icon icon="mdi:book-alphabet" class="w-4 h-4" />
             <span class="word-text">{{ word.word }}</span>
+            <span class="word-part-of-speech" v-if="word.partOfSpeech">({{ word.partOfSpeech }})</span>
             <span class="word-meaning">{{ word.meaning }}</span>
           </div>
         </div>
@@ -17,9 +18,6 @@
         <div class="instruction">
           <span class="keyboard-hint" :class="{ 'keyboard-hint-active': isPlayingAudio }">
             <kbd>Ctrl</kbd> to replay audio
-          </span>
-          <span class="keyboard-hint" v-if="userInput.trim()">
-            • <kbd>Enter</kbd> to submit
           </span>
         </div>
         <div v-if="example?.sentence && showSentence" class="example-sentence">
@@ -144,6 +142,7 @@
       <ResultDisplay
         v-if="showResult && dictationResult"
         :result="dictationResult"
+        :sentence="example?.sentence"
         :translation="example?.translation"
         :grammar="example?.grammar"
         @replay="playCorrectAudio"
@@ -297,15 +296,23 @@ const submitAnswer = async () => {
   }
   
   try {
+    // Calculate final elapsed time before stopping timer
+    if (startTime.value) {
+      elapsedTime.value = Math.floor((Date.now() - startTime.value) / 1000)
+    }
     stopTimer()
     
     console.log('📤 Submitting dictation...')
+    console.log('⏱️ Elapsed time:', elapsedTime.value, 'seconds')
+    
     const result = await submitDictation(
       props.example.id,
-      userInput.value.trim()
+      userInput.value.trim(),
+      elapsedTime.value
     )
     
     console.log('✅ Dictation result:', result)
+    console.log('⏱️ Result time:', result.timeTakenSeconds, 'seconds')
     showResult.value = true
     emit('submit', result)
   } catch (err) {
@@ -362,13 +369,6 @@ const resetComponent = () => {
 const handleKeyDown = (event: KeyboardEvent) => {
   // Ctrl key to play audio
   if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
-    const target = event.target as HTMLElement
-    
-    // Don't trigger if typing in textarea or input
-    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-      return
-    }
-    
     // Only trigger if not in result view and has audio button
     if (!showResult.value && props.example?.sentence && listenButton.value) {
       event.preventDefault()
@@ -407,6 +407,13 @@ onMounted(() => {
 watchEffect(() => {
   console.log('👀 DictationResult changed:', dictationResult.value)
   console.log('👀 showResult:', showResult.value)
+})
+
+// Watch userInput to start timer when user starts typing
+watchEffect(() => {
+  if (userInput.value.length > 0 && !startTime.value && !showResult.value) {
+    startTimer()
+  }
 })
 
 onUnmounted(() => {
@@ -497,6 +504,13 @@ watchEffect(() => {
   color: #e75e8d;
   font-size: 1.2rem;
   font-weight: bold;
+}
+
+.word-part-of-speech {
+  color: #ffc107;
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 0 0.5rem;
 }
 
 .word-meaning {

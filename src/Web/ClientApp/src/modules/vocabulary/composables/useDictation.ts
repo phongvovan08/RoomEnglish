@@ -148,13 +148,13 @@ export const useDictation = () => {
   }
 
   // Submit dictation
-  const submitDictation = async (exampleId: number, userText?: string): Promise<DictationResult> => {
+  const submitDictation = async (exampleId: number, userText?: string, elapsedTime?: number): Promise<DictationResult> => {
     try {
       isLoading.value = true
       error.value = null
 
       const inputText = userText || userInput.value
-      const timeTaken = startTime.value ? Math.floor((Date.now() - startTime.value) / 1000) : 0
+      const timeTaken = elapsedTime ?? (startTime.value ? Math.floor((Date.now() - startTime.value) / 1000) : 0)
 
       // Get correct answer from current example
       const correctAnswer = currentExample.value?.sentence || ''
