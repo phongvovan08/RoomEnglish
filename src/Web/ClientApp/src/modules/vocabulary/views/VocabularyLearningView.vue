@@ -22,9 +22,13 @@
           :key="category.id"
           class="category-card"
           :style="{ '--category-color': getCategoryColor(category.color) }"
+          :class="{ 'mastered': getCategoryProgress(category.id) >= 80 }"
           @click="selectCategory(category)"
         >
           <div class="card-background">
+            <div class="mastery-badge" v-if="getCategoryProgress(category.id) >= 80">
+              <i class="mdi mdi-crown"></i>
+            </div>
             <div class="card-icon">
               <i :class="getIconClass(category.iconName)"></i>
             </div>
@@ -33,6 +37,15 @@
               <p>{{ category.description }}</p>
               <div class="stats">
                 <span class="word-count">{{ category.wordCount }} words</span>
+              </div>
+              <div class="progress-info">
+                <div class="progress-bar-mini">
+                  <div 
+                    class="progress-fill-mini"
+                    :style="{ width: `${getCategoryProgress(category.id)}%` }"
+                  ></div>
+                </div>
+                <span class="progress-text-mini">{{ getCategoryProgress(category.id) }}% Complete</span>
               </div>
             </div>
             <div class="card-glow"></div>
@@ -125,6 +138,15 @@ const goBack = () => {
 const handleSessionComplete = (result: LearningSession) => {
   sessionResult.value = result
   isCompleted.value = true
+  
+  // Update category progress based on session results
+  if (selectedCategory.value) {
+    const currentProgress = getCategoryProgress(selectedCategory.value.id)
+    const sessionProgress = Math.round((result.correctAnswers / result.totalWords) * 100)
+    // Calculate weighted average (70% current, 30% new session)
+    const newProgress = Math.min(100, Math.round(currentProgress * 0.7 + sessionProgress * 0.3))
+    updateCategoryProgress(selectedCategory.value.id, newProgress)
+  }
 }
 
 const restart = () => {
@@ -139,6 +161,28 @@ const loadCategories = async () => {
   } catch (err) {
     console.error('Failed to load categories:', err)
   }
+}
+
+const getCategoryProgress = (categoryId: number): number => {
+  // Get progress from localStorage
+  const key = `category_progress_${categoryId}`
+  const progressData = localStorage.getItem(key)
+  
+  if (progressData) {
+    try {
+      const data = JSON.parse(progressData)
+      return Math.round(data.progress || 0)
+    } catch {
+      return 0
+    }
+  }
+  
+  return 0
+}
+
+const updateCategoryProgress = (categoryId: number, progress: number) => {
+  const key = `category_progress_${categoryId}`
+  localStorage.setItem(key, JSON.stringify({ progress, updatedAt: new Date().toISOString() }))
 }
 
 onMounted(() => {
@@ -280,6 +324,34 @@ onMounted(() => {
   font-weight: bold;
 }
 
+.progress-info {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.progress-bar-mini {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill-mini {
+  height: 100%;
+  background: linear-gradient(90deg, #e75e8d, #74c0fc, #e75e8d);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(231, 94, 141, 0.5);
+}
+
+.progress-text-mini {
+  font-size: 0.85rem;
+  color: #74c0fc;
+  font-weight: 600;
+}
+
 .card-glow {
   position: absolute;
   top: -2px;
@@ -299,6 +371,38 @@ onMounted(() => {
 
 .category-card:hover .card-glow {
   opacity: 0.3;
+}
+
+.category-card.mastered {
+  border: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.category-card.mastered .card-background::before {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+  opacity: 0.3;
+}
+
+.mastery-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #1a1a2e;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 .loading-container, .error-container {
