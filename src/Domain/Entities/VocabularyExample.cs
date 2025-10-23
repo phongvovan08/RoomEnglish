@@ -16,4 +16,5 @@ public class VocabularyExample : BaseAuditableEntity
     // Navigation properties
     public VocabularyWord Word { get; set; } = null!;
     public IList<DictationResult> DictationResults { get; private set; } = new List<DictationResult>();
+    public IList<UserExampleProgress> UserProgress { get; private set; } = new List<UserExampleProgress>();
 }

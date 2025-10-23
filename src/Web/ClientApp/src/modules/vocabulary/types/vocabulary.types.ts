@@ -27,6 +27,9 @@ export interface VocabularyWord {
   incorrectCount: number
   categoryId: number
   categoryName: string
+  exampleCount: number
+  completedExampleCount: number
+  exampleCompletionPercentage: number
   examples: VocabularyExample[]
   userProgress?: UserWordProgress
 }

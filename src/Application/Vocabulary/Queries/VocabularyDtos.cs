@@ -36,6 +36,8 @@ public class VocabularyWordDto : IMapFrom<VocabularyWord>
     public int CategoryId { get; init; }
     public string CategoryName { get; init; } = string.Empty;
     public int ExampleCount { get; init; } // For sorting and display
+    public int CompletedExampleCount { get; init; } // Number of completed examples
+    public double ExampleCompletionPercentage { get; init; } // Percentage of examples completed
     public IList<VocabularyExampleDto> Examples { get; init; } = new List<VocabularyExampleDto>();
     public UserWordProgressDto? UserProgress { get; init; }
 

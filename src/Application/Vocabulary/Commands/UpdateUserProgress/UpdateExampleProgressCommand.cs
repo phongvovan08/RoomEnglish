@@ -15,11 +15,13 @@ public class UpdateExampleProgressCommandHandler : IRequestHandler<UpdateExample
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly ISender _sender;
 
-    public UpdateExampleProgressCommandHandler(IApplicationDbContext context, IUser user)
+    public UpdateExampleProgressCommandHandler(IApplicationDbContext context, IUser user, ISender sender)
     {
         _context = context;
         _user = user;
+        _sender = sender;
     }
 
     public async Task<Unit> Handle(UpdateExampleProgressCommand request, CancellationToken cancellationToken)
@@ -63,6 +65,83 @@ public class UpdateExampleProgressCommandHandler : IRequestHandler<UpdateExample
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        // Get the word ID and update word progress based on example completion
+        var example = await _context.VocabularyExamples
+            .FirstOrDefaultAsync(e => e.Id == request.ExampleId, cancellationToken);
+        
+        if (example != null)
+        {
+            await UpdateWordProgressFromExamples(example.WordId, userId, cancellationToken);
+        }
+
         return Unit.Value;
+    }
+
+    private async Task UpdateWordProgressFromExamples(int wordId, string userId, CancellationToken cancellationToken)
+    {
+        // Get all examples for this word
+        var totalExamples = await _context.VocabularyExamples
+            .Where(e => e.WordId == wordId && e.IsActive)
+            .CountAsync(cancellationToken);
+
+        if (totalExamples == 0) return;
+
+        // Get user's progress on these examples
+        var exampleProgress = await _context.UserExampleProgress
+            .Where(p => p.UserId == userId && p.Example.WordId == wordId)
+            .ToListAsync(cancellationToken);
+
+        var completedExamples = exampleProgress.Count(p => p.IsCompleted);
+        var completionPercentage = (double)completedExamples / totalExamples * 100;
+
+        // Get or create word progress
+        var wordProgress = await _context.UserWordProgress
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == wordId, cancellationToken);
+
+        if (wordProgress == null)
+        {
+            wordProgress = new Domain.Entities.UserWordProgress
+            {
+                UserId = userId,
+                WordId = wordId,
+                StudiedTimes = 0,
+                CorrectAnswers = 0,
+                TotalAttempts = 0,
+                IsMastered = false,
+                MasteryLevel = 0,
+                FirstStudiedAt = DateTime.UtcNow
+            };
+            _context.UserWordProgress.Add(wordProgress);
+        }
+
+        // Update word mastery based on example completion
+        wordProgress.StudiedTimes = exampleProgress.Count;
+        
+        // Calculate mastery level based on completion percentage
+        wordProgress.MasteryLevel = completionPercentage switch
+        {
+            >= 95 => 5,
+            >= 80 => 4,
+            >= 60 => 3,
+            >= 40 => 2,
+            >= 20 => 1,
+            _ => 0
+        };
+
+        // Mark as mastered if all examples are completed
+        wordProgress.IsMastered = completedExamples == totalExamples;
+        wordProgress.LastStudiedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Trigger category progress update
+        await _sender.Send(new UpdateCategoryProgressCommand
+        {
+            CategoryId = (await _context.VocabularyWords
+                .Where(w => w.Id == wordId)
+                .Select(w => w.CategoryId)
+                .FirstOrDefaultAsync(cancellationToken)),
+            UserId = userId
+        }, cancellationToken);
     }
 }

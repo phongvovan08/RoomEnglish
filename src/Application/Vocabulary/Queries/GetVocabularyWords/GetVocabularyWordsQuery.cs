@@ -94,7 +94,14 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                 IncorrectCount = x.IncorrectCount,
                 CategoryId = x.CategoryId,
                 CategoryName = x.Category.Name,
-                ExampleCount = x.Examples.Count(e => e.IsActive), // Add example count for sorting
+                ExampleCount = x.Examples.Count(e => e.IsActive),
+                CompletedExampleCount = request.UserId != null 
+                    ? x.Examples.Count(e => e.IsActive && e.UserProgress.Any(p => p.UserId == request.UserId && p.IsCompleted))
+                    : 0,
+                ExampleCompletionPercentage = x.Examples.Count(e => e.IsActive) > 0 && request.UserId != null
+                    ? (double)x.Examples.Count(e => e.IsActive && e.UserProgress.Any(p => p.UserId == request.UserId && p.IsCompleted)) 
+                      / x.Examples.Count(e => e.IsActive) * 100
+                    : 0,
                 Examples = x.Examples
                     .Where(e => e.IsActive)
                     .OrderBy(e => e.DisplayOrder)

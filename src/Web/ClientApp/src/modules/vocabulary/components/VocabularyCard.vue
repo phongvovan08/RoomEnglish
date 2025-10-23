@@ -40,18 +40,29 @@
       </div>
 
       <!-- Progress Info -->
-      <div class="progress-info" v-if="word.userProgress">
+      <div class="progress-info" v-if="word.userProgress || word.exampleCompletionPercentage > 0">
         <h4>Your Progress</h4>
         <div class="progress-stats">
-          <div class="stat">
+          <div class="stat" v-if="word.exampleCount > 0">
+            <span class="stat-label">Examples Completed:</span>
+            <span class="stat-value">{{ word.completedExampleCount }}/{{ word.exampleCount }}</span>
+            <div class="progress-bar-small">
+              <div 
+                class="progress-fill-small"
+                :style="{ width: `${word.exampleCompletionPercentage}%` }"
+              ></div>
+            </div>
+            <span class="stat-percentage">{{ Math.round(word.exampleCompletionPercentage) }}%</span>
+          </div>
+          <div class="stat" v-if="word.userProgress">
             <span class="stat-label">Accuracy:</span>
             <span class="stat-value">{{ Math.round(word.userProgress.accuracyRate) }}%</span>
           </div>
-          <div class="stat">
+          <div class="stat" v-if="word.userProgress">
             <span class="stat-label">Studied:</span>
             <span class="stat-value">{{ word.userProgress.studiedTimes }} times</span>
           </div>
-          <div class="stat" v-if="word.userProgress.isMastered">
+          <div class="stat" v-if="word.userProgress?.isMastered">
             <span class="mastery-badge">🏆 Mastered</span>
           </div>
         </div>
@@ -340,6 +351,29 @@ const getHintText = (): string => {
 .stat-value {
   color: white;
   font-weight: bold;
+}
+
+.progress-bar-small {
+  width: 150px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-fill-small {
+  height: 100%;
+  background: linear-gradient(90deg, #e75e8d, #74c0fc);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(231, 94, 141, 0.5);
+}
+
+.stat-percentage {
+  color: #74c0fc;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .mastery-badge {
