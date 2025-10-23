@@ -21,6 +21,8 @@ public interface IApplicationDbContext
     
     DbSet<UserExampleProgress> UserExampleProgress { get; }
     
+    DbSet<UserLearningPosition> UserLearningPositions { get; }
+    
     DbSet<DictationResult> DictationResults { get; }
     
     DbSet<LearningSession> LearningSessions { get; }

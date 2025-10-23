@@ -115,6 +115,13 @@ export interface UserProgress {
   exampleProgress: UserExampleProgress[]
 }
 
+export interface LearningPosition {
+  wordId: number
+  groupIndex: number
+  lastExampleIndex: number
+  lastAccessedAt: string
+}
+
 // API Request/Response Types
 export interface GetVocabularyCategoriesQuery {
   pageNumber?: number

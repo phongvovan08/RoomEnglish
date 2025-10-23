@@ -549,6 +549,100 @@
         ]
       }
     },
+    "/api/user-progress/position/{wordId}": {
+      "get": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Get learning position",
+        "description": "Gets user's saved learning position for a word",
+        "operationId": "GetLearningPosition",
+        "parameters": [
+          {
+            "name": "wordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Clear learning position",
+        "description": "Clears user's saved learning position for a word",
+        "operationId": "ClearLearningPosition",
+        "parameters": [
+          {
+            "name": "wordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/user-progress/position": {
+      "post": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Save learning position",
+        "description": "Saves user's current learning position",
+        "operationId": "SaveLearningPosition",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLearningPositionRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Users/register": {
       "post": {
         "tags": [
@@ -2361,6 +2455,24 @@
         "additionalProperties": false,
         "properties": {
           "accuracyPercentage": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SaveLearningPositionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "wordId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "groupIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastExampleIndex": {
             "type": "integer",
             "format": "int32"
           }

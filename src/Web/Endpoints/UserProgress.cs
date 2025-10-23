@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomEnglish.Application.Vocabulary.Queries.GetUserProgress;
 using RoomEnglish.Application.Vocabulary.Commands.UpdateUserProgress;
+using RoomEnglish.Application.Vocabulary.Queries;
+using RoomEnglish.Application.Vocabulary.Commands;
 using RoomEnglish.Web.Infrastructure;
 
 namespace RoomEnglish.Web.Endpoints;
@@ -41,6 +43,21 @@ public class UserProgress : EndpointGroupBase
              .WithName("RecalculateCategoryProgress")
              .WithSummary("Recalculate category progress")
              .WithDescription("Recalculates and updates category progress based on word progress");
+
+        group.MapGet("position/{wordId}", GetLearningPosition)
+             .WithName("GetLearningPosition")
+             .WithSummary("Get learning position")
+             .WithDescription("Gets user's saved learning position for a word");
+
+        group.MapPost("position", SaveLearningPosition)
+             .WithName("SaveLearningPosition")
+             .WithSummary("Save learning position")
+             .WithDescription("Saves user's current learning position");
+
+        group.MapDelete("position/{wordId}", ClearLearningPosition)
+             .WithName("ClearLearningPosition")
+             .WithSummary("Clear learning position")
+             .WithDescription("Clears user's saved learning position for a word");
     }
 
     [Authorize]
@@ -99,6 +116,40 @@ public class UserProgress : EndpointGroupBase
         int categoryId)
     {
         await sender.Send(new UpdateCategoryProgressCommand { CategoryId = categoryId });
+        return Results.Ok();
+    }
+
+    [Authorize]
+    public async Task<IResult> GetLearningPosition(
+        ISender sender,
+        int wordId)
+    {
+        var result = await sender.Send(new GetLearningPositionQuery { WordId = wordId });
+        return Results.Ok(result);
+    }
+
+    public record SaveLearningPositionRequest(int WordId, int GroupIndex, int LastExampleIndex);
+
+    [Authorize]
+    public async Task<IResult> SaveLearningPosition(
+        ISender sender,
+        SaveLearningPositionRequest request)
+    {
+        await sender.Send(new SaveLearningPositionCommand 
+        { 
+            WordId = request.WordId,
+            GroupIndex = request.GroupIndex,
+            LastExampleIndex = request.LastExampleIndex
+        });
+        return Results.Ok();
+    }
+
+    [Authorize]
+    public async Task<IResult> ClearLearningPosition(
+        ISender sender,
+        int wordId)
+    {
+        await sender.Send(new ClearLearningPositionCommand { WordId = wordId });
         return Results.Ok();
     }
 }

@@ -28,6 +28,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     
     public DbSet<UserExampleProgress> UserExampleProgress => Set<UserExampleProgress>();
     
+    public DbSet<UserLearningPosition> UserLearningPositions => Set<UserLearningPosition>();
+    
     public DbSet<DictationResult> DictationResults => Set<DictationResult>();
     
     public DbSet<LearningSession> LearningSessions => Set<LearningSession>();

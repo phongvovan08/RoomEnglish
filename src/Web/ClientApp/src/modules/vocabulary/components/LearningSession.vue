@@ -195,7 +195,12 @@ const {
 
 const {
   updateWordProgress,
-  updateExampleProgress
+  updateExampleProgress,
+  getUserProgress,
+  progress: userProgressData,
+  getLearningPosition,
+  saveLearningPosition,
+  clearLearningPosition
 } = useUserProgress()
 
 // Session state
@@ -303,6 +308,22 @@ const loadSessionWords = async () => {
       throw new Error('No words found in this category')
     }
 
+    // Load user progress to get completed examples
+    await getUserProgress()
+    
+    // Build completedExamples array from progress data
+    if (userProgressData.value && currentWord.value) {
+      const exampleProgressList = userProgressData.value.exampleProgress
+      completedExamples.value = currentWord.value.examples
+        .map((example, index) => {
+          const isCompleted = exampleProgressList.some(
+            p => p.exampleId === example.id && p.isCompleted
+          )
+          return isCompleted ? index : -1
+        })
+        .filter(index => index !== -1)
+    }
+
     // Start the learning session
     await startLearningSession({
       categoryId: props.category.id,
@@ -335,6 +356,16 @@ const handleDictationSubmit = async (result: any) => {
   // Mark current example as completed locally
   if (!completedExamples.value.includes(currentExampleIndex.value)) {
     completedExamples.value.push(currentExampleIndex.value)
+  }
+  
+  // Save current position to database
+  if (currentWord.value && selectedGroupIndex.value !== null) {
+    await saveLearningPosition(
+      currentWord.value.id,
+      selectedGroupIndex.value,
+      currentExampleIndex.value
+    )
+    console.log(`Saved position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${currentExampleIndex.value}`)
   }
   
   // Don't auto advance - user will click Next button in ResultDisplay
@@ -405,7 +436,7 @@ const nextWord = () => {
   console.log('After nextWord - currentIndex:', currentIndex.value)
 }
 
-const switchToDictation = () => {
+const switchToDictation = async () => {
   console.log('=== Switching to dictation mode ===')
   const word = currentWord.value
   
@@ -417,25 +448,79 @@ const switchToDictation = () => {
   console.log('Current word:', word.word)
   console.log('Examples count:', word.examples.length)
   
+  // Load progress to get completed examples
+  await getUserProgress()
+  
+  // Update completedExamples array for current word
+  if (userProgressData.value) {
+    const exampleProgressList = userProgressData.value.exampleProgress
+    completedExamples.value = word.examples
+      .map((example, index) => {
+        const isCompleted = exampleProgressList.some(
+          p => p.exampleId === example.id && p.isCompleted
+        )
+        return isCompleted ? index : -1
+      })
+      .filter(index => index !== -1)
+  }
+  
   // Show example grid instead of going directly to dictation
   showExampleGrid.value = true
   
-  console.log('Showing example grid')
+  console.log('Showing example grid with', completedExamples.value.length, 'completed examples')
 }
 
-const selectExampleGroup = (groupIndex: number) => {
+const selectExampleGroup = async (groupIndex: number) => {
   console.log('=== Example group selected:', groupIndex, '===')
   
-  // Hide grid and show dictation card for first example in group
+  // Hide grid and show dictation card
   showExampleGrid.value = false
   selectedGroupIndex.value = groupIndex
   
-  // Calculate start index of the group (each group has 10 examples)
+  // Calculate start and end index of the group (each group has 10 examples)
   const startIndex = groupIndex * 10
-  currentExampleIndex.value = startIndex
+  const endIndex = Math.min(startIndex + 10, currentWord.value?.examples?.length || 0)
+  
+  let targetIndex = startIndex
+  
+  // Check if there's a saved position in database
+  if (currentWord.value) {
+    const savedPosition = await getLearningPosition(currentWord.value.id)
+    
+    if (savedPosition && savedPosition.groupIndex === groupIndex) {
+      // Verify saved position is still valid and incomplete
+      if (savedPosition.lastExampleIndex >= startIndex && 
+          savedPosition.lastExampleIndex < endIndex &&
+          !completedExamples.value.includes(savedPosition.lastExampleIndex)) {
+        targetIndex = savedPosition.lastExampleIndex
+        console.log(`Resuming from database position: example ${targetIndex}`)
+      } else {
+        // Saved position is complete or invalid, find first incomplete
+        for (let i = startIndex; i < endIndex; i++) {
+          if (!completedExamples.value.includes(i)) {
+            targetIndex = i
+            break
+          }
+        }
+        console.log(`Saved position complete, starting at ${targetIndex} (first incomplete)`)
+      }
+    } else {
+      // No saved position, find first incomplete example in this group
+      for (let i = startIndex; i < endIndex; i++) {
+        if (!completedExamples.value.includes(i)) {
+          targetIndex = i
+          break
+        }
+      }
+      console.log(`Starting at example index ${targetIndex} (first incomplete in group)`)
+    }
+  }
+  
+  currentExampleIndex.value = targetIndex
   currentSessionType.value = 'dictation'
   
-  console.log('Switched to dictation mode for group', groupIndex, 'starting at example', startIndex)
+  console.log('Switched to dictation mode for group', groupIndex)
+  console.log('Starting at example index', targetIndex, '(first incomplete in group)')
 }
 
 const backToVocabulary = () => {
@@ -446,8 +531,38 @@ const backToVocabulary = () => {
   selectedGroupIndex.value = null
 }
 
-const backToExampleGrid = () => {
+const backToExampleGrid = async () => {
   console.log('=== Going back to example grid ===')
+  
+  // Reload progress to get updated completed examples
+  await getUserProgress()
+  
+  // Update completedExamples array
+  if (userProgressData.value && currentWord.value) {
+    const exampleProgressList = userProgressData.value.exampleProgress
+    completedExamples.value = currentWord.value.examples
+      .map((example, index) => {
+        const isCompleted = exampleProgressList.some(
+          p => p.exampleId === example.id && p.isCompleted
+        )
+        return isCompleted ? index : -1
+      })
+      .filter(index => index !== -1)
+    
+    // Clear saved progress for current group if all examples completed
+    if (selectedGroupIndex.value !== null && currentWord.value) {
+      const groupStart = selectedGroupIndex.value * 10
+      const groupEnd = Math.min(groupStart + 10, currentWord.value.examples.length)
+      const groupCompleted = Array.from({ length: groupEnd - groupStart }, (_, i) => groupStart + i)
+        .every(i => completedExamples.value.includes(i))
+      
+      if (groupCompleted) {
+        await clearLearningPosition(currentWord.value.id)
+        console.log(`Cleared database position for completed group ${selectedGroupIndex.value}`)
+      }
+    }
+  }
+  
   // Return to example grid from dictation
   showExampleGrid.value = true
   currentSessionType.value = 'vocabulary'

@@ -104,6 +104,56 @@ export function useUserProgress() {
     return progress.value.wordProgress.find(p => p.wordId === wordId) || null
   }
 
+  const getLearningPosition = async (wordId: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/user-progress/position/${wordId}`, {
+        headers: createAuthHeaders()
+      })
+      
+      if (!response.ok) {
+        if (response.status === 404) return null
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      return result
+    } catch (err) {
+      console.error('Failed to get learning position:', err)
+      return null
+    }
+  }
+
+  const saveLearningPosition = async (wordId: number, groupIndex: number, lastExampleIndex: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/user-progress/position`, {
+        method: 'POST',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ wordId, groupIndex, lastExampleIndex })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+    } catch (err) {
+      console.error('Failed to save learning position:', err)
+    }
+  }
+
+  const clearLearningPosition = async (wordId: number) => {
+    try {
+      const response = await fetch(`${API_BASE}/user-progress/position/${wordId}`, {
+        method: 'DELETE',
+        headers: createAuthHeaders()
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+    } catch (err) {
+      console.error('Failed to clear learning position:', err)
+    }
+  }
+
   return {
     progress,
     isLoading,
@@ -114,6 +164,9 @@ export function useUserProgress() {
     updateExampleProgress,
     recalculateCategoryProgress,
     getExampleProgress,
-    getWordProgress
+    getWordProgress,
+    getLearningPosition,
+    saveLearningPosition,
+    clearLearningPosition
   }
 }
