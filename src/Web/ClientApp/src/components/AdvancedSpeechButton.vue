@@ -34,11 +34,6 @@
           step="0.1"
           class="speed-slider"
         />
-        <div class="speed-presets">
-          <button @click="speechRate = 0.5" class="preset-btn">Slow</button>
-          <button @click="speechRate = 0.8" class="preset-btn">Normal</button>
-          <button @click="speechRate = 1.0" class="preset-btn">Fast</button>
-        </div>
       </div>
 
       <!-- Voice Selection -->
@@ -258,27 +253,6 @@ onMounted(async () => {
 .speed-slider,
 .pitch-slider {
   width: 100%;
-  margin-bottom: 0.5rem;
-}
-
-.speed-presets {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.preset-btn {
-  background: rgba(231, 94, 141, 0.3);
-  border: 1px solid rgba(231, 94, 141, 0.5);
-  color: #e75e8d;
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.preset-btn:hover {
-  background: rgba(231, 94, 141, 0.5);
 }
 
 .voice-select {
