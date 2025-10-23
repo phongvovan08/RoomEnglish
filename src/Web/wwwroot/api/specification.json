@@ -356,6 +356,199 @@
         ]
       }
     },
+    "/api/user-progress": {
+      "get": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Get user progress",
+        "description": "Retrieves user progress for categories, words, and examples",
+        "operationId": "GetUserProgress",
+        "parameters": [
+          {
+            "name": "UserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "CategoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/user-progress/category/{categoryId}": {
+      "get": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Get category progress",
+        "description": "Retrieves user progress for a specific category",
+        "operationId": "GetCategoryProgress",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/user-progress/word/{wordId}": {
+      "post": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Update word progress",
+        "description": "Updates user progress after practicing a word",
+        "operationId": "UpdateWordProgress",
+        "parameters": [
+          {
+            "name": "wordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWordProgressRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/user-progress/example/{exampleId}": {
+      "post": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Update example progress",
+        "description": "Updates user progress after completing an example",
+        "operationId": "UpdateExampleProgress",
+        "parameters": [
+          {
+            "name": "exampleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExampleProgressRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/user-progress/category/{categoryId}/recalculate": {
+      "post": {
+        "tags": [
+          "User Progress"
+        ],
+        "summary": "Recalculate category progress",
+        "description": "Recalculates and updates category progress based on word progress",
+        "operationId": "RecalculateCategoryProgress",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Users/register": {
       "post": {
         "tags": [
@@ -2151,6 +2344,25 @@
           "title": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "UpdateWordProgressRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "isCorrect": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateExampleProgressRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accuracyPercentage": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

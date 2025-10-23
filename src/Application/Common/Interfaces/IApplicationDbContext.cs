@@ -17,6 +17,10 @@ public interface IApplicationDbContext
     
     DbSet<UserWordProgress> UserWordProgress { get; }
     
+    DbSet<UserCategoryProgress> UserCategoryProgress { get; }
+    
+    DbSet<UserExampleProgress> UserExampleProgress { get; }
+    
     DbSet<DictationResult> DictationResults { get; }
     
     DbSet<LearningSession> LearningSessions { get; }

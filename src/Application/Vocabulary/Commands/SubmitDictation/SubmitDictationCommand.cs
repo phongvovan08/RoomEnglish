@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Application.Common.Exceptions;
 using RoomEnglish.Application.Vocabulary.Queries;
+using RoomEnglish.Application.Vocabulary.Commands.UpdateUserProgress;
 using RoomEnglish.Domain.Entities;
 using AutoMapper;
 
@@ -20,15 +21,18 @@ public class SubmitDictationCommandHandler : IRequestHandler<SubmitDictationComm
     private readonly IApplicationDbContext _context;
     private readonly IUser _currentUser;
     private readonly IMapper _mapper;
+    private readonly ISender _sender;
 
     public SubmitDictationCommandHandler(
         IApplicationDbContext context,
         IUser currentUser,
-        IMapper mapper)
+        IMapper mapper,
+        ISender sender)
     {
         _context = context;
         _currentUser = currentUser;
         _mapper = mapper;
+        _sender = sender;
     }
 
     public async Task<DictationResultDto> Handle(SubmitDictationCommand request, CancellationToken cancellationToken)
@@ -67,6 +71,14 @@ public class SubmitDictationCommandHandler : IRequestHandler<SubmitDictationComm
 
         // Update user word progress
         await UpdateUserWordProgress(example.WordId, userId, isCorrect, cancellationToken);
+
+        // Update example progress
+        await _sender.Send(new UpdateExampleProgressCommand
+        {
+            ExampleId = request.ExampleId,
+            AccuracyPercentage = accuracy,
+            UserId = userId
+        }, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 
