@@ -58,7 +58,7 @@
       </div>
 
       <!-- Next Button -->
-      <button @click="$emit('next')" class="next-btn">
+      <button @click="handleNext" class="next-btn">
         Next Word
         <i class="mdi mdi-arrow-right"></i>
       </button>
@@ -101,6 +101,13 @@ const emit = defineEmits<{
 }>()
 
 const showHintModal = ref(false)
+
+const handleNext = () => {
+  console.log('Next button clicked!')
+  console.log('Current word:', props.word.word)
+  console.log('Emitting next event...')
+  emit('next')
+}
 
 // Instance ID for word audio  
 const WORD_AUDIO_ID = 'word-audio'

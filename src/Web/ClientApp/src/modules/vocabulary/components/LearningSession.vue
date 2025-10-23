@@ -64,10 +64,7 @@
       <VocabularyCard 
         v-if="sessionType === 'vocabulary'"
         :word="currentWord"
-        :show-answer="showAnswer"
-        @answer="handleAnswer"
         @next="nextWord"
-        @play-audio="playWordAudio"
       />
 
       <!-- Dictation Mode -->
@@ -85,11 +82,8 @@
         :is="currentMode === 'vocabulary' ? 'VocabularyCard' : 'DictationCard'"
         :word="currentWord"
         :example="currentMode === 'dictation' ? currentExample : undefined"
-        :show-answer="showAnswer"
-        @answer="handleAnswer"
         @submit="handleDictationSubmit"
         @next="nextWord"
-        @play-audio="playWordAudio"
       />
     </div>
 
@@ -192,7 +186,6 @@ const correctCount = ref(0)
 const totalAttempts = ref(0)
 const startTime = ref<number>(Date.now())
 const elapsedTime = ref(0)
-const showAnswer = ref(false)
 const isSessionComplete = ref(false)
 const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
@@ -299,20 +292,6 @@ const loadSessionWords = async () => {
   }
 }
 
-const handleAnswer = (isCorrect: boolean) => {
-  totalAttempts.value++
-  if (isCorrect) {
-    correctCount.value++
-  }
-  
-  showAnswer.value = true
-  
-  // Auto advance after 2 seconds
-  setTimeout(() => {
-    nextWord()
-  }, 2000)
-}
-
 const handleDictationSubmit = (result: any) => {
   totalAttempts.value++
   if (result.isCorrect) {
@@ -323,19 +302,25 @@ const handleDictationSubmit = (result: any) => {
 }
 
 const nextWord = () => {
-  showAnswer.value = false
+  console.log('=== nextWord called ===')
+  console.log('Current index:', currentIndex.value)
+  console.log('Total words:', sessionWords.value.length)
+  console.log('Session type:', currentSessionType.value)
   
   const word = currentWord.value
+  console.log('Current word:', word?.word)
   
-  // Check if there are more examples for current word
-  if (word?.examples && currentExampleIndex.value < word.examples.length - 1) {
-    // Move to next example of current word
+  // Only cycle through examples in dictation mode
+  if (currentSessionType.value === 'dictation' && word?.examples && currentExampleIndex.value < word.examples.length - 1) {
+    console.log('Moving to next example of current word (dictation mode)')
     currentExampleIndex.value++
   } else {
     // Move to next word
+    console.log('Moving to next word...')
     currentExampleIndex.value = 0 // Reset example index
     
     if (currentIndex.value < sessionWords.value.length - 1) {
+      console.log('Incrementing currentIndex from', currentIndex.value, 'to', currentIndex.value + 1)
       currentIndex.value++
       
       // Switch mode for mixed sessions
@@ -343,9 +328,12 @@ const nextWord = () => {
         currentMode.value = Math.random() > 0.5 ? 'vocabulary' : 'dictation'
       }
     } else {
+      console.log('No more words - finishing session')
       finishSession()
     }
   }
+  
+  console.log('After nextWord - currentIndex:', currentIndex.value)
 }
 
 const finishSession = () => {
@@ -378,15 +366,6 @@ const changeSessionType = (event: Event) => {
   // Reset current mode for mixed sessions
   if (newType === 'mixed') {
     currentMode.value = 'vocabulary'
-  }
-}
-
-const playWordAudio = async (audioUrl: string) => {
-  try {
-    const audio = new Audio(audioUrl)
-    await audio.play()
-  } catch (err) {
-    console.error('Failed to play audio:', err)
   }
 }
 
