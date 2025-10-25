@@ -287,14 +287,14 @@ onMounted(async () => {
 
 .card-content h3 {
   color: white;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
 
 .card-content p {
   color: #b8b8b8;
-  font-size: 1rem;
+  font-size: 1.1rem;
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -308,7 +308,7 @@ onMounted(async () => {
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 
@@ -335,7 +335,7 @@ onMounted(async () => {
 }
 
 .progress-text-mini {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #74c0fc;
   font-weight: 600;
 }

@@ -78,6 +78,7 @@
           
           <div class="input-wrapper">
             <textarea
+              ref="inputTextarea"
               id="dictation-input"
               v-model="userInput"
               :placeholder="isRecording ? 'Listening...' : 'Start typing or click microphone for voice input'"
@@ -207,6 +208,7 @@ const startTime = ref<number | null>(null)
 const elapsedTime = ref(0)
 const showTranslation = ref(false)
 const listenButton = ref<InstanceType<typeof GlobalSpeechButton> | null>(null)
+const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -425,6 +427,11 @@ const updateExample = () => {
     // Auto play audio when example changes
     setTimeout(() => {
       playAudio()
+      
+      // Auto focus on input textarea
+      if (inputTextarea.value && !showResult.value) {
+        inputTextarea.value.focus()
+      }
     }, 300)
   }
 }

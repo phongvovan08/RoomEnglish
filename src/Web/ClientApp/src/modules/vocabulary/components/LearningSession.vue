@@ -418,11 +418,6 @@ const handleDictationSubmit = async (result: any) => {
     console.log(`✅ Updated completedExamples: ${completedExamples.value.length}/${currentWord.value.examples.length}`)
   }
   
-  // Mark current example as completed locally (backup)
-  if (!completedExamples.value.includes(currentExampleIndex.value)) {
-    completedExamples.value.push(currentExampleIndex.value)
-  }
-  
   // Save current position to database
   if (currentWord.value && selectedGroupIndex.value !== null) {
     await saveLearningPosition(
