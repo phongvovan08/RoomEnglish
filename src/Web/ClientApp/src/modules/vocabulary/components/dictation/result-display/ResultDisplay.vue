@@ -1,6 +1,16 @@
 <template>
   <div class="result-section">
-    <div class="result-header" :class="{ 'correct': result.isCorrect, 'incorrect': !result.isCorrect }">
+    
+
+    <div class="sentence-section" v-if="sentence">
+      <div class="sentence-card">
+        <h4>📝 Sentence:</h4>
+        <p class="sentence-content">{{ sentence }}</p>
+        <p class="translation-content">{{ translation }}</p>
+        <p class="grammar-text">{{ grammar }}</p>
+      </div>
+    </div>
+<div class="result-header" :class="{ 'correct': result.isCorrect, 'incorrect': !result.isCorrect }">
       <div class="result-icon">
         <i class="mdi" :class="result.isCorrect ? 'mdi-check-circle' : 'mdi-close-circle'"></i>
       </div>
@@ -11,16 +21,6 @@
         </div>
       </div>
     </div>
-
-    <div class="sentence-section" v-if="sentence">
-      <div class="sentence-card">
-        <h4>📝 Sentence:</h4>
-        <p class="sentence-content">{{ sentence }}</p>
-        <p class="translation-content">{{ translation }}</p>
-        <p class="grammar-text">{{ grammar }}</p>
-      </div>
-    </div>
-
     <div class="performance-stats">
       <div class="stat-item">
         <i class="mdi mdi-clock"></i>
@@ -30,12 +30,14 @@
 
     <button @click="$emit('next')" class="next-btn">
       <span>Next Exercise</span>
+      <kbd class="keyboard-hint-key">Enter ↵</kbd>
       <i class="mdi mdi-arrow-right"></i>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import type { DictationResult } from '../../../types/vocabulary.types'
 
 interface Props {
@@ -47,7 +49,7 @@ interface Props {
 
 defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   replay: []
   next: []
 }>()
@@ -57,6 +59,29 @@ const formatTime = (seconds: number): string => {
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
+
+// Keyboard shortcut handler
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Enter key to go to next exercise
+  // Ignore if user is typing in an input/textarea
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+    return
+  }
+  
+  if (event.key === 'Enter' && !event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+    event.preventDefault()
+    emit('next')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>
@@ -298,6 +323,18 @@ const formatTime = (seconds: number): string => {
 .next-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(231, 94, 141, 0.4);
+}
+
+.keyboard-hint-key {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 5px;
+  padding: 0.25rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {

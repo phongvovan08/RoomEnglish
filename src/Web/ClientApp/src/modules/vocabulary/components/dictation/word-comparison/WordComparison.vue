@@ -252,7 +252,7 @@ const missingCount = computed(() => {
 
 .user-word {
   color: white;
-  font-size: 1rem;
+  font-size: 1.3rem;
   font-weight: 500;
 }
 

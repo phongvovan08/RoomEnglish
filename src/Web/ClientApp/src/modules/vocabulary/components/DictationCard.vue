@@ -3,8 +3,6 @@
     <div class="card-container">
       <!-- Header -->
       <div class="dictation-header">
-        <h2>🎤 Dictation Practice</h2>
-        
         <!-- Word Info -->
         <div v-if="word" class="word-info">
           <div class="word-badge">
@@ -15,12 +13,7 @@
           </div>
         </div>
         
-        <div class="instruction">
-          <span class="keyboard-hint" :class="{ 'keyboard-hint-active': isPlayingAudio }">
-            <kbd>Ctrl</kbd> to replay audio
-          </span>
-        </div>
-        <div v-if="example?.sentence && showSentence" class="example-sentence">
+        <div v-if="example?.sentence && showSentence && !showResult" class="example-sentence">
           <div class="sentence-label">
             <Icon icon="mdi:text" class="w-5 h-5" />
             Example Sentence:
@@ -34,7 +27,7 @@
           </button>
         </div>
         <button 
-          v-else-if="example?.sentence && !showSentence"
+          v-else-if="example?.sentence && !showSentence && !showResult"
           @click="showSentence = true" 
           class="show-sentence-btn"
         >
@@ -331,8 +324,8 @@ const handleEnterKey = (event: KeyboardEvent) => {
   // Prevent default Enter behavior (new line in textarea)
   event.preventDefault()
   
-  // Only submit if there's user input
-  if (userInput.value.trim()) {
+  // Only submit if there's user input and not already showing result
+  if (userInput.value.trim() && !showResult.value) {
     submitAnswer()
   }
 }
@@ -814,7 +807,7 @@ watchEffect(() => {
   border-radius: 15px;
   padding: 1rem;
   color: white;
-  font-size: 1rem;
+  font-size: 1.3rem;
   resize: vertical;
   transition: all 0.3s ease;
   font-family: inherit;
