@@ -1,5 +1,6 @@
 import { ref, readonly } from 'vue'
 import { OpenAITTS } from '@lobehub/tts'
+import { useAudioCacheAPI } from './useAudioCacheAPI'
 
 export const useSpeechSynthesis = () => {
   const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
@@ -7,6 +8,17 @@ export const useSpeechSynthesis = () => {
   const audioInstances = ref(new Map<string, HTMLAudioElement>())
   const currentTTSProvider = ref<'openai' | 'webspeech'>('webspeech') // Default to Web Speech API
   const webSpeechVoices = ref<SpeechSynthesisVoice[]>([])
+  
+  // Memory cache for current session (faster)
+  const memoryCache = ref(new Map<string, Blob>())
+  
+  // Database API for persistent cache
+  const { 
+    getCachedAudio, 
+    saveAudioToCache, 
+    getCacheStats: getAPICacheStats,
+    cleanupCache: cleanupAPICache
+  } = useAudioCacheAPI()
 
   interface SpeechOptions {
     lang?: string
@@ -77,6 +89,34 @@ export const useSpeechSynthesis = () => {
       return Promise.reject('Invalid voice for OpenAI')
     }
 
+    const voiceName = selectedVoice.voiceName
+    const rate = options.rate || 1.0
+    const provider = 'openai'
+    
+    // Create cache key for memory cache
+    const cacheKey = `${text}_${voiceName}_${rate}`
+    
+    // Check memory cache first (fastest)
+    let cachedBlob = memoryCache.value.get(cacheKey)
+    
+    if (cachedBlob) {
+      console.log('⚡ Using memory cache:', text.substring(0, 30))
+      return cachedBlob.arrayBuffer()
+    }
+    
+    // Check database cache
+    const dbCachedBlob = await getCachedAudio(text, voiceName, rate, provider)
+    
+    if (dbCachedBlob) {
+      console.log('💾 Loaded from database cache:', text.substring(0, 30))
+      // Save to memory for faster future access
+      memoryCache.value.set(cacheKey, dbCachedBlob)
+      return dbCachedBlob.arrayBuffer()
+    }
+
+    // Not cached, fetch from API
+    console.log('🌐 Fetching from OpenAI API...')
+    
     // Get API key from environment or settings
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key')
     console.log('🔑 API Key found:', apiKey ? `${apiKey.substring(0, 10)}...` : 'No key')
@@ -86,7 +126,7 @@ export const useSpeechSynthesis = () => {
     }
 
     console.log('📝 Text to synthesize:', text.substring(0, 50) + '...')
-    console.log('🎵 Voice:', selectedVoice.voiceName)
+    console.log('🎵 Voice:', voiceName)
 
     const tts = new OpenAITTS({ OPENAI_API_KEY: apiKey })
     
@@ -94,7 +134,8 @@ export const useSpeechSynthesis = () => {
       input: text,
       options: {
         model: 'tts-1', // or 'tts-1-hd' for higher quality
-        voice: selectedVoice.voiceName as any
+        voice: voiceName as any,
+        speed: rate
       }
     }
 
@@ -107,6 +148,20 @@ export const useSpeechSynthesis = () => {
       if (response.ok) {
         const arrayBuffer = await response.arrayBuffer()
         console.log('✅ OpenAI TTS success! Audio buffer size:', arrayBuffer.byteLength)
+        
+        // Cache the audio blob
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+        
+        // Save to memory cache (instant)
+        memoryCache.value.set(cacheKey, blob)
+        
+        // Save to database (async, fire and forget)
+        saveAudioToCache(text, voiceName, rate, provider, blob, 30).catch(err => {
+          console.error('Failed to save to database cache:', err)
+        })
+        
+        console.log('💾 Cached audio for future use')
+        
         return arrayBuffer
       } else {
         const errorText = await response.text()
@@ -375,6 +430,31 @@ export const useSpeechSynthesis = () => {
     await loadWebSpeechVoices()
   }
 
+  // Clear audio cache (useful for memory management)
+  const clearCache = async () => {
+    memoryCache.value.clear()
+    const deleted = await cleanupAPICache(100, true)
+    console.log(`🧹 Audio cache cleared (${deleted} entries deleted)`)
+    return deleted
+  }
+
+  // Get cache stats
+  const getCacheStats = async () => {
+    const dbStats = await getAPICacheStats()
+    return {
+      memory: {
+        count: memoryCache.value.size,
+        size: Array.from(memoryCache.value.values()).reduce((sum, blob) => sum + blob.size, 0)
+      },
+      database: dbStats ? {
+        count: dbStats.totalEntries,
+        size: dbStats.totalSizeBytes,
+        hits: dbStats.totalHits,
+        expired: dbStats.expiredEntries
+      } : null
+    }
+  }
+
   return {
     isPlaying,
     isSupported: readonly(isSupported),
@@ -387,6 +467,8 @@ export const useSpeechSynthesis = () => {
     currentTTSProvider: readonly(currentTTSProvider),
     setTTSProvider,
     webSpeechVoices: readonly(webSpeechVoices),
-    openaiVoices: readonly(openaiVoices)
+    openaiVoices: readonly(openaiVoices),
+    clearCache,
+    getCacheStats
   }
 }

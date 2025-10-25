@@ -6,6 +6,135 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/audio-cache": {
+      "get": {
+        "tags": [
+          "Audio Cache"
+        ],
+        "summary": "Get cached audio",
+        "description": "Retrieves cached audio from database",
+        "operationId": "GetAudioCache",
+        "parameters": [
+          {
+            "name": "Text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Voice",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "Rate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "Provider",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Audio Cache"
+        ],
+        "summary": "Save audio to cache",
+        "description": "Saves audio data to database cache",
+        "operationId": "SaveAudioCache",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveAudioRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/audio-cache/stats": {
+      "get": {
+        "tags": [
+          "Audio Cache"
+        ],
+        "summary": "Get cache statistics",
+        "description": "Gets statistics about audio cache",
+        "operationId": "GetAudioCacheStats",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/audio-cache/cleanup": {
+      "post": {
+        "tags": [
+          "Audio Cache"
+        ],
+        "summary": "Cleanup cache",
+        "description": "Removes expired and least used cache entries",
+        "operationId": "CleanupAudioCache",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CleanupRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Authentication/GetDefaultToken": {
       "post": {
         "tags": [
@@ -2184,6 +2313,50 @@
   },
   "components": {
     "schemas": {
+      "SaveAudioRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "voice": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "number",
+            "format": "double"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "audioDataBase64": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "expiryDays": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "CleanupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "maxCacheSizeMB": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "deleteExpired": {
+            "type": "boolean"
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "additionalProperties": {

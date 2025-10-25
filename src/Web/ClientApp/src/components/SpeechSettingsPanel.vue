@@ -104,11 +104,41 @@
         Reset to Default
       </button>
     </div>
+
+    <!-- Audio Cache Management -->
+    <div class="setting-group cache-group">
+      <label class="setting-label">Audio Cache:</label>
+      <div class="cache-stats">
+        <div class="stat-item">
+          <Icon icon="mdi:memory" class="w-4 h-4" />
+          <span>Memory: {{ cacheStats.memory.count }} items ({{ formatBytes(cacheStats.memory.size) }})</span>
+        </div>
+        <div class="stat-item" v-if="cacheStats.database">
+          <Icon icon="mdi:database" class="w-4 h-4" />
+          <span>Database: {{ cacheStats.database.count }} items ({{ formatBytes(cacheStats.database.size) }})</span>
+        </div>
+        <div class="stat-item" v-if="cacheStats.database && cacheStats.database.hits > 0">
+          <Icon icon="mdi:chart-line" class="w-4 h-4" />
+          <span>Total Hits: {{ cacheStats.database.hits }}</span>
+        </div>
+        <div class="stat-item warning" v-if="cacheStats.database && cacheStats.database.expired > 0">
+          <Icon icon="mdi:alert-circle" class="w-4 h-4" />
+          <span>Expired: {{ cacheStats.database.expired }} items</span>
+        </div>
+      </div>
+      <button @click="handleClearCache" class="clear-cache-btn">
+        <Icon icon="mdi:delete-sweep" class="w-4 h-4" />
+        Clear Audio Cache
+      </button>
+      <div class="cache-note">
+        💡 Caching audio reduces API calls and improves performance
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useSpeechSettings } from '@/composables/useSpeechSettings'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
@@ -139,11 +169,17 @@ const {
   loadSettings
 } = useSpeechSettings()
 
-const { speak, isPlaying } = useSpeechSynthesis()
+const { speak, isPlaying, getCacheStats, clearCache } = useSpeechSynthesis()
 
 // API Key management
 const openaiApiKey = ref(localStorage.getItem('openai_api_key') || '')
 const apiKeySaved = ref(false)
+
+// Cache stats
+const cacheStats = ref({
+  memory: { count: 0, size: 0 },
+  database: { count: 0, size: 0, hits: 0, expired: 0 } as { count: number; size: number; hits: number; expired: number } | null
+})
 
 // Computed values
 const currentRate = computed(() => speechRate.value)
@@ -274,10 +310,29 @@ const saveApiKey = () => {
   }, 2000)
 }
 
+// Cache management
+const updateCacheStats = async () => {
+  cacheStats.value = await getCacheStats()
+}
+
+const handleClearCache = async () => {
+  await clearCache()
+  await updateCacheStats()
+}
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+}
+
 onMounted(async () => {
   // Load voices first, then load settings
   await initializeDefaultVoice()
   loadSettings()
+  updateCacheStats()
 })
 </script>
 
@@ -533,6 +588,65 @@ onMounted(async () => {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Cache Management */
+.cache-group {
+  background: rgba(116, 192, 252, 0.05);
+  border: 1px solid rgba(116, 192, 252, 0.2);
+  border-radius: 12px;
+  padding: 1rem !important;
+}
+
+.cache-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.cache-stats .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.cache-stats .stat-item svg {
+  color: #74c0fc;
+}
+
+.clear-cache-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #e75e8d, #74c0fc);
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.clear-cache-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(231, 94, 141, 0.4);
+}
+
+.cache-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
   text-align: center;
 }
 </style>

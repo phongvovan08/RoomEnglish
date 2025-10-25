@@ -23,6 +23,8 @@ public interface IApplicationDbContext
     
     DbSet<UserLearningPosition> UserLearningPositions { get; }
     
+    DbSet<AudioCache> AudioCaches { get; }
+    
     DbSet<DictationResult> DictationResults { get; }
     
     DbSet<LearningSession> LearningSessions { get; }

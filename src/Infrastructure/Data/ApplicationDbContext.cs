@@ -30,6 +30,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     
     public DbSet<UserLearningPosition> UserLearningPositions => Set<UserLearningPosition>();
     
+    public DbSet<AudioCache> AudioCaches => Set<AudioCache>();
+    
     public DbSet<DictationResult> DictationResults => Set<DictationResult>();
     
     public DbSet<LearningSession> LearningSessions => Set<LearningSession>();
