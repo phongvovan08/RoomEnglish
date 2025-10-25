@@ -12,7 +12,10 @@
         <div class="session-stats">
           <div class="stat-item">
             <i class="mdi mdi-target"></i>
-            <span v-if="currentSessionType === 'dictation'">
+            <span v-if="currentSessionType === 'dictation' && selectedGroupIndex !== null">
+              Example {{ currentExampleInGroup }} / {{ currentGroupSize }} (Group {{ selectedGroupIndex + 1 }})
+            </span>
+            <span v-else-if="currentSessionType === 'dictation'">
               Example {{ currentExampleNumber }} / {{ totalExamples }}
             </span>
             <span v-else>
@@ -248,8 +251,31 @@ const currentExampleNumber = computed(() => {
   return count
 })
 
+// Group-specific progress tracking
+const currentExampleInGroup = computed(() => {
+  if (selectedGroupIndex.value === null) return 0
+  const groupStart = selectedGroupIndex.value * 10
+  return currentExampleIndex.value - groupStart + 1
+})
+
+const currentGroupSize = computed(() => {
+  if (selectedGroupIndex.value === null || !currentWord.value) return 0
+  const groupStart = selectedGroupIndex.value * 10
+  const groupEnd = Math.min(groupStart + 10, currentWord.value.examples?.length || 0)
+  return groupEnd - groupStart
+})
+
+const groupProgress = computed(() => {
+  if (currentGroupSize.value === 0) return 0
+  return (currentExampleInGroup.value / currentGroupSize.value) * 100
+})
+
 const progress = computed(() => {
   if (currentSessionType.value === 'dictation') {
+    // If in group mode, show group progress
+    if (selectedGroupIndex.value !== null) {
+      return groupProgress.value
+    }
     // For dictation mode, calculate based on examples
     if (totalExamples.value === 0) return 0
     return (currentExampleNumber.value / totalExamples.value) * 100
