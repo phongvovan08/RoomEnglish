@@ -619,7 +619,7 @@ const jumpToExample = (localIndex: number) => {
 }
 
 const backToExampleGrid = async () => {
-  console.log('=== Going back to example grid ===')
+  console.log('=== Going back to word list ===')
   
   // Reload progress to get updated completed examples
   await getUserProgress()
@@ -650,8 +650,8 @@ const backToExampleGrid = async () => {
     }
   }
   
-  // Return to example grid from dictation
-  showExampleGrid.value = true
+  // Return to vocabulary card (word list)
+  showExampleGrid.value = false
   currentSessionType.value = 'vocabulary'
   selectedGroupIndex.value = null
   currentExampleIndex.value = 0

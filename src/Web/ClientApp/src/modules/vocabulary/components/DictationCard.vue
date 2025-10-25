@@ -128,7 +128,7 @@
           class="back-to-grid-btn"
         >
           <Icon icon="mdi:arrow-left" class="w-5 h-5" />
-          Back to Groups
+          Back to Words
         </button>
       </div>
 
