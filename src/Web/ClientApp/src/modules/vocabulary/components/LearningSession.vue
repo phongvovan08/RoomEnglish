@@ -535,10 +535,9 @@ const switchToDictation = async () => {
       .filter(index => index !== -1)
   }
   
-  // Show example grid instead of going directly to dictation
-  showExampleGrid.value = true
-  
-  console.log('Showing example grid with', completedExamples.value.length, 'completed examples')
+  // Automatically select first group (group 0) and start learning
+  console.log('Auto-selecting first group (group 0) and starting dictation')
+  await selectExampleGroup(0)
 }
 
 const selectExampleGroup = async (groupIndex: number) => {
