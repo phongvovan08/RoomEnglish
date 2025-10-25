@@ -421,6 +421,11 @@ const updateExample = () => {
   if (props.example) {
     setExample(props.example)
     resetComponent()
+    
+    // Auto play audio when example changes
+    setTimeout(() => {
+      playAudio()
+    }, 300)
   }
 }
 
@@ -432,8 +437,8 @@ watchEffect(() => {
 
 <style scoped>
 .dictation-card {
-  max-width: 900px;
-  margin: 0 auto;
+  width: 97%;
+  margin: 0;
 }
 
 .card-container {

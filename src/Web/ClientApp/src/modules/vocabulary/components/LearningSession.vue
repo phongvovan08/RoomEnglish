@@ -82,15 +82,26 @@
       />
 
       <!-- Dictation Mode -->
-      <DictationCard 
-        v-else-if="currentSessionType === 'dictation'"
-        :example="currentExample"
-        :word="currentWord"
-        :show-back-to-grid="selectedGroupIndex !== null"
-        @submit="handleDictationSubmit"
-        @next="nextWord"
-        @back-to-grid="backToExampleGrid"
-      />
+      <div v-else-if="currentSessionType === 'dictation'" class="dictation-container">
+        <ExampleSidebar 
+          v-if="selectedGroupIndex !== null && currentWord && currentWord.examples"
+          :examples="getCurrentGroupExamples()"
+          :group-index="selectedGroupIndex"
+          :current-index="currentExampleIndex - (selectedGroupIndex * 10)"
+          :completed-examples="completedExamples"
+          :group-start-index="selectedGroupIndex * 10"
+          @select-example="jumpToExample"
+        />
+        
+        <DictationCard 
+          :example="currentExample"
+          :word="currentWord"
+          :show-back-to-grid="selectedGroupIndex !== null"
+          @submit="handleDictationSubmit"
+          @next="nextWord"
+          @back-to-grid="backToExampleGrid"
+        />
+      </div>
 
       <!-- Mixed Mode -->
       <component 
@@ -170,6 +181,7 @@ import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSes
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
 import ExampleGrid from '../components/ExampleGrid.vue'
+import ExampleSidebar from '../components/ExampleSidebar.vue'
 import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
 import { Icon } from '@iconify/vue'
 
@@ -266,8 +278,17 @@ const currentGroupSize = computed(() => {
 })
 
 const groupProgress = computed(() => {
-  if (currentGroupSize.value === 0) return 0
-  return (currentExampleInGroup.value / currentGroupSize.value) * 100
+  if (currentGroupSize.value === 0 || selectedGroupIndex.value === null) return 0
+  
+  // Calculate based on completed examples in this group
+  const groupStart = selectedGroupIndex.value * 10
+  const groupEnd = groupStart + currentGroupSize.value
+  
+  const completedInGroup = completedExamples.value.filter(
+    index => index >= groupStart && index < groupEnd
+  ).length
+  
+  return (completedInGroup / currentGroupSize.value) * 100
 })
 
 const progress = computed(() => {
@@ -379,7 +400,25 @@ const handleDictationSubmit = async (result: any) => {
     await updateWordProgress(currentWord.value.id, result.isCorrect)
   }
   
-  // Mark current example as completed locally
+  // Reload user progress to get updated data
+  await getUserProgress()
+  
+  // Rebuild completedExamples array from updated progress data
+  if (userProgressData.value && currentWord.value) {
+    const exampleProgressList = userProgressData.value.exampleProgress
+    completedExamples.value = currentWord.value.examples
+      .map((example, index) => {
+        const isCompleted = exampleProgressList.some(
+          p => p.exampleId === example.id && p.isCompleted
+        )
+        return isCompleted ? index : -1
+      })
+      .filter(index => index !== -1)
+    
+    console.log(`✅ Updated completedExamples: ${completedExamples.value.length}/${currentWord.value.examples.length}`)
+  }
+  
+  // Mark current example as completed locally (backup)
   if (!completedExamples.value.includes(currentExampleIndex.value)) {
     completedExamples.value.push(currentExampleIndex.value)
   }
@@ -397,7 +436,7 @@ const handleDictationSubmit = async (result: any) => {
   // Don't auto advance - user will click Next button in ResultDisplay
 }
 
-const nextWord = () => {
+const nextWord = async () => {
   console.log('=== nextWord called ===')
   console.log('Current index:', currentIndex.value)
   console.log('Total words:', sessionWords.value.length)
@@ -419,6 +458,17 @@ const nextWord = () => {
       return
     } else {
       console.log('Finished group, returning to example grid')
+      
+      // Check if the group is now 100% complete
+      const groupCompleted = Array.from({ length: groupEndIndex - groupStartIndex + 1 }, (_, i) => groupStartIndex + i)
+        .every(i => completedExamples.value.includes(i))
+      
+      // Clear saved position if group is fully completed
+      if (groupCompleted && word) {
+        await clearLearningPosition(word.id)
+        console.log(`✅ Group ${selectedGroupIndex.value} completed 100% - cleared database position`)
+      }
+      
       // Return to example grid to show updated progress
       currentSessionType.value = 'vocabulary'
       showExampleGrid.value = true
@@ -557,6 +607,23 @@ const backToVocabulary = () => {
   selectedGroupIndex.value = null
 }
 
+// Get examples for current group
+const getCurrentGroupExamples = () => {
+  if (!currentWord.value || selectedGroupIndex.value === null) return []
+  const groupSize = 10
+  const startIndex = selectedGroupIndex.value * groupSize
+  const endIndex = Math.min(startIndex + groupSize, currentWord.value.examples?.length || 0)
+  return currentWord.value.examples?.slice(startIndex, endIndex) || []
+}
+
+// Jump to a specific example in the group
+const jumpToExample = (localIndex: number) => {
+  if (selectedGroupIndex.value === null) return
+  const globalIndex = selectedGroupIndex.value * 10 + localIndex
+  currentExampleIndex.value = globalIndex
+  console.log(`Jumped to example ${globalIndex} (local index ${localIndex} in group ${selectedGroupIndex.value})`)
+}
+
 const backToExampleGrid = async () => {
   console.log('=== Going back to example grid ===')
   
@@ -648,6 +715,27 @@ onUnmounted(() => {
   min-height: 100vh;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   padding: 1rem;
+}
+
+.learning-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dictation-container {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .dictation-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .learning-content {
+    max-width: 800px;
+  }
 }
 
 .session-header {
@@ -791,11 +879,6 @@ onUnmounted(() => {
   font-weight: bold;
   min-width: 50px;
   text-align: right;
-}
-
-.learning-content {
-  max-width: 800px;
-  margin: 0 auto;
 }
 
 .loading-state, .error-state {
