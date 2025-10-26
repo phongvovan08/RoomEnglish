@@ -1,6 +1,29 @@
 <template>
   <div class="vocabulary-card">
-    <div class="card-container">
+    <!-- Loading Skeleton -->
+    <div v-if="isLoading" class="card-container loading-skeleton">
+      <div class="word-section">
+        <div class="skeleton-word"></div>
+        <div class="skeleton-phonetic"></div>
+        <div class="skeleton-audio"></div>
+        <div class="skeleton-meaning"></div>
+      </div>
+      
+      <div class="definition-section">
+        <div class="skeleton-definition-title"></div>
+        <div class="skeleton-definition-text"></div>
+        <div class="skeleton-definition-text short"></div>
+      </div>
+      
+      <div class="skeleton-examples">
+        <div class="skeleton-example"></div>
+        <div class="skeleton-example"></div>
+        <div class="skeleton-example"></div>
+      </div>
+    </div>
+    
+    <!-- Actual Content -->
+    <div v-else class="card-container">
       <!-- Word Display -->
       <div class="word-section">
         <div class="word-display-inline">
@@ -107,10 +130,13 @@ import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
-  word: VocabularyWord
+  word?: VocabularyWord | any
+  isLoading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isLoading: false
+})
 
 const emit = defineEmits<{
   next: []
@@ -484,6 +510,91 @@ const getHintText = (): string => {
 .hint-text {
   color: white;
   line-height: 1.6;
+}
+
+/* Loading Skeleton Styles */
+.loading-skeleton {
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-word,
+.skeleton-phonetic,
+.skeleton-audio,
+.skeleton-meaning,
+.skeleton-definition-title,
+.skeleton-definition-text,
+.skeleton-example {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-word {
+  height: 4rem;
+  width: 70%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-phonetic {
+  height: 1.8rem;
+  width: 40%;
+  margin-bottom: 1rem;
+}
+
+.skeleton-audio {
+  height: 3rem;
+  width: 150px;
+  border-radius: 25px;
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-meaning {
+  height: 2.5rem;
+  width: 60%;
+  margin-bottom: 2rem;
+}
+
+.skeleton-definition-title {
+  height: 1.5rem;
+  width: 200px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-definition-text {
+  height: 1.2rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-definition-text.short {
+  width: 80%;
+}
+
+.skeleton-examples {
+  margin-top: 2rem;
+}
+
+.skeleton-example {
+  height: 4rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 12px;
 }
 
 @media (max-width: 768px) {

@@ -78,6 +78,9 @@ export const useVocabulary = () => {
       params.append('IncludeExamples', (query.includeExamples || false).toString())
       params.append('IncludeUserProgress', (query.includeUserProgress || false).toString())
 
+      console.log('GetWords - Request URL:', `${API_BASE}/vocabulary-words?${params}`)
+      console.log('GetWords - PageSize:', query.pageSize || 10)
+
       const response = await fetch(`${API_BASE}/vocabulary-words?${params}`, {
         headers: createAuthHeaders()
       })

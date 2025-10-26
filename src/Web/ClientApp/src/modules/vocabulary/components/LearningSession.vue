@@ -78,11 +78,16 @@
         <WordSidebar 
           :words="sessionWords"
           :current-word-index="currentIndex"
+          :has-more="hasMoreWords"
+          :is-loading-more="isLoadingMore"
+          :is-initial-loading="isLoading"
           @select-word="jumpToWord"
+          @load-more="loadMoreWords"
         />
         
         <VocabularyCard 
-          :word="currentWord"
+          :word="currentWord || {}"
+          :is-loading="isLoading"
           @next="nextWord"
           @learn-example="switchToDictation"
         />
@@ -120,12 +125,6 @@
         @submit="handleDictationSubmit"
         @next="nextWord"
       />
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-state">
-      <div class="cyber-spinner"></div>
-      <p>Preparing your learning session...</p>
     </div>
 
     <!-- Error State -->
@@ -243,6 +242,12 @@ const originalSessionType = ref(props.sessionType) // Remember original type
 const showExampleGrid = ref(false) // Show example grid
 const completedExamples = ref<number[]>([]) // Track completed example indices
 const selectedGroupIndex = ref<number | null>(null) // Track selected group
+
+// Pagination state
+const currentPage = ref(1)
+const totalCount = ref(0)
+const hasMoreWords = ref(true)
+const isLoadingMore = ref(false)
 
 // Timer
 let timer: number | null = null
@@ -369,14 +374,19 @@ const updateAllWordsCompletionCount = () => {
 const loadSessionWords = async () => {
   try {
     clearError()
+    currentPage.value = 1
     const result = await getWords({
       categoryId: props.category.id,
       includeExamples: true,
       includeUserProgress: true,
-      pageSize: 20
+      pageSize: 20,
+      pageNumber: 1
     })
     
+    console.log('API returned words:', result.items.length, 'Total count:', result.totalCount)
     sessionWords.value = result.items
+    totalCount.value = result.totalCount
+    hasMoreWords.value = sessionWords.value.length < result.totalCount
     
     if (sessionWords.value.length === 0) {
       throw new Error('No words found in this category')
@@ -411,6 +421,37 @@ const loadSessionWords = async () => {
     startTimer()
   } catch (err) {
     console.error('Failed to load session:', err)
+  }
+}
+
+// Load more words when scrolling
+const loadMoreWords = async () => {
+  if (isLoadingMore.value || !hasMoreWords.value) return
+  
+  try {
+    isLoadingMore.value = true
+    currentPage.value++
+    
+    const result = await getWords({
+      categoryId: props.category.id,
+      includeExamples: true,
+      includeUserProgress: true,
+      pageSize: 20,
+      pageNumber: currentPage.value
+    })
+    
+    console.log('Loaded more words:', result.items.length, 'Page:', currentPage.value)
+    
+    // Append new words
+    sessionWords.value = [...sessionWords.value, ...result.items]
+    hasMoreWords.value = sessionWords.value.length < totalCount.value
+    
+    // Update progress for new words
+    updateAllWordsCompletionCount()
+  } catch (err) {
+    console.error('Failed to load more words:', err)
+  } finally {
+    isLoadingMore.value = false
   }
 }
 
