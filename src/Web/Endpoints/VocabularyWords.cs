@@ -297,7 +297,7 @@ public class VocabularyWords : EndpointGroupBase
         worksheet.Cells[1, 2].Value = "Phonetic";
         worksheet.Cells[1, 3].Value = "Part of Speech";
         worksheet.Cells[1, 4].Value = "Meaning (Vietnamese)";
-        worksheet.Cells[1, 5].Value = "Definition (English)";
+        worksheet.Cells[1, 5].Value = "Definition";
         worksheet.Cells[1, 6].Value = "Difficulty Level";
 
         // Sample data

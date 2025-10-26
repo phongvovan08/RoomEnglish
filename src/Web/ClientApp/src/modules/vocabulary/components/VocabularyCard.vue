@@ -51,39 +51,10 @@
       <!-- Definition Section -->
       <div class="definition-section">
           <div class="definition-card">
-              <h3>Definition (English)</h3>
+              <h3>Definition</h3>
               <p class="definition">{{ word.definition }}</p>
               <p class="vietnamese-meaning" v-if="word.vietnameseMeaning">{{ word.vietnameseMeaning }}</p>
           </div>
-      </div>
-
-      <!-- Progress Info -->
-      <div class="progress-info" v-if="word.userProgress || word.exampleCompletionPercentage > 0">
-        <h4>Your Progress</h4>
-        <div class="progress-stats">
-          <div class="stat" v-if="word.exampleCount > 0">
-            <span class="stat-label">Examples Completed:</span>
-            <span class="stat-value">{{ word.completedExampleCount }}/{{ word.exampleCount }}</span>
-            <div class="progress-bar-small">
-              <div 
-                class="progress-fill-small"
-                :style="{ width: `${word.exampleCompletionPercentage}%` }"
-              ></div>
-            </div>
-            <span class="stat-percentage">{{ Math.round(word.exampleCompletionPercentage) }}%</span>
-          </div>
-          <div class="stat" v-if="word.userProgress">
-            <span class="stat-label">Accuracy:</span>
-            <span class="stat-value">{{ Math.round(word.userProgress.accuracyRate) }}%</span>
-          </div>
-          <div class="stat" v-if="word.userProgress">
-            <span class="stat-label">Studied:</span>
-            <span class="stat-value">{{ word.userProgress.studiedTimes }} times</span>
-          </div>
-          <div class="stat" v-if="word.userProgress?.isMastered">
-            <span class="mastery-badge">🏆 Mastered</span>
-          </div>
-        </div>
       </div>
 
       <!-- Action Buttons -->
@@ -249,7 +220,6 @@ const getHintText = (): string => {
   align-items: center;
   gap: 0.75rem;
   justify-content: center;
-  margin: 1rem auto 0;
 }
 
 .vietnamese-meaning-primary {

@@ -14,10 +14,7 @@
         </div>
         
         <div v-if="example?.sentence && showSentence && !showResult" class="example-sentence">
-          <div class="sentence-label">
-            <Icon icon="mdi:text" class="w-5 h-5" />
-            Example Sentence:
-          </div>
+
           <div class="sentence-text">
             {{ example.sentence }}
           </div>
