@@ -33,8 +33,15 @@ public static class DependencyInjection
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
 
+        // Read token expiration from configuration (default 7 days)
+        var tokenExpirationDays = builder.Configuration.GetValue<int>("Authentication:BearerToken:ExpirationDays", 7);
+
         builder.Services.AddAuthentication()
-            .AddBearerToken(IdentityConstants.BearerScheme);
+            .AddBearerToken(IdentityConstants.BearerScheme, options =>
+            {
+                // Configure Bearer Token expiration from appsettings.json
+                options.BearerTokenExpiration = TimeSpan.FromDays(tokenExpirationDays);
+            });
 
         builder.Services.AddAuthorizationBuilder();
 
