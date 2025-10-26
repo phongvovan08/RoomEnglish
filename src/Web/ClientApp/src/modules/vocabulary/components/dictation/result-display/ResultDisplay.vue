@@ -4,7 +4,6 @@
 
     <div class="sentence-section" v-if="sentence">
       <div class="sentence-card">
-        <h4>📝 Sentence:</h4>
         <p class="sentence-content">{{ sentence }}</p>
         <p class="translation-content">{{ translation }}</p>
         <p class="grammar-text">{{ grammar }}</p>
@@ -197,6 +196,7 @@ onUnmounted(() => {
 }
 
 .sentence-section {
+  margin-top: 1rem;
   margin-bottom: 2rem;
 }
 
@@ -210,11 +210,11 @@ onUnmounted(() => {
 
 .sentence-card h4 {
   color: #e75e8d;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-size: 1.1rem;
 }
 .sentence-card p{
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   font-size: 1.2rem;
 }
 

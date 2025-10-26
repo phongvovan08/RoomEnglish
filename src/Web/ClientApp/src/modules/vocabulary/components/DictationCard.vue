@@ -478,7 +478,6 @@ watchEffect(() => {
 }
 
 .word-info {
-  margin: 1rem 0;
   display: flex;
   justify-content: center;
 }

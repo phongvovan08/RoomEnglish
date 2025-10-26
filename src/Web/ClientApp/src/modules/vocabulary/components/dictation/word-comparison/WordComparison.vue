@@ -15,7 +15,7 @@
         }"
       >
         <div class="word-display">
-          <span class="user-word">{{ word.userWord || '___' }}</span>
+          <span class="user-word">{{ word.userWord || '-'.repeat(word.correctWord.length) }}</span>
           <i v-if="word.isCorrect" class="mdi mdi-check status-icon"></i>
           <i v-else-if="word.isTypingCorrectly" class="mdi mdi-pencil status-icon"></i>
           <i v-else-if="!word.isCorrect && word.userWord && word.correctWord" class="mdi mdi-close status-icon"></i>

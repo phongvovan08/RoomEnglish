@@ -740,7 +740,7 @@ onUnmounted(() => {
   backdrop-filter: blur(10px);
   border-radius: 15px;
   padding: 1rem 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -850,7 +850,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem;
 }
 
 .progress-bar {
