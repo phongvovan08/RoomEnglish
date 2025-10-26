@@ -1,14 +1,5 @@
 <template>
   <div class="vocabulary-learning-container">
-    <!-- Gaming Header -->
-    <div class="gaming-header">
-      <div class="header-background">
-        <div class="neon-text">
-          <h1>🎯 VOCABULARY LEARNING</h1>
-          <div class="subtitle">Master English with Cyborg Technology</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Category Selection -->
     <div class="categories-section" v-if="!selectedCategory">

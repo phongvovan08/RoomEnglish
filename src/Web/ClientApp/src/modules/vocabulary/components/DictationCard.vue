@@ -84,7 +84,7 @@
               :placeholder="isRecording ? 'Listening...' : 'Start typing or click microphone for voice input'"
               :disabled="isRecording"
               class="dictation-input"
-              rows="4"
+              rows="3"
               @keydown.enter.exact="handleEnterKey"
             ></textarea>
             
@@ -472,7 +472,7 @@ watchEffect(() => {
 
 .dictation-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -530,7 +530,6 @@ watchEffect(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 1.5rem;
   align-items: center;
 }
 
@@ -819,7 +818,7 @@ watchEffect(() => {
   border-radius: 15px;
   padding: 1rem;
   color: white;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   resize: vertical;
   transition: all 0.3s ease;
   font-family: inherit;

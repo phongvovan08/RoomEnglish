@@ -1,11 +1,5 @@
 <template>
   <div class="word-comparison" v-if="userInput.trim()">
-    <div class="comparison-header">
-      <h4>
-        <i class="mdi mdi-compare"></i>
-        Word by Word Check:
-      </h4>
-    </div>
     
     <div class="word-list">
       <div 
@@ -143,8 +137,8 @@ const missingCount = computed(() => {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 15px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
+  padding: 1rem;
+  margin: 1rem 0;
   animation: slideIn 0.3s ease-out;
 }
 

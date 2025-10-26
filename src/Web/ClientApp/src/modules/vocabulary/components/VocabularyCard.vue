@@ -3,14 +3,10 @@
     <div class="card-container">
       <!-- Word Display -->
       <div class="word-section">
-        <div class="word-display">
+        <div class="word-display-inline">
           <h1 class="main-word">{{ word.word }}</h1>
-          <div class="phonetic" v-if="word.phonetic">
-            {{ word.phonetic }}
-          </div>
-          <div class="part-of-speech">
-            {{ word.partOfSpeech }}
-          </div>
+          <span class="phonetic" v-if="word.phonetic">{{ word.phonetic }}</span>
+          <span class="part-of-speech">{{ word.partOfSpeech }}</span>
         </div>
         
         <!-- Audio Controls -->
@@ -22,6 +18,11 @@
             button-class="audio-btn large"
           />
         </div>
+
+        <!-- Vietnamese Meaning (Primary) -->
+        <div class="vietnamese-meaning-primary" v-if="word.meaning">
+          <div class="meaning-value">{{ word.meaning }}</div>
+        </div>
       </div>
 
       <!-- Definition Section -->
@@ -29,13 +30,7 @@
           <div class="definition-card">
               <h3>Definition (English)</h3>
               <p class="definition">{{ word.definition }}</p>
-              <p class="vietnamese-meaning">{{ word.vietnameseMeaning }}</p>
-          </div>
-          
-          <!-- Meaning Display -->
-          <div class="meaning-card">
-              <h3>Meaning (Vietnamese)</h3>
-              <p class="meaning-display">{{ word.meaning }}</p>
+              <p class="vietnamese-meaning" v-if="word.vietnameseMeaning">{{ word.vietnameseMeaning }}</p>
           </div>
       </div>
 
@@ -185,36 +180,42 @@ const getHintText = (): string => {
 
 .word-section {
   text-align: center;
-  margin-bottom: 2rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.word-display-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
 .main-word {
-  font-size: 4rem;
+  font-size: 2.5rem;
   font-weight: bold;
   color: transparent;
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
   background-clip: text;
   -webkit-background-clip: text;
-  margin-bottom: 0.5rem;
+  margin: 0;
   text-shadow: 0 0 30px rgba(231, 94, 141, 0.3);
 }
 
 .phonetic {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   color: #74c0fc;
   font-style: italic;
-  margin-bottom: 0.5rem;
 }
 
 .part-of-speech {
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: #e75e8d;
   background: rgba(231, 94, 141, 0.2);
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 15px;
-  display: inline-block;
 }
 
 .audio-controls {
@@ -225,18 +226,42 @@ const getHintText = (): string => {
   margin: 1rem auto 0;
 }
 
+.vietnamese-meaning-primary {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(231, 94, 141, 0.15);
+  border-radius: 15px;
+  text-align: center;
+}
+
+.meaning-label {
+  color: #e75e8d;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.meaning-value {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .audio-btn {
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 25px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .settings-btn {
@@ -277,43 +302,28 @@ const getHintText = (): string => {
   text-align: center;
 }
 
-.definition-card, .meaning-card {
+.definition-card {
   background: rgba(116, 192, 252, 0.1);
   border: 1px solid rgba(116, 192, 252, 0.3);
   border-radius: 15px;
   padding: 1.5rem;
 }
 
-.definition-card h3, .meaning-card h3 {
+.definition-card h3 {
   color: #74c0fc;
   margin-bottom: 1rem;
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
-.definition-card p, .meaning-card p {
+.definition-card p {
   color: white;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
 
 .definition-card .vietnamese-meaning {
   color: #74c0fc;
   margin-top: 0.5rem;
-}
-
-.meaning-card {
-  background: rgba(231, 94, 141, 0.1);
-  border-color: rgba(231, 94, 141, 0.3);
-  text-align: center;
-}
-
-.meaning-card h3 {
-  color: #e75e8d;
-}
-
-.meaning-card .meaning-display {
-  font-weight: 500;
-  font-size: 2rem; 
 }
 
 .progress-info {
@@ -397,10 +407,10 @@ const getHintText = (): string => {
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
   color: white;
   border: none;
-  padding: 1rem 2rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 25px;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;

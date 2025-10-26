@@ -18,7 +18,7 @@
           :placeholder="isRecording ? 'Listening...' : 'Start typing or use voice input (Press Enter to check)'"
           :disabled="isRecording"
           class="dictation-input"
-          rows="4"
+          rows="3"
         ></textarea>
         
         <!-- Voice Input Controls -->
