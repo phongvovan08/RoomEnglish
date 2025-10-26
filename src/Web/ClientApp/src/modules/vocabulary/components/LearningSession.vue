@@ -185,6 +185,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
+import { useToast } from '@/composables/useToast'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
@@ -226,6 +227,8 @@ const {
   saveLearningPosition,
   clearLearningPosition
 } = useUserProgress()
+
+const { showSuccess } = useToast()
 
 // Session state
 const sessionWords = ref<VocabularyWord[]>([])
@@ -569,11 +572,37 @@ const nextWord = async () => {
         console.log(`✅ Group ${selectedGroupIndex.value} completed 100% - cleared database position`)
       }
       
-      // Return to example grid to show updated progress
-      currentSessionType.value = 'vocabulary'
-      showExampleGrid.value = true
-      selectedGroupIndex.value = null
-      currentExampleIndex.value = 0
+      // Check if ALL examples of the current word are completed
+      const allExamplesCompleted = word?.examples && 
+        completedExamples.value.length === word.examples.length
+      
+      if (allExamplesCompleted) {
+        // All examples completed - move to next word
+        console.log('✅ All examples completed! Moving to next word...')
+        
+        // Show toast notification
+        showSuccess(`Completed all examples for "${word?.word}"!`)
+        
+        currentSessionType.value = 'vocabulary'
+        showExampleGrid.value = false
+        selectedGroupIndex.value = null
+        currentExampleIndex.value = 0
+        
+        // Move to next word
+        if (currentIndex.value < sessionWords.value.length - 1) {
+          currentIndex.value++
+          console.log(`Moved to next word: ${sessionWords.value[currentIndex.value]?.word}`)
+        } else {
+          console.log('No more words - finishing session')
+          finishSession()
+        }
+      } else {
+        // Return to example grid to show updated progress
+        currentSessionType.value = 'vocabulary'
+        showExampleGrid.value = true
+        selectedGroupIndex.value = null
+        currentExampleIndex.value = 0
+      }
       return
     }
   }
