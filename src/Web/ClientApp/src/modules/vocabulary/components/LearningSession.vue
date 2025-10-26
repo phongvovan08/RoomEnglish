@@ -463,13 +463,16 @@ const handleDictationSubmit = async (result: any) => {
     correctCount.value++
   }
   
-  // Show loading state in sidebar
-  if (selectedGroupIndex.value !== null) {
+  // Check if passing score first
+  const isPassingScore = result.accuracyPercentage >= 75
+  
+  // Show loading state in sidebar ONLY if passing score
+  if (isPassingScore && selectedGroupIndex.value !== null) {
     submittingExampleIndex.value = currentExampleIndex.value - (selectedGroupIndex.value * 10)
   }
   
-  // Optimistic update: Add to completedExamples immediately
-  if (currentExample.value && !completedExamples.value.includes(currentExampleIndex.value)) {
+  // Optimistic update: Add to completedExamples immediately ONLY if accuracy >= 75%
+  if (isPassingScore && currentExample.value && !completedExamples.value.includes(currentExampleIndex.value)) {
     completedExamples.value = [...completedExamples.value, currentExampleIndex.value]
     
     // Update completedExampleCount for the current word immediately
