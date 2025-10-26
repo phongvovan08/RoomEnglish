@@ -90,43 +90,36 @@ export const useSpeechSynthesis = () => {
     }
 
     const voiceName = selectedVoice.voiceName
-    const rate = options.rate || 1.0
+    // Always request audio at 1.0 speed from OpenAI
+    // We'll use playbackRate in browser to control speed
+    const normalSpeed = 1.0
     const provider = 'openai'
     
-    // Create cache key for memory cache
-    const cacheKey = `${text}_${voiceName}_${rate}`
+    // Create cache key for memory cache (use normal speed for caching)
+    const cacheKey = `${text}_${voiceName}_${normalSpeed}`
     
     // Check memory cache first (fastest)
     let cachedBlob = memoryCache.value.get(cacheKey)
     
     if (cachedBlob) {
-      console.log('⚡ Using memory cache:', text.substring(0, 30))
       return cachedBlob.arrayBuffer()
     }
     
     // Check database cache
-    const dbCachedBlob = await getCachedAudio(text, voiceName, rate, provider)
+    const dbCachedBlob = await getCachedAudio(text, voiceName, normalSpeed, provider)
     
     if (dbCachedBlob) {
-      console.log('💾 Loaded from database cache:', text.substring(0, 30))
       // Save to memory for faster future access
       memoryCache.value.set(cacheKey, dbCachedBlob)
       return dbCachedBlob.arrayBuffer()
     }
 
     // Not cached, fetch from API
-    console.log('🌐 Fetching from OpenAI API...')
-    
-    // Get API key from environment or settings
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key')
-    console.log('🔑 API Key found:', apiKey ? `${apiKey.substring(0, 10)}...` : 'No key')
     
     if (!apiKey) {
       throw new Error('OpenAI API key not found. Please add VITE_OPENAI_API_KEY to environment or set it in settings.')
     }
-
-    console.log('📝 Text to synthesize:', text.substring(0, 50) + '...')
-    console.log('🎵 Voice:', voiceName)
 
     const tts = new OpenAITTS({ OPENAI_API_KEY: apiKey })
     
@@ -135,19 +128,15 @@ export const useSpeechSynthesis = () => {
       options: {
         model: 'tts-1', // or 'tts-1-hd' for higher quality
         voice: voiceName as any,
-        speed: rate
+        speed: normalSpeed
       }
     }
 
-    console.log('📤 Sending request to OpenAI:', payload)
-
     try {
       const response = await tts.create(payload)
-      console.log('📥 Response status:', response.status, response.statusText)
       
       if (response.ok) {
         const arrayBuffer = await response.arrayBuffer()
-        console.log('✅ OpenAI TTS success! Audio buffer size:', arrayBuffer.byteLength)
         
         // Cache the audio blob
         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
@@ -156,11 +145,9 @@ export const useSpeechSynthesis = () => {
         memoryCache.value.set(cacheKey, blob)
         
         // Save to database (async, fire and forget)
-        saveAudioToCache(text, voiceName, rate, provider, blob, 30).catch(err => {
+        saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
           console.error('Failed to save to database cache:', err)
         })
-        
-        console.log('💾 Cached audio for future use')
         
         return arrayBuffer
       } else {
@@ -182,7 +169,7 @@ export const useSpeechSynthesis = () => {
 
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.lang = options.lang || 'en-US'
-        utterance.rate = options.rate || 0.8
+        utterance.rate = options.rate !== undefined ? options.rate : 0.8
         utterance.pitch = options.pitch || 1.0
         utterance.volume = options.volume || 1.0
 
@@ -190,7 +177,6 @@ export const useSpeechSynthesis = () => {
         if (options.voiceIndex !== undefined && webSpeechVoices.value[options.voiceIndex]) {
           const selectedVoice = webSpeechVoices.value[options.voiceIndex]
           utterance.voice = selectedVoice
-          console.log(`Web Speech API: Using voice ${selectedVoice.name} (${selectedVoice.lang})`)
         } else {
           // Fallback: find first English voice
           const fallbackVoice = webSpeechVoices.value.find(voice => 
@@ -198,7 +184,6 @@ export const useSpeechSynthesis = () => {
           ) || webSpeechVoices.value.find(voice => voice.lang.startsWith('en'))
           if (fallbackVoice) {
             utterance.voice = fallbackVoice
-            console.log(`Web Speech API fallback: Using voice ${fallbackVoice.name} (${fallbackVoice.lang})`)
           }
         }
 
@@ -222,20 +207,15 @@ export const useSpeechSynthesis = () => {
 
   // Main speak function with provider selection
   const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
-    console.log('🎙️ speak() called for instance:', instanceId)
-    
     // Ensure voices are loaded
     await loadWebSpeechVoices()
     
     const allVoices = getAllVoices()
     const selectedVoice = allVoices[options.voiceIndex || 0]
     const provider = options.provider || selectedVoice?.provider || currentTTSProvider.value
-    
-    console.log('🎤 Provider:', provider, 'Voice:', selectedVoice?.name)
 
     // Stop any existing audio for this instance first
     if (playingInstances.value.has(instanceId)) {
-      console.log('⏹️ Stopping existing instance:', instanceId)
       stop(instanceId)
       // Wait a bit for cleanup
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -243,38 +223,35 @@ export const useSpeechSynthesis = () => {
 
     try {
       playingInstances.value.add(instanceId)
-      console.log('📝 Added instance to playing set:', instanceId)
 
       // Route to appropriate TTS provider
       if (provider === 'openai') {
         try {
           const audioBuffer = await speakWithOpenAI(text, instanceId, options)
           
-          // Play audio from buffer
+          // Play audio from buffer using Web Audio API for playback rate control
           const blob = new Blob([audioBuffer], { type: 'audio/mpeg' })
           const audioUrl = URL.createObjectURL(blob)
-          console.log('🎧 Created audio URL:', audioUrl, 'Blob size:', blob.size)
           
-          // Create audio element and set src directly
+          // Create audio element
           const audio = new Audio(audioUrl)
-          console.log('🎧 Created Audio element with src:', audio.src)
           
           audioInstances.value.set(instanceId, audio)
           audio.volume = options.volume || 1.0
-          audio.autoplay = false // Don't autoplay, we'll control it
+          audio.autoplay = false
           
-          console.log('🎧 Audio volume:', audio.volume)
+          // Set playback rate using HTMLAudioElement API
+          const playbackRate = options.rate !== undefined ? options.rate : 1.0
+          audio.playbackRate = playbackRate
 
           return new Promise<void>((resolve, reject) => {
             const cleanup = () => {
-              console.log('🧹 Cleaning up audio instance:', instanceId)
               playingInstances.value.delete(instanceId)
               audioInstances.value.delete(instanceId)
               URL.revokeObjectURL(audioUrl)
             }
 
             audio.onended = () => {
-              console.log('🏁 Audio ended')
               cleanup()
               resolve()
             }
@@ -289,29 +266,22 @@ export const useSpeechSynthesis = () => {
             }
             
             audio.onloadeddata = () => {
-              console.log('📊 Audio data loaded. Duration:', audio.duration, 'readyState:', audio.readyState)
+              // Ensure playback rate is set after data is loaded
+              audio.playbackRate = playbackRate
               // Try to play as soon as data is loaded
               attemptPlay()
-            }
-            
-            audio.onplaying = () => {
-              console.log('🔊 Audio is now playing!')
-            }
-            
-            audio.onpause = () => {
-              console.log('⏸️ Audio paused')
             }
 
             // Wait for audio to be ready before playing
             const attemptPlay = () => {
-              console.log('▶️ Attempting to play audio...')
-              console.log('   readyState:', audio.readyState, 'paused:', audio.paused)
+              // Ensure playback rate is set right before playing
+              audio.playbackRate = playbackRate
               
               const playPromise = audio.play()
               if (playPromise !== undefined) {
                 playPromise
                   .then(() => {
-                    console.log('✅ Audio.play() promise resolved - audio should be playing')
+                    // Audio playing successfully
                   })
                   .catch((error) => {
                     console.error('❌ Audio.play() failed:', error.name, error.message)
@@ -321,16 +291,12 @@ export const useSpeechSynthesis = () => {
                       reject(error)
                     } else {
                       // Silently handle abort errors
-                      console.log('ℹ️ AbortError - audio was stopped')
                       resolve()
                     }
                   })
-              } else {
-                console.warn('⚠️ audio.play() returned undefined')
               }
             }
             
-            console.log('⏳ Loading audio...')
             // Audio with src in constructor should auto-load, but let's be explicit
             audio.load()
           })

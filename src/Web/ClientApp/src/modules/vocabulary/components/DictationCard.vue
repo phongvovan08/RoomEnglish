@@ -35,14 +35,36 @@
 
       <!-- Audio Player - Using GlobalSpeechButton -->
       <div class="audio-player-section" v-if="example?.sentence">
-        <GlobalSpeechButton 
-          ref="listenButton"
-          :text="example.sentence"
-          instance-id="dictation-audio"
-          :show-text="true"
-          button-class="speech-btn large"
-          :custom-rate="playbackSpeed"
-        />
+        <div class="audio-controls-wrapper">
+          <GlobalSpeechButton 
+            ref="listenButton"
+            :text="example.sentence"
+            instance-id="dictation-audio"
+            :show-text="true"
+            button-class="speech-btn large"
+            :custom-rate="playbackSpeed"
+          />
+          
+          <!-- Speed Dropdown -->
+          <div class="speed-control">
+            <label for="speed-select" class="speed-label">
+              <Icon icon="mdi:speedometer" class="w-4 h-4" />
+              Speed:
+            </label>
+            <select 
+              id="speed-select"
+              v-model="playbackSpeed" 
+              class="speed-select"
+            > 
+             <option :value="0.5">0.5x (Slow)</option>
+              <option :value="0.75">0.75x</option>
+              <option :value="1">1x (Normal)</option>
+              <option :value="1.25">1.25x</option>
+              <option :value="1.5">1.5x (Fast)</option>
+              <option :value="2">2x</option>
+             </select>
+          </div>
+        </div>
       </div>
 
       <!-- Input Section (textarea only, no buttons) -->
@@ -350,7 +372,8 @@ const resetComponent = () => {
   showHintModal.value = false
   showSentence.value = false
   playCount.value = 0
-  playbackSpeed.value = 1
+  // Don't reset playbackSpeed - keep user preference
+  // playbackSpeed.value = 1
   elapsedTime.value = 0
   startTime.value = null
   stopTimer()
@@ -527,6 +550,57 @@ watchEffect(() => {
   flex-direction: column;
   gap: 1rem;
   align-items: center;
+}
+
+.audio-controls-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.speed-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #74c0fc;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.speed-select {
+  background: rgba(116, 192, 252, 0.1);
+  border: 2px solid rgba(116, 192, 252, 0.3);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  outline: none;
+}
+
+.speed-select:hover {
+  background: rgba(116, 192, 252, 0.2);
+  border-color: rgba(116, 192, 252, 0.5);
+}
+
+.speed-select:focus {
+  border-color: #74c0fc;
+  box-shadow: 0 0 10px rgba(116, 192, 252, 0.3);
+}
+
+.speed-select option {
+  background: #1a1a2e;
+  color: white;
 }
 
 .playback-controls {
