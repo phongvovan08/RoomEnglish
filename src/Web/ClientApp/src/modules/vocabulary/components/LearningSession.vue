@@ -97,6 +97,7 @@
           :current-index="currentExampleIndex - (selectedGroupIndex * 10)"
           :completed-examples="completedExamples"
           :group-start-index="selectedGroupIndex * 10"
+          :word="currentWord"
           @select-example="jumpToExample"
         />
         

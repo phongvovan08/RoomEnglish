@@ -152,7 +152,7 @@ const getHintText = (): string => {
 
 <style scoped>
 .vocabulary-card {
-  max-width: 800px;
+  width:97%;
   margin: 0 auto;
 }
 

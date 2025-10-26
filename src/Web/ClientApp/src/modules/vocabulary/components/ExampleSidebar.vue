@@ -1,9 +1,17 @@
 <template>
   <div class="example-sidebar">
     <div class="sidebar-header">
-      <h4>📚 Examples in Group {{ groupIndex + 1 }}</h4>
+      <div class="word-info">
+        <div class="word-inline">
+          <span class="word-title">{{ word.word }}</span>
+          <span class="separator">|</span>
+          <span class="part-of-speech">{{ word.partOfSpeech }}</span>
+          <span class="separator">|</span>
+          <span class="word-meaning">{{ word.meaning }}</span>
+        </div>
+      </div>
       <div class="progress-info">
-        {{ completedCount }}/{{ examples.length }} completed
+        Group {{ groupIndex + 1 }}: {{ completedCount }}/{{ examples.length }} completed
       </div>
     </div>
     
@@ -53,7 +61,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
-import type { VocabularyExample } from '../types/vocabulary.types'
+import type { VocabularyExample, VocabularyWord } from '../types/vocabulary.types'
 
 interface Props {
   examples: VocabularyExample[]
@@ -61,6 +69,7 @@ interface Props {
   currentIndex: number
   completedExamples: number[] // Array of global indices
   groupStartIndex: number // Starting index of the group in all examples
+  word: VocabularyWord
 }
 
 const props = defineProps<Props>()
@@ -116,6 +125,42 @@ watch(() => props.currentIndex, async (newIndex) => {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.word-info {
+  margin-bottom: 1rem;
+}
+
+.word-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.word-title {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1rem;
+}
+
+.word-meta {
+  margin-bottom: 0.5rem;
+}
+
+.part-of-speech {
+  color: #e75e8d;
+  font-size: 0.9rem;
+}
+
+.word-meaning {
+  color: #74c0fc;
+  font-size: 1rem;
 }
 
 .sidebar-header h4 {
