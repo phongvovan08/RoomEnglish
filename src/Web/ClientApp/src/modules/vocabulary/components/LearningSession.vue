@@ -103,6 +103,7 @@
           :completed-examples="completedExamples"
           :group-start-index="selectedGroupIndex * 10"
           :word="currentWord"
+          :submitting-example-index="submittingExampleIndex ?? undefined"
           @select-example="jumpToExample"
         />
         
@@ -242,6 +243,7 @@ const originalSessionType = ref(props.sessionType) // Remember original type
 const showExampleGrid = ref(false) // Show example grid
 const completedExamples = ref<number[]>([]) // Track completed example indices
 const selectedGroupIndex = ref<number | null>(null) // Track selected group
+const submittingExampleIndex = ref<number | null>(null) // Track example being submitted
 
 // Pagination state
 const currentPage = ref(1)
@@ -461,48 +463,71 @@ const handleDictationSubmit = async (result: any) => {
     correctCount.value++
   }
   
-  // Update example progress in database
-  if (currentExample.value) {
-    await updateExampleProgress(currentExample.value.id, result.accuracyPercentage)
+  // Show loading state in sidebar
+  if (selectedGroupIndex.value !== null) {
+    submittingExampleIndex.value = currentExampleIndex.value - (selectedGroupIndex.value * 10)
   }
   
-  // Update word progress in database
-  if (currentWord.value) {
-    await updateWordProgress(currentWord.value.id, result.isCorrect)
-  }
-  
-  // Reload user progress to get updated data
-  await getUserProgress()
-  
-  // Rebuild completedExamples array from updated progress data
-  if (userProgressData.value && currentWord.value) {
-    const exampleProgressList = userProgressData.value.exampleProgress
-    completedExamples.value = currentWord.value.examples
-      .map((example, index) => {
-        const isCompleted = exampleProgressList.some(
-          p => p.exampleId === example.id && p.isCompleted
-        )
-        return isCompleted ? index : -1
-      })
-      .filter(index => index !== -1)
+  // Optimistic update: Add to completedExamples immediately
+  if (currentExample.value && !completedExamples.value.includes(currentExampleIndex.value)) {
+    completedExamples.value = [...completedExamples.value, currentExampleIndex.value]
     
-    console.log(`✅ Updated completedExamples: ${completedExamples.value.length}/${currentWord.value.examples.length}`)
+    // Update completedExampleCount for the current word immediately
+    if (currentWord.value) {
+      currentWord.value.completedExampleCount = completedExamples.value.length
+    }
     
-    // Update completedExampleCount for the current word
-    currentWord.value.completedExampleCount = completedExamples.value.length
+    // Update all words' completedExampleCount immediately
+    updateAllWordsCompletionCount()
   }
   
-  // Update all words' completedExampleCount
-  updateAllWordsCompletionCount()
-  
-  // Save current position to database
-  if (currentWord.value && selectedGroupIndex.value !== null) {
-    await saveLearningPosition(
-      currentWord.value.id,
-      selectedGroupIndex.value,
-      currentExampleIndex.value
-    )
-    console.log(`Saved position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${currentExampleIndex.value}`)
+  try {
+    // Update example progress in database
+    if (currentExample.value) {
+      await updateExampleProgress(currentExample.value.id, result.accuracyPercentage)
+    }
+    
+    // Update word progress in database
+    if (currentWord.value) {
+      await updateWordProgress(currentWord.value.id, result.isCorrect)
+    }
+    
+    // Reload user progress to get updated data (in background)
+    await getUserProgress()
+    
+    // Rebuild completedExamples array from updated progress data to ensure sync
+    if (userProgressData.value && currentWord.value) {
+      const exampleProgressList = userProgressData.value.exampleProgress
+      completedExamples.value = currentWord.value.examples
+        .map((example, index) => {
+          const isCompleted = exampleProgressList.some(
+            p => p.exampleId === example.id && p.isCompleted
+          )
+          return isCompleted ? index : -1
+        })
+        .filter(index => index !== -1)
+      
+      console.log(`✅ Updated completedExamples: ${completedExamples.value.length}/${currentWord.value.examples.length}`)
+      
+      // Update completedExampleCount for the current word
+      currentWord.value.completedExampleCount = completedExamples.value.length
+    }
+    
+    // Update all words' completedExampleCount again to ensure accuracy
+    updateAllWordsCompletionCount()
+    
+    // Save current position to database
+    if (currentWord.value && selectedGroupIndex.value !== null) {
+      await saveLearningPosition(
+        currentWord.value.id,
+        selectedGroupIndex.value,
+        currentExampleIndex.value
+      )
+      console.log(`Saved position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${currentExampleIndex.value}`)
+    }
+  } finally {
+    // Clear loading state
+    submittingExampleIndex.value = null
   }
   
   // Don't auto advance - user will click Next button in ResultDisplay

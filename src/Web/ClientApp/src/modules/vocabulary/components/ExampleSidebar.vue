@@ -38,7 +38,12 @@
         </div>
         <div class="item-status">
           <Icon 
-            v-if="isCompleted(index)" 
+            v-if="index === props.submittingExampleIndex" 
+            icon="mdi:loading" 
+            class="status-icon submitting-icon" 
+          />
+          <Icon 
+            v-else-if="isCompleted(index)" 
             icon="mdi:check-circle" 
             class="status-icon completed-icon" 
           />
@@ -70,6 +75,7 @@ interface Props {
   completedExamples: number[] // Array of global indices
   groupStartIndex: number // Starting index of the group in all examples
   word: VocabularyWord
+  submittingExampleIndex?: number // Local index of example being submitted
 }
 
 const props = defineProps<Props>()
@@ -274,17 +280,31 @@ watch(() => props.currentIndex, async (newIndex) => {
   font-size: 1.5rem;
 }
 
+.submitting-icon {
+  color: #ffa726;
+  animation: spin 1s linear infinite;
+}
+
 .completed-icon {
   color: #4caf50;
 }
 
 .current-icon {
   color: #e75e8d;
-  animation: pulse 2s infinite;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .pending-icon {
-  color: #888;
+  color: #666;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
