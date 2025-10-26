@@ -22,8 +22,8 @@
           <i v-else-if="word.isMissing" class="mdi mdi-help status-icon"></i>
         </div>
         
-        <!-- Only show correct word if user typed wrong (not typing correctly) and has enough characters -->
-        <div v-if="!word.isCorrect && !word.isTypingCorrectly && word.userWord && word.correctWord && word.userWord.length >= word.correctWord.length" class="correct-word">
+        <!-- Only show correct word for the FIRST error when showCorrectWords is true (after submit) -->
+        <div v-if="showCorrectWords && index === firstErrorIndex && !word.isCorrect && word.correctWord" class="correct-word">
           <i class="mdi mdi-arrow-down"></i>
           {{ word.correctWord }}
         </div>
@@ -62,9 +62,12 @@ interface WordComparison {
 interface Props {
   userInput: string
   correctAnswer: string
+  showCorrectWords?: boolean // Show correct words when submitted
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showCorrectWords: false
+})
 
 // Normalize text: lowercase, trim, remove extra spaces and punctuation
 const normalizeText = (text: string): string => {
@@ -129,6 +132,31 @@ const incorrectCount = computed(() => {
 
 const missingCount = computed(() => {
   return comparisonWords.value.filter(w => w.isMissing).length
+})
+
+// Find the index of the first incorrect/missing word
+const firstErrorIndex = computed(() => {
+  if (!props.showCorrectWords) {
+    return -1 // Don't show any error before submit
+  }
+  
+  // Only find the first word that user typed WRONG (not missing/not typed yet)
+  return comparisonWords.value.findIndex(w => 
+    !w.isCorrect && w.userWord && w.correctWord
+  )
+})
+
+// Check if all words are correct
+const hasErrors = computed(() => {
+  return incorrectCount.value > 0 || missingCount.value > 0
+})
+
+// Expose to parent
+defineExpose({
+  hasErrors,
+  incorrectCount,
+  missingCount,
+  correctCount
 })
 </script>
 

@@ -118,9 +118,11 @@
 
       <!-- Word Comparison (always show when user has input and not showing result) -->
       <WordComparison 
+        ref="wordComparisonRef"
         v-if="!showResult && example?.sentence && userInput.trim()"
         :user-input="userInput"
         :correct-answer="example.sentence"
+        :show-correct-words="hasSubmitted"
       />
 
       <!-- Action Buttons (below Word Comparison) -->
@@ -173,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watchEffect, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useDictation } from '../composables/useDictation'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
@@ -228,6 +230,8 @@ const elapsedTime = ref(0)
 const showTranslation = ref(false)
 const listenButton = ref<InstanceType<typeof GlobalSpeechButton> | null>(null)
 const inputTextarea = ref<HTMLTextAreaElement | null>(null)
+const hasSubmitted = ref(false) // Track if user has submitted
+const wordComparisonRef = ref<InstanceType<typeof WordComparison> | null>(null)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -309,6 +313,20 @@ const submitAnswer = async () => {
     return
   }
   
+  // Mark as submitted to show correct words
+  hasSubmitted.value = true
+  
+  // Wait for next tick to ensure WordComparison updates
+  await nextTick()
+  
+  // Check if there are any errors
+  if (wordComparisonRef.value?.hasErrors) {
+    console.log('❌ There are errors in the answer. Focus on input to fix.')
+    // Focus on the input to let user fix the errors
+    inputTextarea.value?.focus()
+    return
+  }
+  
   try {
     // Calculate final elapsed time before stopping timer
     if (startTime.value) {
@@ -353,6 +371,7 @@ const handleEnterKey = (event: KeyboardEvent) => {
 
 const clearInput = () => {
   userInput.value = ''
+  hasSubmitted.value = false // Reset submitted state
 }
 
 const showHint = () => {
@@ -376,6 +395,7 @@ const resetComponent = () => {
   // playbackSpeed.value = 1
   elapsedTime.value = 0
   startTime.value = null
+  hasSubmitted.value = false
   stopTimer()
   reset()
 }
@@ -429,6 +449,16 @@ watchEffect(() => {
   if (userInput.value.length > 0 && !startTime.value && !showResult.value) {
     startTimer()
   }
+})
+
+// Watch userInput changes after submit - reset hasSubmitted when user modifies input
+let previousInput = ''
+watchEffect(() => {
+  if (hasSubmitted.value && userInput.value !== previousInput) {
+    // User is editing after submit, hide correct words again
+    hasSubmitted.value = false
+  }
+  previousInput = userInput.value
 })
 
 onUnmounted(() => {
