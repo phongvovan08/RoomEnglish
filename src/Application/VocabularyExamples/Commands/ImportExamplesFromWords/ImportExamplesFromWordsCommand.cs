@@ -408,18 +408,18 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     private string CreatePromptForExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
     {
         var grammarInstruction = request.IncludeGrammar 
-            ? "For each English sentence that uses a specific vocabulary word, analyze and explain the grammar used in a simple way.\r\n\r\nFocus on:\r\n- The grammatical role of the vocabulary word (e.g., noun, verb, object, etc.)\r\n- Sentence structure (e.g., S + V + O, passive voice, comparisons, etc.)\r\n- Any useful grammatical pattern used\r\n\r\nExplain in one short, clear sentence suitable for English learners. Output only the analysis.\r\n\r\nVocabulary word: \"computer\"\r\nSentence: \"I use my computer to write emails every morning.\"\r\n→ Grammar: \"'computer' là danh từ (noun) làm tân ngữ cho động từ 'use'; cấu trúc câu: S + V + O + to V\""
+            ? "For each English sentence that uses a specific vocabulary word, analyze and explain the grammar used in a detail way.\r\n\r\nFocus on:\r\n- The grammatical role of the vocabulary word (e.g., noun, verb, object, etc.)\r\n- Sentence structure \r\n- Any useful grammatical pattern used\r\n\r\nExplain in one detail sentence suitable for English learners. Output only the analysis.\r\n\r\nVocabulary word: \"computer\"\r\nSentence: \"I use my computer to write emails every morning.\"\r\n→ Grammar: \"Cấu trúc: S + hope + (that) + S + will be + able + to V; 'able' là tính từ theo sau động từ 'be'.\""
             : "Grammar explanations are optional.";
         
         var contextInstruction = request.IncludeContext 
-            ? "Give examples in different contexts (formal, informal, business, everyday life, commonly used in life)."
+            ? "Give examples in different contexts (daily life, common usage in life, in meetings, in work, in IT, in software development)."
             : "Use common everyday contexts.";
         
         var difficultyInstruction = request.DifficultyLevel switch
         {
             DifficultyLevel.Easy => "Create simple, easy-to-understand examples suitable for beginners.",
-            DifficultyLevel.Medium => "Create examples with long, easy-to-understand sentences.",
-            DifficultyLevel.Hard => "Create long, advanced examples with complex grammar and vocabulary, suitable for advanced learners.",
+            DifficultyLevel.Medium => "Create an example by combining 2 understandable sentences.",
+            DifficultyLevel.Hard => "Create an example by combining 3 understandable sentences.",
             _ => "Keep examples at beginner to intermediate level."
         };
 
@@ -434,7 +434,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
           {{
             ""Sentence"": ""English sentence using '{vocabularyWord}'"",
             ""Translation"": ""Natural Vietnamese translation"", 
-            ""Grammar"": ""Brief grammar explanation (if applicable)""
+            ""Grammar"": ""Brief grammar explanation""
           }}
         ]
         
