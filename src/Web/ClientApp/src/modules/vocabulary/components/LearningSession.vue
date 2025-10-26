@@ -74,12 +74,19 @@
       />
 
       <!-- Vocabulary Mode -->
-      <VocabularyCard 
-        v-else-if="currentSessionType === 'vocabulary'"
-        :word="currentWord"
-        @next="nextWord"
-        @learn-example="switchToDictation"
-      />
+      <div v-else-if="currentSessionType === 'vocabulary'" class="vocabulary-container">
+        <WordSidebar 
+          :words="sessionWords"
+          :current-word-index="currentIndex"
+          @select-word="jumpToWord"
+        />
+        
+        <VocabularyCard 
+          :word="currentWord"
+          @next="nextWord"
+          @learn-example="switchToDictation"
+        />
+      </div>
 
       <!-- Dictation Mode -->
       <div v-else-if="currentSessionType === 'dictation'" class="dictation-container">
@@ -182,6 +189,7 @@ import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
 import ExampleGrid from '../components/ExampleGrid.vue'
 import ExampleSidebar from '../components/ExampleSidebar.vue'
+import WordSidebar from '../components/WordSidebar.vue'
 import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
 import { Icon } from '@iconify/vue'
 
@@ -339,6 +347,24 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+// Update completedExampleCount for all words based on current progress
+const updateAllWordsCompletionCount = () => {
+  if (!userProgressData.value) return
+  
+  const exampleProgressList = userProgressData.value.exampleProgress
+  
+  sessionWords.value.forEach(word => {
+    if (word.examples && word.examples.length > 0) {
+      const completedCount = word.examples.filter(example => 
+        exampleProgressList.some(p => p.exampleId === example.id && p.isCompleted)
+      ).length
+      
+      word.completedExampleCount = completedCount
+      word.exampleCompletionPercentage = (completedCount / word.examples.length) * 100
+    }
+  })
+}
+
 const loadSessionWords = async () => {
   try {
     clearError()
@@ -357,6 +383,9 @@ const loadSessionWords = async () => {
 
     // Load user progress to get completed examples
     await getUserProgress()
+    
+    // Update all words' completion counts
+    updateAllWordsCompletionCount()
     
     // Build completedExamples array from progress data
     if (userProgressData.value && currentWord.value) {
@@ -416,7 +445,13 @@ const handleDictationSubmit = async (result: any) => {
       .filter(index => index !== -1)
     
     console.log(`✅ Updated completedExamples: ${completedExamples.value.length}/${currentWord.value.examples.length}`)
+    
+    // Update completedExampleCount for the current word
+    currentWord.value.completedExampleCount = completedExamples.value.length
   }
+  
+  // Update all words' completedExampleCount
+  updateAllWordsCompletionCount()
   
   // Save current position to database
   if (currentWord.value && selectedGroupIndex.value !== null) {
@@ -522,6 +557,9 @@ const switchToDictation = async () => {
   // Load progress to get completed examples
   await getUserProgress()
   
+  // Update all words' completion counts
+  updateAllWordsCompletionCount()
+  
   // Update completedExamples array for current word
   if (userProgressData.value) {
     const exampleProgressList = userProgressData.value.exampleProgress
@@ -618,11 +656,22 @@ const jumpToExample = (localIndex: number) => {
   console.log(`Jumped to example ${globalIndex} (local index ${localIndex} in group ${selectedGroupIndex.value})`)
 }
 
+// Jump to a specific word
+const jumpToWord = (wordIndex: number) => {
+  if (wordIndex >= 0 && wordIndex < sessionWords.value.length) {
+    currentIndex.value = wordIndex
+    console.log(`Jumped to word ${wordIndex}: ${sessionWords.value[wordIndex].word}`)
+  }
+}
+
 const backToExampleGrid = async () => {
   console.log('=== Going back to word list ===')
   
   // Reload progress to get updated completed examples
   await getUserProgress()
+  
+  // Update all words' completion counts
+  updateAllWordsCompletionCount()
   
   // Update completedExamples array
   if (userProgressData.value && currentWord.value) {
@@ -716,6 +765,12 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
+.vocabulary-container {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  gap: 1.5rem;
+}
+
 .dictation-container {
   display: grid;
   grid-template-columns: 30% 70%;
@@ -723,6 +778,10 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1024px) {
+  .vocabulary-container {
+    grid-template-columns: 1fr;
+  }
+  
   .dictation-container {
     grid-template-columns: 1fr;
   }
