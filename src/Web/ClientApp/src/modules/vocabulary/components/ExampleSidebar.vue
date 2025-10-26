@@ -11,6 +11,7 @@
       <div 
         v-for="(example, index) in examples" 
         :key="example.id"
+        :ref="el => setItemRef(el, index)"
         class="example-item"
         :class="{ 
           'completed': isCompleted(index),
@@ -50,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import type { VocabularyExample } from '../types/vocabulary.types'
 
@@ -68,6 +69,14 @@ defineEmits<{
   selectExample: [index: number]
 }>()
 
+const itemRefs = ref<(HTMLElement | null)[]>([])
+
+const setItemRef = (el: any, index: number) => {
+  if (el) {
+    itemRefs.value[index] = el as HTMLElement
+  }
+}
+
 const isCompleted = (localIndex: number) => {
   const globalIndex = props.groupStartIndex + localIndex
   return props.completedExamples.includes(globalIndex)
@@ -76,6 +85,18 @@ const isCompleted = (localIndex: number) => {
 const completedCount = computed(() => {
   return props.examples.filter((_, index) => isCompleted(index)).length
 })
+
+// Watch for currentIndex changes and scroll to the current item
+watch(() => props.currentIndex, async (newIndex) => {
+  await nextTick()
+  const currentItem = itemRefs.value[newIndex]
+  if (currentItem) {
+    currentItem.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    })
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
