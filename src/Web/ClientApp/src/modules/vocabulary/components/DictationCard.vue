@@ -3,15 +3,6 @@
     <div class="card-container">
       <!-- Header -->
       <div class="dictation-header">
-        <!-- Word Info -->
-        <div v-if="word" class="word-info">
-          <div class="word-badge">
-            <Icon icon="mdi:book-alphabet" class="w-4 h-4" />
-            <span class="word-text">{{ word.word }}</span>
-            <span class="word-part-of-speech" v-if="word.partOfSpeech">({{ word.partOfSpeech }})</span>
-            <span class="word-meaning">{{ word.meaning }}</span>
-          </div>
-        </div>
         
         <div v-if="example?.sentence && showSentence && !showResult" class="example-sentence">
 
@@ -806,7 +797,6 @@ watchEffect(() => {
 }
 
 .show-sentence-btn {
-  margin-top: 1rem;
   background: rgba(116, 192, 252, 0.2);
   color: #74c0fc;
   border-color: rgba(116, 192, 252, 0.5);

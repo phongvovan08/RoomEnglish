@@ -307,7 +307,6 @@ const getHintText = (): string => {
 
 .definition-card h3 {
   color: #74c0fc;
-  margin-bottom: 1rem;
   font-size: 1rem;
 }
 
