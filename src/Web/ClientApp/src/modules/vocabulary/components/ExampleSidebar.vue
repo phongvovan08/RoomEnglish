@@ -116,15 +116,23 @@ watch(() => props.currentIndex, async (newIndex) => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   height: fit-content;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow: hidden;
   position: sticky;
   top: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .word-info {
@@ -183,6 +191,9 @@ watch(() => props.currentIndex, async (newIndex) => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .example-item {
@@ -286,21 +297,21 @@ watch(() => props.currentIndex, async (newIndex) => {
 }
 
 /* Scrollbar styling */
-.example-sidebar::-webkit-scrollbar {
+.example-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.example-sidebar::-webkit-scrollbar-track {
+.example-list::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 
-.example-sidebar::-webkit-scrollbar-thumb {
+.example-list::-webkit-scrollbar-thumb {
   background: rgba(116, 192, 252, 0.5);
   border-radius: 3px;
 }
 
-.example-sidebar::-webkit-scrollbar-thumb:hover {
+.example-list::-webkit-scrollbar-thumb:hover {
   background: rgba(116, 192, 252, 0.7);
 }
 
