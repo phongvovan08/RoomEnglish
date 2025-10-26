@@ -81,6 +81,7 @@
           :has-more="hasMoreWords"
           :is-loading-more="isLoadingMore"
           :is-initial-loading="isLoading"
+          :total-words="totalWords"
           @select-word="jumpToWord"
           @load-more="loadMoreWords"
         />
@@ -265,7 +266,16 @@ const currentExample = computed(() => {
   return word.examples[currentExampleIndex.value] || null
 })
 
-const totalWords = computed(() => sessionWords.value.length)
+// Use totalCount from API instead of loaded words length
+const totalWords = computed(() => totalCount.value || sessionWords.value.length)
+
+// Count completed words (all examples done)
+const completedWordsCount = computed(() => {
+  return sessionWords.value.filter(word => {
+    if (!word.exampleCount || word.exampleCount === 0) return false
+    return (word.completedExampleCount || 0) === word.exampleCount
+  }).length
+})
 
 const totalExamples = computed(() => {
   return sessionWords.value.reduce((total, word) => {
@@ -320,9 +330,9 @@ const progress = computed(() => {
     if (totalExamples.value === 0) return 0
     return (currentExampleNumber.value / totalExamples.value) * 100
   } else {
-    // For vocabulary mode, calculate based on words
+    // For vocabulary mode, calculate based on completed words
     if (totalWords.value === 0) return 0
-    return (currentIndex.value / totalWords.value) * 100
+    return (completedWordsCount.value / totalWords.value) * 100
   }
 })
 

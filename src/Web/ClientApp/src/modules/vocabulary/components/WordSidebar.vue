@@ -3,7 +3,7 @@
     <div class="sidebar-header">
       <h4>📚 Vocabulary Words</h4>
       <div class="progress-info">
-        {{ currentWordIndex + 1 }}/{{ words.length }} words
+        {{ completedWordsCount }}/{{ totalWords || words.length }} words
       </div>
     </div>
     
@@ -93,6 +93,7 @@ interface Props {
   hasMore?: boolean
   isLoadingMore?: boolean
   isInitialLoading?: boolean
+  totalWords?: number
 }
 
 const props = defineProps<Props>()
@@ -124,6 +125,11 @@ const isWordCompleted = (word: VocabularyWord): boolean => {
   if (!word.exampleCount || word.exampleCount === 0) return false
   return (word.completedExampleCount || 0) === word.exampleCount
 }
+
+// Count completed words
+const completedWordsCount = computed(() => {
+  return props.words.filter(word => isWordCompleted(word)).length
+})
 
 // Watch for currentWordIndex changes and scroll to the current item
 watch(() => props.currentWordIndex, async (newIndex, oldIndex) => {
