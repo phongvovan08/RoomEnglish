@@ -9,8 +9,13 @@ export const useSpeechSynthesis = () => {
   const currentTTSProvider = ref<'openai' | 'webspeech'>('webspeech') // Default to Web Speech API
   const webSpeechVoices = ref<SpeechSynthesisVoice[]>([])
   
-  // Memory cache for current session (faster)
+  // Memory cache for current session (faster) - with timestamps
   const memoryCache = ref(new Map<string, Blob>())
+  const memoryCacheTimestamps = ref(new Map<string, number>())
+  const MEMORY_CACHE_TTL = 10 * 60 * 1000 // 10 minutes in milliseconds
+  
+  // Background cleanup interval
+  let cleanupIntervalId: number | null = null
   
   // Database API for persistent cache
   const { 
@@ -100,6 +105,18 @@ export const useSpeechSynthesis = () => {
     
     // Check memory cache first (fastest)
     let cachedBlob = memoryCache.value.get(cacheKey)
+    const cacheTimestamp = memoryCacheTimestamps.value.get(cacheKey)
+    
+    // Check if cache is expired (> 10 minutes)
+    if (cachedBlob && cacheTimestamp) {
+      const age = Date.now() - cacheTimestamp
+      if (age > MEMORY_CACHE_TTL) {
+        // Expired - remove from memory cache
+        memoryCache.value.delete(cacheKey)
+        memoryCacheTimestamps.value.delete(cacheKey)
+        cachedBlob = undefined
+      }
+    }
     
     if (cachedBlob) {
       return cachedBlob.arrayBuffer()
@@ -111,6 +128,7 @@ export const useSpeechSynthesis = () => {
     if (dbCachedBlob) {
       // Save to memory for faster future access
       memoryCache.value.set(cacheKey, dbCachedBlob)
+      memoryCacheTimestamps.value.set(cacheKey, Date.now())
       return dbCachedBlob.arrayBuffer()
     }
 
@@ -141,10 +159,11 @@ export const useSpeechSynthesis = () => {
         // Cache the audio blob
         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
         
-        // Save to memory cache (instant)
+        // Save to memory cache (instant) with timestamp
         memoryCache.value.set(cacheKey, blob)
+        memoryCacheTimestamps.value.set(cacheKey, Date.now())
         
-        // Save to database (async, fire and forget)
+        // Save to database (async, fire and forget) - expires in 30 days
         saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
           console.error('Failed to save to database cache:', err)
         })
@@ -394,11 +413,54 @@ export const useSpeechSynthesis = () => {
   // Initialize voices on load
   const initializeVoices = async () => {
     await loadWebSpeechVoices()
+    startBackgroundCleanup() // Start cleanup timer
+  }
+
+  // Cleanup expired memory cache entries
+  const cleanupExpiredMemoryCache = () => {
+    const now = Date.now()
+    let cleanedCount = 0
+    
+    for (const [key, timestamp] of memoryCacheTimestamps.value.entries()) {
+      const age = now - timestamp
+      if (age > MEMORY_CACHE_TTL) {
+        memoryCache.value.delete(key)
+        memoryCacheTimestamps.value.delete(key)
+        cleanedCount++
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      console.log(`🧹 Auto-cleaned ${cleanedCount} expired memory cache entries`)
+    }
+    
+    return cleanedCount
+  }
+
+  // Start background cleanup (runs every 2 minutes)
+  const startBackgroundCleanup = () => {
+    if (cleanupIntervalId !== null) return // Already running
+    
+    cleanupIntervalId = window.setInterval(() => {
+      cleanupExpiredMemoryCache()
+    }, 2 * 60 * 1000) // Check every 2 minutes
+    
+    console.log('🔄 Background cache cleanup started (every 2 minutes)')
+  }
+
+  // Stop background cleanup
+  const stopBackgroundCleanup = () => {
+    if (cleanupIntervalId !== null) {
+      clearInterval(cleanupIntervalId)
+      cleanupIntervalId = null
+      console.log('⏹️ Background cache cleanup stopped')
+    }
   }
 
   // Clear audio cache (useful for memory management)
   const clearCache = async () => {
     memoryCache.value.clear()
+    memoryCacheTimestamps.value.clear() // Also clear timestamps
     const deleted = await cleanupAPICache(100, true)
     console.log(`🧹 Audio cache cleared (${deleted} entries deleted)`)
     return deleted
@@ -407,10 +469,21 @@ export const useSpeechSynthesis = () => {
   // Get cache stats
   const getCacheStats = async () => {
     const dbStats = await getAPICacheStats()
+    
+    // Calculate oldest entry age
+    const now = Date.now()
+    let oldestAge = 0
+    for (const timestamp of memoryCacheTimestamps.value.values()) {
+      const age = now - timestamp
+      if (age > oldestAge) oldestAge = age
+    }
+    
     return {
       memory: {
         count: memoryCache.value.size,
-        size: Array.from(memoryCache.value.values()).reduce((sum, blob) => sum + blob.size, 0)
+        size: Array.from(memoryCache.value.values()).reduce((sum, blob) => sum + blob.size, 0),
+        ttl: MEMORY_CACHE_TTL,
+        oldestEntryAge: oldestAge
       },
       database: dbStats ? {
         count: dbStats.totalEntries,
@@ -435,6 +508,8 @@ export const useSpeechSynthesis = () => {
     webSpeechVoices: readonly(webSpeechVoices),
     openaiVoices: readonly(openaiVoices),
     clearCache,
-    getCacheStats
+    getCacheStats,
+    cleanupExpiredMemoryCache, // Expose for manual cleanup
+    stopBackgroundCleanup // Expose for cleanup on unmount
   }
 }
