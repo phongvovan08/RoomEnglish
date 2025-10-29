@@ -1,0 +1,172 @@
+name: Deploy to IIS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '18.x'
+  PUBLISH_PATH: './publish'
+  DEPLOY_PATH: 'C:\inetpub\RoomEnglish'
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Checkout code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # Setup .NET
+    - name: Setup .NET ${{ env.DOTNET_VERSION }}
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    # Setup Node.js
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: src/Web/ClientApp/package-lock.json
+    
+    # Build Frontend
+    - name: Install frontend dependencies
+      working-directory: src/Web/ClientApp
+      run: npm ci
+    
+    - name: Build frontend
+      working-directory: src/Web/ClientApp
+      run: npm run build
+    
+    # Build Backend
+    - name: Restore backend dependencies
+      run: dotnet restore src/src.sln
+    
+    - name: Build backend
+      run: dotnet build src/src.sln --configuration Release --no-restore
+    
+    - name: Publish backend
+      run: dotnet publish src/Web/Web.csproj --configuration Release --output ${{ env.PUBLISH_PATH }} --no-build
+    
+    # Copy frontend build to wwwroot
+    - name: Copy frontend to wwwroot
+      run: |
+        rm -rf ${{ env.PUBLISH_PATH }}/wwwroot/*
+        cp -r src/Web/ClientApp/dist/* ${{ env.PUBLISH_PATH }}/wwwroot/
+    
+    # Create deployment package
+    - name: Create deployment package
+      run: |
+        cd ${{ env.PUBLISH_PATH }}
+        zip -r ../RoomEnglish.zip .
+    
+    # Upload artifact
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-package
+        path: RoomEnglish.zip
+        retention-days: 1
+
+  deploy:
+    name: Deploy to IIS
+    runs-on: self-hosted  # This will run on your Windows Server
+    needs: build
+    environment: production
+    
+    steps:
+    # Download artifact
+    - name: Download deployment package
+      uses: actions/download-artifact@v4
+      with:
+        name: deployment-package
+    
+    # Stop IIS App Pool
+    - name: Stop IIS Application Pool
+      shell: powershell
+      run: |
+        Import-Module WebAdministration
+        Stop-WebAppPool -Name "RoomEnglish"
+        Start-Sleep -Seconds 5
+    
+    # Backup current deployment
+    - name: Backup current deployment
+      shell: powershell
+      run: |
+        $backupPath = "C:\Backups\RoomEnglish_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        if (Test-Path "${{ env.DEPLOY_PATH }}") {
+          Copy-Item -Path "${{ env.DEPLOY_PATH }}" -Destination $backupPath -Recurse
+          Write-Host "Backup created at: $backupPath"
+        }
+    
+    # Clear deployment directory
+    - name: Clear deployment directory
+      shell: powershell
+      run: |
+        if (Test-Path "${{ env.DEPLOY_PATH }}") {
+          Get-ChildItem -Path "${{ env.DEPLOY_PATH }}" -Recurse | Remove-Item -Force -Recurse
+        } else {
+          New-Item -Path "${{ env.DEPLOY_PATH }}" -ItemType Directory
+        }
+    
+    # Extract deployment package
+    - name: Extract deployment package
+      shell: powershell
+      run: |
+        Expand-Archive -Path "RoomEnglish.zip" -DestinationPath "${{ env.DEPLOY_PATH }}" -Force
+    
+    # Start IIS App Pool
+    - name: Start IIS Application Pool
+      shell: powershell
+      run: |
+        Import-Module WebAdministration
+        Start-WebAppPool -Name "RoomEnglish"
+        Start-Sleep -Seconds 5
+    
+    # Verify deployment
+    - name: Verify deployment
+      shell: powershell
+      run: |
+        $appPoolState = (Get-WebAppPoolState -Name "RoomEnglish").Value
+        if ($appPoolState -eq "Started") {
+          Write-Host "✅ Application Pool started successfully"
+        } else {
+          Write-Error "❌ Application Pool failed to start"
+          exit 1
+        }
+    
+    # Health check
+    - name: Health check
+      shell: powershell
+      run: |
+        Start-Sleep -Seconds 10
+        try {
+          $response = Invoke-WebRequest -Uri "http://localhost/health" -UseBasicParsing -TimeoutSec 30
+          if ($response.StatusCode -eq 200) {
+            Write-Host "✅ Health check passed"
+          } else {
+            Write-Warning "⚠️ Health check returned status: $($response.StatusCode)"
+          }
+        } catch {
+          Write-Warning "⚠️ Health check failed: $_"
+        }
+    
+    # Cleanup
+    - name: Cleanup old backups
+      shell: powershell
+      run: |
+        $backupPath = "C:\Backups"
+        if (Test-Path $backupPath) {
+          Get-ChildItem -Path $backupPath -Directory | 
+            Where-Object { $_.Name -like "RoomEnglish_*" } | 
+            Sort-Object CreationTime -Descending | 
+            Select-Object -Skip 5 | 
+            Remove-Item -Recurse -Force
+          Write-Host "Old backups cleaned up (kept last 5)"
+        }
