@@ -56,7 +56,7 @@
   </Target>
 
   <!-- Build Vue.js ClientApp during publish only -->
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(IsPublishing)' == 'true' Or '$(DeployOnBuild)' == 'true'">
+  <Target Name="BuildClientApp" BeforeTargets="PrepareForPublish">
     <Message Text="Building Vue.js ClientApp..." Importance="high" />
     
     <!-- Install npm packages -->
@@ -64,18 +64,15 @@
     
     <!-- Build production -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
-
-    <!-- Copy built files to wwwroot -->
+    
+    <!-- Copy dist to wwwroot for publishing -->
     <ItemGroup>
-      <DistFiles Include="$(SpaRoot)dist\**" />
-      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
-        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      </ResolvedFileToPublish>
+      <ClientAppDist Include="$(SpaRoot)dist\**\*.*" />
     </ItemGroup>
+    
+    <Copy SourceFiles="@(ClientAppDist)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="true" />
 
-    <Message Text="Vue.js ClientApp built successfully" Importance="high" />
+    <Message Text="Vue.js ClientApp built and copied to wwwroot successfully" Importance="high" />
   </Target>
 
 </Project>
