@@ -1,25 +1,48 @@
-# ⚠️ CÁCH SETUP AZURE DEPLOYMENT - QUAN TRỌNG
+# ⚠️ CÁCH SETUP AZURE DEPLOYMENT - OIDC (Khuyến nghị)
 
-## Bước 1: Lấy Publish Profile từ Azure Portal
+## Phương pháp: OpenID Connect (OIDC) - An toàn, không cần password
+
+### Bước 1: Setup Federated Credential trên Azure Portal
 
 1. Đăng nhập vào [Azure Portal](https://portal.azure.com)
 2. Tìm **WebRoomEnglish** App Service
-3. Click nút **Get publish profile** (trên thanh toolbar)
-4. File `.PublishSettings` sẽ được tải về
+3. Sidebar bên trái → **Deployment Center**
+4. Tab **Settings** → Source: **GitHub**
+5. Click **Authorize** và chọn:
+   - **Organization**: phongvovan08
+   - **Repository**: RoomEnglish
+   - **Branch**: main
+6. Click **Save**
 
-## Bước 2: Thêm Secret vào GitHub
+Azure sẽ tự động:
+- Tạo Service Principal
+- Setup Federated Credential
+- Thêm 3 secrets vào GitHub repository
 
-1. Mở repository: https://github.com/phongvovan08/RoomEnglish
-2. Click **Settings** (tab trên cùng)
-3. Sidebar bên trái: **Secrets and variables** → **Actions**
-4. Click nút **New repository secret**
-5. Điền thông tin:
-   ```
-   Name: AZURE_WEBAPP_PUBLISH_PROFILE
-   
-   Secret: [Paste toàn bộ nội dung XML từ file .PublishSettings]
-   ```
-6. Click **Add secret**
+### Bước 2: Verify GitHub Secrets (Tự động)
+
+Vào https://github.com/phongvovan08/RoomEnglish/settings/secrets/actions
+
+Kiểm tra có 3 secrets sau (Azure tự tạo):
+```
+AZURE_CLIENT_ID
+AZURE_TENANT_ID  
+AZURE_SUBSCRIPTION_ID
+```
+
+**Nếu chưa có**, làm thủ công:
+
+#### 2.1. Lấy thông tin từ Azure
+```powershell
+# Trong Azure Cloud Shell hoặc local (cần Azure CLI)
+az ad sp list --display-name WebRoomEnglish --query "[0].{clientId:appId, tenantId:appOwnerOrganizationId}" -o json
+az account show --query "{subscriptionId:id}" -o json
+```
+
+#### 2.2. Thêm vào GitHub
+- `AZURE_CLIENT_ID`: Application (client) ID
+- `AZURE_TENANT_ID`: Directory (tenant) ID  
+- `AZURE_SUBSCRIPTION_ID`: `6d6d5629-96f5-4bb9-8b30-1004108e6a99`
 
 ## Bước 3: Test Deployment
 
