@@ -45,5 +45,6 @@ jobs:
 
       - name: Check build artifacts
         run: |
-          echo "Checking published files..."
-          ls -la src/Web/wwwroot/
+          echo "Checking Vue.js build output..."
+          ls -la src/Web/ClientApp/dist/
+          echo "Vue.js built successfully!"
