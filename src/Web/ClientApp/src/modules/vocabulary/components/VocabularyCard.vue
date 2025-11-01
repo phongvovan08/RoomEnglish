@@ -24,11 +24,6 @@
     
     <!-- Actual Content -->
     <div v-else class="card-container">
-      <!-- Progress Indicator -->
-      <div v-if="currentIndex !== undefined && totalWords !== undefined" class="progress-indicator">
-        <span class="progress-text">{{ currentIndex + 1 }}/{{ totalWords }} words</span>
-      </div>
-
       <!-- Word Display -->
       <div class="word-section">
         <div class="word-display-inline">
@@ -108,8 +103,6 @@ import type { VocabularyWord } from '../types/vocabulary.types'
 interface Props {
   word?: VocabularyWord | any
   isLoading?: boolean
-  currentIndex?: number
-  totalWords?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -180,25 +173,6 @@ const getHintText = (): string => {
   right: 0;
   height: 4px;
   background: linear-gradient(135deg, #e75e8d, #74c0fc);
-}
-
-.progress-indicator {
-  position: absolute;
-  top: 1rem;
-  right: 1.5rem;
-  background: rgba(116, 192, 252, 0.2);
-  border: 1px solid rgba(116, 192, 252, 0.3);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-  z-index: 10;
-}
-
-.progress-text {
-  color: #74c0fc;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
 .word-section {

@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { createAuthHeaders, getAuthToken } from '@/utils/auth'
+import { API_CONFIG } from '@/config/api.config'
 import type { 
   VocabularyCategory, 
   VocabularyWord, 
@@ -11,7 +12,7 @@ import type {
   PaginatedList
 } from '../types/vocabulary.types'
 
-const API_BASE = '/api'
+const API_BASE = API_CONFIG.baseURL
 
 export const useVocabulary = () => {
   const categories = ref<VocabularyCategory[]>([])

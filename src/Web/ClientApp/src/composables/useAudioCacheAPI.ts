@@ -1,6 +1,7 @@
 import { createAuthHeaders } from '@/utils/auth'
+import { API_CONFIG } from '@/config/api.config'
 
-const API_BASE = '/api/audio-cache'
+const API_BASE = `${API_CONFIG.baseURL}/audio-cache`
 
 export interface AudioCacheStats {
   totalEntries: number

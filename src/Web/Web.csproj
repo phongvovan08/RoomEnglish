@@ -3,7 +3,16 @@
   <PropertyGroup>
     <RootNamespace>RoomEnglish.Web</RootNamespace>
     <AssemblyName>RoomEnglish.Web</AssemblyName>
+    <SpaRoot>ClientApp\</SpaRoot>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Don't publish the SPA source files, but do show them in the project files list -->
+    <Content Remove="$(SpaRoot)**" />
+    <None Remove="$(SpaRoot)**" />
+    <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Application\Application.csproj" />
@@ -44,6 +53,29 @@
 
     <Message Text="$(NSwagOutput)" Condition="'$(NSwagExitCode)' == '0'" Importance="low" />
     <Error Text="$(NSwagOutput)" Condition="'$(NSwagExitCode)' != '0'" />
+  </Target>
+
+  <!-- Build Vue.js ClientApp during publish -->
+  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
+    <Message Text="Building Vue.js ClientApp..." Importance="high" />
+    
+    <!-- Install npm packages -->
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
+    
+    <!-- Build production -->
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+
+    <!-- Copy built files to wwwroot -->
+    <ItemGroup>
+      <DistFiles Include="$(SpaRoot)dist\**" />
+      <ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <Message Text="Vue.js ClientApp built successfully" Importance="high" />
   </Target>
 
 </Project>

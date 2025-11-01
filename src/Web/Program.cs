@@ -51,9 +51,13 @@ app.UseSwaggerUi(settings =>
 
 app.UseExceptionHandler(options => { });
 
-app.Map("/", () => Results.Redirect("/api"));
+// Redirect root to API docs (temporarily - will be replaced by SPA)
+// app.Map("/", () => Results.Redirect("/api"));
 
 app.MapEndpoints();
+
+// Enable SPA fallback routing - serve index.html for non-API routes
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

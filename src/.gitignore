@@ -40,3 +40,10 @@ _ReSharper*/
 x64/
 x86/
 [Aa]rtifacts/
+
+# Publish output folders
+publish/
+publish-*/
+
+# Service Dependencies
+**/Properties/ServiceDependencies/
