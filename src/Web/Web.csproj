@@ -5,6 +5,9 @@
     <AssemblyName>RoomEnglish.Web</AssemblyName>
     <SpaRoot>ClientApp\</SpaRoot>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+    
+    <!-- Disable compression during build, only enable during publish -->
+    <CompressionEnabled Condition="'$(PublishDir)' == ''">false</CompressionEnabled>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +15,12 @@
     <Content Remove="$(SpaRoot)**" />
     <None Remove="$(SpaRoot)**" />
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
+    
+    <!-- Exclude wwwroot from static web assets processing during build -->
+    <Content Remove="wwwroot\**" Condition="'$(PublishDir)' == ''" />
+    
+    <!-- Exclude API specification from duplicate processing -->
+    <Content Update="wwwroot\api\specification.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,8 +65,14 @@
   </Target>
 
   <!-- Build Vue.js ClientApp during publish only -->
-  <Target Name="BuildClientApp" BeforeTargets="PrepareForPublish">
+  <Target Name="BuildClientApp" BeforeTargets="PrepareForPublish" Condition="'$(PublishDir)' != ''">
     <Message Text="Building Vue.js ClientApp..." Importance="high" />
+    
+    <!-- Clean wwwroot except api folder -->
+    <ItemGroup>
+      <WwwrootFiles Include="wwwroot\**\*.*" Exclude="wwwroot\api\**" />
+    </ItemGroup>
+    <Delete Files="@(WwwrootFiles)" />
     
     <!-- Install npm packages -->
     <Exec WorkingDirectory="$(SpaRoot)" Command="npm install" />
@@ -70,7 +85,7 @@
       <ClientAppDist Include="$(SpaRoot)dist\**\*.*" />
     </ItemGroup>
     
-    <Copy SourceFiles="@(ClientAppDist)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ClientAppDist)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="false" />
 
     <Message Text="Vue.js ClientApp built and copied to wwwroot successfully" Importance="high" />
   </Target>
