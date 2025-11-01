@@ -16,6 +16,9 @@
     <None Remove="$(SpaRoot)**" />
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
     
+    <!-- Completely exclude wwwroot from Content items during publish - our BuildClientApp target handles it -->
+    <Content Remove="wwwroot\**" Condition="'$(PublishDir)' != ''" />
+    
     <!-- Exclude wwwroot from static web assets processing during build -->
     <Content Remove="wwwroot\**" Condition="'$(PublishDir)' == ''" />
     
@@ -65,7 +68,7 @@
   </Target>
 
   <!-- Build Vue.js ClientApp during publish only -->
-  <Target Name="BuildClientApp" BeforeTargets="PrepareForPublish" Condition="'$(PublishDir)' != ''">
+  <Target Name="BuildClientApp" BeforeTargets="ComputeFilesToPublish" Condition="'$(PublishDir)' != ''">
     <Message Text="Building Vue.js ClientApp..." Importance="high" />
     
     <!-- Clean wwwroot except api folder -->
@@ -88,6 +91,18 @@
     <Copy SourceFiles="@(ClientAppDist)" DestinationFolder="wwwroot\%(RecursiveDir)" SkipUnchangedFiles="false" />
 
     <Message Text="Vue.js ClientApp built and copied to wwwroot successfully" Importance="high" />
+  </Target>
+
+  <!-- Add wwwroot files to publish manifest -->
+  <Target Name="AddWwwrootToPublish" AfterTargets="BuildClientApp" Condition="'$(PublishDir)' != ''">
+    <ItemGroup>
+      <_PublishWwwroot Include="wwwroot\**\*" />
+      <ResolvedFileToPublish Include="@(_PublishWwwroot)">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+    <Message Text="Added %(ResolvedFileToPublish.Identity) to publish" Importance="low" />
   </Target>
 
 </Project>
