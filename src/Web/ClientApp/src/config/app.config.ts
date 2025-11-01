@@ -1,7 +1,7 @@
 // Application Configuration
 export const appConfig = {
-  // API Base URL - read from environment variables
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001',
+  // API Base URL - read from environment variables (empty = same origin)
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || '',
   
   // Other app settings
   app: {
