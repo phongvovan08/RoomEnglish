@@ -1,0 +1,49 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore src/src.sln
+
+      - name: Build solution
+        run: dotnet build src/src.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test src/src.sln --configuration Release --no-build --verbosity normal
+
+      - name: Build Vue.js app
+        working-directory: src/Web/ClientApp
+        run: |
+          npm install
+          npm run build
+
+      - name: Check build artifacts
+        run: |
+          echo "Checking published files..."
+          ls -la src/Web/wwwroot/
