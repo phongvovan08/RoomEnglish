@@ -55,8 +55,8 @@
     <Error Text="$(NSwagOutput)" Condition="'$(NSwagExitCode)' != '0'" />
   </Target>
 
-  <!-- Build Vue.js ClientApp during publish -->
-  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
+  <!-- Build Vue.js ClientApp during publish only -->
+  <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(IsPublishing)' == 'true' Or '$(DeployOnBuild)' == 'true'">
     <Message Text="Building Vue.js ClientApp..." Importance="high" />
     
     <!-- Install npm packages -->
