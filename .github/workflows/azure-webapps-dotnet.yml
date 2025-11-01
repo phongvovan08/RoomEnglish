@@ -1,5 +1,10 @@
 name: Deploy to Azure Web App
 
+# IMPORTANT: Before running this workflow, you MUST add the secret:
+# GitHub Repository → Settings → Secrets and variables → Actions
+# Secret name: AZURE_WEBAPP_PUBLISH_PROFILE
+# Secret value: Content from Azure Portal → WebRoomEnglish → Get publish profile
+
 on:
   push:
     branches:
