@@ -275,39 +275,18 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         catch (Exception ex)
         {
             wordStopwatch.Stop();
-            _logger.LogWarning(ex, "ChatGPT processing failed for '{Word}' after {ElapsedMs}ms. Using fallback data. Error: {ErrorMessage}", 
+            _logger.LogError(ex, "Failed to generate examples for '{Word}' after {ElapsedMs}ms. Error: {ErrorMessage}", 
                 vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, ex.Message);
             
-            // If ChatGPT fails, use fallback mock data
-            var fallbackExamples = GenerateFallbackExamples(vocabularyWord.Word, request);
+            // Add detailed error message to the result
+            var errorMessage = ex.InnerException != null 
+                ? $"Failed to generate examples for '{vocabularyWord.Word}': {ex.Message} (Inner: {ex.InnerException.Message})"
+                : $"Failed to generate examples for '{vocabularyWord.Word}': {ex.Message}";
             
-            foreach (var example in fallbackExamples)
-            {
-                try
-                {
-                    var newExample = new VocabularyExample
-                    {
-                        Sentence = example.Sentence,
-                        Translation = example.Translation,
-                        Grammar = example.Grammar,
-                        WordId = vocabularyWord.Id,
-                        IsActive = true,
-                        DifficultyLevel = (int)(request.DifficultyLevel ?? Commands.ImportExamplesFromWords.DifficultyLevel.Easy),
-                        DisplayOrder = 0
-                    };
-
-                    _context.VocabularyExamples.Add(newExample);
-                    result.SuccessCount++;
-                }
-                catch (Exception fallbackEx)
-                {
-                    result.Errors.Add($"Error with fallback data: {fallbackEx.Message}");
-                    result.ErrorCount++;
-                }
-            }
+            result.Errors.Add(errorMessage);
+            result.ErrorCount++;
             
-            result.Errors.Add($"ChatGPT failed, used fallback data: {ex.Message}");
-            await _context.SaveChangesAsync(cancellationToken);
+            // Don't create fallback examples - let the user know the actual error
         }
     }
 
@@ -385,24 +364,6 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             vocabularyWord, maxRetries, lastException?.Message);
         
         throw new InvalidOperationException($"ChatGPT failed after {maxRetries} attempts: {lastException?.Message}");
-    }
-
-    private List<ChatGPTExampleResponse> GenerateFallbackExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
-    {
-        var examples = new List<ChatGPTExampleResponse>();
-        
-        // Generate simple fallback examples for the vocabulary word
-        for (int i = 1; i <= 3; i++)
-        {
-            examples.Add(new ChatGPTExampleResponse
-            {
-                Sentence = $"This is example {i} using the word '{vocabularyWord}' in context.",
-                Translation = $"Đây là ví dụ {i} sử dụng từ '{vocabularyWord}' trong ngữ cảnh.",
-                Grammar = $"Simple sentence structure demonstrating '{vocabularyWord}' usage."
-            });
-        }
-        
-        return examples;
     }
 
     private string CreatePromptForExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
