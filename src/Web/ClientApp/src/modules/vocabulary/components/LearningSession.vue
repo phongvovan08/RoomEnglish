@@ -1,7 +1,18 @@
 <template>
   <div class="learning-session-container">
-    <!-- Session Header -->
-    <div class="session-header">
+    <!-- Restoring Position Overlay -->
+    <div v-if="isRestoringPosition" class="restoring-overlay">
+      <div class="restoring-content">
+        <div class="cyber-spinner-large"></div>
+        <h3>Đang khôi phục tiến trình...</h3>
+        <p class="restore-info" v-if="restoreInfo">{{ restoreInfo }}</p>
+      </div>
+    </div>
+
+    <!-- Main Content - Hidden during restore -->
+    <template v-if="!isRestoringPosition">
+      <!-- Session Header -->
+      <div class="session-header">
       <button @click="$emit('back')" class="back-btn">
         <i class="mdi mdi-arrow-left"></i>
         Back to Categories
@@ -179,11 +190,13 @@
         />
       </div>
     </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
 import { useToast } from '@/composables/useToast'
@@ -230,6 +243,7 @@ const {
 } = useUserProgress()
 
 const { showSuccess } = useToast()
+const route = useRoute()
 
 // Session state
 const sessionWords = ref<VocabularyWord[]>([])
@@ -248,6 +262,8 @@ const showExampleGrid = ref(false) // Show example grid
 const completedExamples = ref<number[]>([]) // Track completed example indices
 const selectedGroupIndex = ref<number | null>(null) // Track selected group
 const submittingExampleIndex = ref<number | null>(null) // Track example being submitted
+const isRestoringPosition = ref(false) // Loading overlay when restoring from URL
+const restoreInfo = ref<string>('') // Info text during restore
 
 // Pagination state
 const currentPage = ref(1)
@@ -853,8 +869,74 @@ const retry = () => {
   loadSessionWords()
 }
 
-onMounted(() => {
-  loadSessionWords()
+onMounted(async () => {
+  // Check if we need to restore position from URL
+  const { wordId, groupIndex, exampleIndex } = route.query
+  const shouldRestore = wordId && groupIndex !== undefined && exampleIndex !== undefined
+  
+  if (shouldRestore) {
+    isRestoringPosition.value = true
+    restoreInfo.value = 'Đang tải dữ liệu...'
+  }
+  
+  await loadSessionWords()
+  
+  // Restore learning position from query params (from "Continue Learning" button)
+  if (shouldRestore) {
+    const targetWordId = Number(wordId)
+    const targetGroupIndex = Number(groupIndex)
+    const targetExampleIndex = Number(exampleIndex)
+    
+    // Find the word in loaded session words
+    const wordIndex = sessionWords.value.findIndex(w => w.id === targetWordId)
+    
+    if (wordIndex !== -1) {
+      console.log(`🎯 Restoring position: word ${targetWordId}, group ${targetGroupIndex}, example ${targetExampleIndex}`)
+      
+      restoreInfo.value = 'Đang khôi phục vị trí học...'
+      
+      // Jump to the word
+      currentIndex.value = wordIndex
+      
+      // Wait for word to load
+      await new Promise(resolve => setTimeout(resolve, 50))
+      
+      restoreInfo.value = 'Đang tải tiến trình...'
+      
+      // Rebuild completedExamples for the target word
+      const targetWord = sessionWords.value[wordIndex]
+      if (userProgressData.value && targetWord?.examples) {
+        const exampleProgressList = userProgressData.value.exampleProgress
+        completedExamples.value = targetWord.examples
+          .map((example, index) => {
+            const isCompleted = exampleProgressList.some(
+              p => p.exampleId === example.id && p.isCompleted
+            )
+            return isCompleted ? index : -1
+          })
+          .filter(index => index !== -1)
+        
+        console.log(`📊 Loaded ${completedExamples.value.length} completed examples for word ${targetWord.word}`)
+      }
+      
+      restoreInfo.value = 'Đang chuyển đến ví dụ...'
+      
+      // Select the group and jump to example
+      await selectExampleGroup(targetGroupIndex)
+      currentExampleIndex.value = targetExampleIndex
+      
+      console.log(`✅ Restored to example ${targetExampleIndex} in group ${targetGroupIndex}`)
+      console.log(`✅ Completed examples in this word:`, completedExamples.value)
+      
+      // Wait a bit before removing overlay for smooth transition
+      await new Promise(resolve => setTimeout(resolve, 300))
+      isRestoringPosition.value = false
+      restoreInfo.value = ''
+    } else {
+      isRestoringPosition.value = false
+      restoreInfo.value = ''
+    }
+  }
 })
 
 onUnmounted(() => {
@@ -1143,6 +1225,65 @@ onUnmounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Restoring Position Overlay */
+.restoring-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(22, 33, 62, 0.98) 50%, rgba(15, 52, 96, 0.98) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.3s ease;
+}
+
+.restoring-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 2rem;
+}
+
+.restoring-content h3 {
+  font-size: 1.5rem;
+  margin: 1.5rem 0 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.restore-info {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.cyber-spinner-large {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* Settings overlay styles */

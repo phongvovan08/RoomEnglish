@@ -1,8 +1,15 @@
 <template>
   <div class="vocabulary-learning-container">
+    <!-- Auto-selecting overlay (when coming from Continue Learning) -->
+    <div v-if="isAutoSelecting" class="auto-select-overlay">
+      <div class="auto-select-content">
+        <div class="cyber-spinner-large"></div>
+        <h3>Đang tải bài học...</h3>
+      </div>
+    </div>
 
     <!-- Category Selection -->
-    <div class="categories-section" v-if="!selectedCategory">
+    <div class="categories-section" v-else-if="!selectedCategory">
       <div class="section-title">
         <h2>📚 Choose Your Learning Path</h2>
       </div>
@@ -80,11 +87,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
 import type { VocabularyCategory, LearningSession } from '../types/vocabulary.types'
 import LearningSessionComponent from '../components/LearningSession.vue'
 import SessionResult from '../components/SessionResult.vue'
+
+const route = useRoute()
 
 const { 
   categories, 
@@ -105,6 +115,7 @@ const selectedCategory = ref<VocabularyCategory | null>(null)
 const sessionType = ref<'vocabulary' | 'dictation' | 'mixed'>('vocabulary')
 const isCompleted = ref(false)
 const sessionResult = ref<LearningSession | null>(null)
+const isAutoSelecting = ref(false) // Loading state when auto-selecting from URL
 
 const getCategoryColor = (color: string) => {
   const colors: Record<string, string> = {
@@ -164,8 +175,23 @@ const getCategoryProgress = (categoryId: number): number => {
 }
 
 onMounted(async () => {
+  // Check if we're auto-selecting from URL (Continue Learning flow)
+  const categoryId = route.query.categoryId
+  if (categoryId) {
+    isAutoSelecting.value = true
+  }
+  
   await loadCategories()
   await getUserProgress()
+  
+  // Auto-select category from query params if provided (for "Continue Learning")
+  if (categoryId && categories.value.length > 0) {
+    const category = categories.value.find(c => c.id === Number(categoryId))
+    if (category) {
+      selectCategory(category)
+    }
+    isAutoSelecting.value = false
+  }
 })
 </script>
 
@@ -432,6 +458,50 @@ onMounted(async () => {
   100% { transform: rotate(360deg); }
 }
 
+/* Auto-selecting overlay */
+.auto-select-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(22, 33, 62, 0.98) 50%, rgba(15, 52, 96, 0.98) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.2s ease;
+}
+
+.auto-select-content {
+  text-align: center;
+  color: white;
+}
+
+.auto-select-content h3 {
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cyber-spinner-large {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (max-width: 768px) {
   .categories-grid {
     grid-template-columns: 1fr;

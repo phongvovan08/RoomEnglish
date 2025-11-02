@@ -6,6 +6,7 @@ using RoomEnglish.Application.Vocabulary.Commands.CompleteLearningSession;
 using RoomEnglish.Application.Vocabulary.Commands.ImportVocabularyFromExcel;
 using RoomEnglish.Application.Vocabulary.Commands.StartLearningSession;
 using RoomEnglish.Application.Vocabulary.Commands.SubmitDictation;
+using RoomEnglish.Application.Vocabulary.Queries;
 using RoomEnglish.Web.Infrastructure;
 using RoomEnglish.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,12 @@ public class Vocabulary : EndpointGroupBase
         group.RequireAuthorization()
              .WithTags("Vocabulary Learning & Import/Export")
              .WithOpenApi();
+
+        // Learning Position
+        group.MapGet("learning-position/last", GetLastLearningPosition)
+             .WithName("GetLastLearningPosition")
+             .WithSummary("Get last learning position")
+             .WithDescription("Gets user's most recent learning position across all words");
 
         // Learning Sessions
         group.MapPost("sessions/start", StartLearningSession)
@@ -52,6 +59,13 @@ public class Vocabulary : EndpointGroupBase
              .WithName("GetVocabularyTemplate")
              .WithSummary("Download Excel template")
              .WithDescription("Downloads an Excel template for vocabulary import");
+    }
+
+    [Authorize]
+    public async Task<IResult> GetLastLearningPosition(ISender sender)
+    {
+        var result = await sender.Send(new GetLastLearningPositionQuery());
+        return Results.Ok(result);
     }
 
     [Authorize]
