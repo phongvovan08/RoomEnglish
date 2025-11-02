@@ -120,7 +120,60 @@ az role assignment create `
   --role Contributor `
   --scope /subscriptions/6d6d5629-96f5-4bb9-8b30-1004108e6a99/resourceGroups/ResourceGroupPhong
 ```
+🛠 Bước-bước trên Azure Portal
+1) Tạo App Registration (Service Principal)
 
+Vào Azure Portal → Azure Active Directory → App registrations → New registration
+
+Nhập tên (ví dụ: RoomEnglish-CI) → chọn tổ chức/tennant thích hợp → Register.
+
+Sau khi tạo xong → trong phần Overview copy Application (client) ID và Directory (tenant) ID.
+
+(Tuỳ chọn) Trong Certificates & secrets nếu cần secret, nhưng nếu dùng OIDC/GitHub Actions có thể không cần secret.
+
+2) Gán quyền Contributor cho SP
+
+Vào Subscriptions hoặc Resource groups → chọn subscription hoặc resource-group mà bạn muốn SP có quyền.
+
+Click Access control (IAM) → + Add role assignment.
+
+Role: Contributor → Select members → tìm tên SP vừa tạo → Save.
+
+3) Tạo Federated Identity Credential
+
+Trong App registration vừa tạo → chọn Certificates & secrets (hoặc “Workload identity federation” nếu UI mới) → tab Federated credentials.
+
+Click + Add credential hoặc + Add federated identity credential:
+
+Scenario drop-down: chọn GitHub Actions deploying Azure resources (nếu có).
+
+Organization: phongvovan08
+
+Repository: RoomEnglish
+
+Entity type: chọn Environment và nhập Production (nếu bạn dùng environment Production).
+
+Name: github-production
+
+Các trường Issuer, Subject, Audiences sẽ tự điền (Issuer là https://token.actions.githubusercontent.com, Audiences là api://AzureADTokenExchange).
+
+Click Add để lưu.
+
+✅ Kết hợp vào GitHub Actions workflow
+
+Từ App registration bạn lấy Client ID và Tenant ID → lưu làm GitHub Secrets (AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID).
+
+Workflow YAML phải có bước login như:
+
+- name: Azure login
+  uses: azure/login@v2
+  with:
+    client-id: ${{ secrets.AZURE_CLIENT_ID }}
+    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+
+Sau khi login thành công → tới bước deploy app.
 #### 2.5. Tạo Federated Credential cho Environment Production
 
 ```powershell
