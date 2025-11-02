@@ -2,6 +2,14 @@
 
 A comprehensive English learning platform built with .NET 8 and Vue 3, featuring vocabulary management, AI-powered example generation, and interactive learning modules.
 
+## 📚 Documentation
+
+Detailed technical documentation and guides are available in the [docs/](./docs/) folder:
+- [Performance & Optimization](./docs/PERFORMANCE_OPTIMIZATION_README.md)
+- [Deployment Guide](./docs/DEPLOYMENT_GUIDE.md)
+- [Database & Architecture](./docs/DATABASE_RELATIONSHIPS_VERIFICATION.md)
+- [View all documentation →](./docs/README.md)
+
 ---
 
 ## 🚀 Overview
