@@ -81,6 +81,7 @@ export const useVocabulary = () => {
       params.append('IncludeInactive', (query.includeInactive || false).toString())
       params.append('IncludeExamples', (query.includeExamples || false).toString())
       params.append('IncludeUserProgress', (query.includeUserProgress || false).toString())
+      if (query.autoTranslate !== undefined) params.append('AutoTranslate', query.autoTranslate.toString())
 
       console.log('GetWords - Request URL:', `${API_BASE}/vocabulary-words?${params}`)
       console.log('GetWords - PageSize:', query.pageSize || 10)

@@ -139,6 +139,7 @@ export interface GetVocabularyWordsQuery {
   includeExamples?: boolean
   includeUserProgress?: boolean
   userId?: string
+  autoTranslate?: boolean // Enable auto-translation of missing Vietnamese meanings
 }
 
 export interface StartLearningSessionCommand {
