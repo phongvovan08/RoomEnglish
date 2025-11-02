@@ -93,6 +93,10 @@ export function useAudioCacheAPI() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.warn('Not authenticated - cannot get cache stats')
+          return null
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 

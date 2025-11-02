@@ -111,19 +111,15 @@
       <div class="cache-stats">
         <div class="stat-item">
           <Icon icon="mdi:memory" class="w-4 h-4" />
-          <span>Memory: {{ cacheStats.memory.count }} items ({{ formatBytes(cacheStats.memory.size) }})</span>
+          <span>Memory: {{ cacheStats.memory.count }} / {{ cacheStats.memory.maxSize }} items ({{ formatBytes(cacheStats.memory.size) }})</span>
         </div>
-        <div class="stat-item" v-if="cacheStats.database">
-          <Icon icon="mdi:database" class="w-4 h-4" />
-          <span>Database: {{ cacheStats.database.count }} items ({{ formatBytes(cacheStats.database.size) }})</span>
+        <div class="stat-item">
+          <Icon icon="mdi:clock-outline" class="w-4 h-4" />
+          <span>TTL: {{ Math.floor(cacheStats.memory.ttl / 60000) }} minutes</span>
         </div>
-        <div class="stat-item" v-if="cacheStats.database && cacheStats.database.hits > 0">
-          <Icon icon="mdi:chart-line" class="w-4 h-4" />
-          <span>Total Hits: {{ cacheStats.database.hits }}</span>
-        </div>
-        <div class="stat-item warning" v-if="cacheStats.database && cacheStats.database.expired > 0">
-          <Icon icon="mdi:alert-circle" class="w-4 h-4" />
-          <span>Expired: {{ cacheStats.database.expired }} items</span>
+        <div class="stat-item" v-if="cacheStats.memory.oldestEntryAge > 0">
+          <Icon icon="mdi:history" class="w-4 h-4" />
+          <span>Oldest: {{ Math.floor(cacheStats.memory.oldestEntryAge / 1000) }}s ago</span>
         </div>
       </div>
       <button @click="handleClearCache" class="clear-cache-btn">
@@ -131,14 +127,14 @@
         Clear Audio Cache
       </button>
       <div class="cache-note">
-        💡 Caching audio reduces API calls and improves performance
+        💡 Memory cache auto-cleans expired entries every 2 minutes
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useSpeechSettings } from '@/composables/useSpeechSettings'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
@@ -147,7 +143,7 @@ interface Props {
   showPanel: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<{
   close: []
 }>()
@@ -177,8 +173,7 @@ const apiKeySaved = ref(false)
 
 // Cache stats
 const cacheStats = ref({
-  memory: { count: 0, size: 0 },
-  database: { count: 0, size: 0, hits: 0, expired: 0 } as { count: number; size: number; hits: number; expired: number } | null
+  memory: { count: 0, size: 0, maxSize: 100, ttl: 0, oldestEntryAge: 0 }
 })
 
 // Computed values
@@ -311,13 +306,15 @@ const saveApiKey = () => {
 }
 
 // Cache management
-const updateCacheStats = async () => {
-  cacheStats.value = await getCacheStats()
+const updateCacheStats = () => {
+  const stats = getCacheStats()
+  console.log('📊 Cache stats from API:', stats)
+  cacheStats.value = stats
 }
 
-const handleClearCache = async () => {
-  await clearCache()
-  await updateCacheStats()
+const handleClearCache = () => {
+  clearCache()
+  updateCacheStats()
 }
 
 const formatBytes = (bytes: number): string => {
@@ -333,6 +330,14 @@ onMounted(async () => {
   await initializeDefaultVoice()
   loadSettings()
   updateCacheStats()
+})
+
+// Watch for panel opening to refresh cache stats
+watch(() => props.showPanel, (isOpen) => {
+  if (isOpen) {
+    console.log('🔄 Panel opened, refreshing cache stats...')
+    updateCacheStats()
+  }
 })
 </script>
 

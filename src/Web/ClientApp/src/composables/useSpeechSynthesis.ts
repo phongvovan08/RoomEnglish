@@ -1,30 +1,25 @@
 import { ref, readonly } from 'vue'
-import { OpenAITTS } from '@lobehub/tts'
-import { useAudioCacheAPI } from './useAudioCacheAPI'
+// import { OpenAITTS } from '@lobehub/tts'  // REMOVED: Using direct fetch instead
+// import { useAudioCacheAPI } from './useAudioCacheAPI'  // REMOVED: Backend cache not needed for dev
+
+// Shared state (singleton pattern) - all components use same cache
+const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
+const playingInstances = ref(new Set<string>())
+const audioInstances = ref(new Map<string, HTMLAudioElement>())
+const currentTTSProvider = ref<'openai' | 'webspeech'>('webspeech') // Default to Web Speech API
+const webSpeechVoices = ref<SpeechSynthesisVoice[]>([])
+
+// Memory cache for current session (faster) - with timestamps
+// SHARED across all component instances!
+const MAX_MEMORY_CACHE_SIZE = 100
+const memoryCache = ref(new Map<string, Blob>())
+const memoryCacheTimestamps = ref(new Map<string, number>())
+const MEMORY_CACHE_TTL = 10 * 60 * 1000 // 10 minutes in milliseconds
+
+// Background cleanup interval
+let cleanupIntervalId: number | null = null
 
 export const useSpeechSynthesis = () => {
-  const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
-  const playingInstances = ref(new Set<string>())
-  const audioInstances = ref(new Map<string, HTMLAudioElement>())
-  const currentTTSProvider = ref<'openai' | 'webspeech'>('webspeech') // Default to Web Speech API
-  const webSpeechVoices = ref<SpeechSynthesisVoice[]>([])
-  
-  // Memory cache for current session (faster) - with timestamps
-  const memoryCache = ref(new Map<string, Blob>())
-  const memoryCacheTimestamps = ref(new Map<string, number>())
-  const MEMORY_CACHE_TTL = 10 * 60 * 1000 // 10 minutes in milliseconds
-  
-  // Background cleanup interval
-  let cleanupIntervalId: number | null = null
-  
-  // Database API for persistent cache
-  const { 
-    getCachedAudio, 
-    saveAudioToCache, 
-    getCacheStats: getAPICacheStats,
-    cleanupCache: cleanupAPICache
-  } = useAudioCacheAPI()
-
   interface SpeechOptions {
     lang?: string
     rate?: number
@@ -86,6 +81,7 @@ export const useSpeechSynthesis = () => {
   // OpenAI TTS
   const speakWithOpenAI = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
     console.log('🤖 OpenAI TTS: Starting synthesis...')
+    console.log('🆕 CODE VERSION: 2024-11-02-18:45 - USING DIRECT FETCH API') // MARKER TO VERIFY NEW CODE
     const allVoices = getAllVoices()
     const selectedVoice = allVoices[options.voiceIndex || 0]
     
@@ -119,18 +115,29 @@ export const useSpeechSynthesis = () => {
     }
     
     if (cachedBlob) {
+      console.log('💾 Using cached audio from memory:', cachedBlob.size, 'bytes')
       return cachedBlob.arrayBuffer()
     }
     
-    // Check database cache
-    const dbCachedBlob = await getCachedAudio(text, voiceName, normalSpeed, provider)
+    // Check database cache - DISABLED: Backend not running in dev
+    // const dbCachedBlob = await getCachedAudio(text, voiceName, normalSpeed, provider)
     
-    if (dbCachedBlob) {
-      // Save to memory for faster future access
-      memoryCache.value.set(cacheKey, dbCachedBlob)
-      memoryCacheTimestamps.value.set(cacheKey, Date.now())
-      return dbCachedBlob.arrayBuffer()
-    }
+    // if (dbCachedBlob) {
+    //   console.log('💾 Using cached audio from database:', dbCachedBlob.size, 'bytes')
+      
+    //   // VALIDATE cached audio before using it
+    //   if (dbCachedBlob.size < 1024) {
+    //     console.warn('⚠️ Cached audio too small, deleting and refetching:', dbCachedBlob.size, 'bytes')
+    //     // Don't use corrupted cache, continue to fetch from API
+    //   } else {
+    //     // Save to memory for faster future access
+    //     memoryCache.value.set(cacheKey, dbCachedBlob)
+    //     memoryCacheTimestamps.value.set(cacheKey, Date.now())
+    //     return dbCachedBlob.arrayBuffer()
+    //   }
+    // }
+    
+    console.log('🌐 No cache found, fetching from OpenAI API...')
 
     // Not cached, fetch from API
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || localStorage.getItem('openai_api_key')
@@ -139,34 +146,106 @@ export const useSpeechSynthesis = () => {
       throw new Error('OpenAI API key not found. Please add VITE_OPENAI_API_KEY to environment or set it in settings.')
     }
 
-    const tts = new OpenAITTS({ OPENAI_API_KEY: apiKey })
-    
+    console.log('🔑 Using API key:', apiKey.substring(0, 10) + '...' + apiKey.substring(apiKey.length - 4))
+    console.log('🔑 API key length:', apiKey.length)
+
+    // Call OpenAI API directly (instead of using @lobehub/tts which has issues)
     const payload = {
+      model: 'tts-1',
       input: text,
-      options: {
-        model: 'tts-1', // or 'tts-1-hd' for higher quality
-        voice: voiceName as any,
-        speed: normalSpeed
-      }
+      voice: voiceName,
+      speed: normalSpeed
     }
 
+    console.log('📤 OpenAI TTS payload:', payload)
+
     try {
-      const response = await tts.create(payload)
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      console.log('📡 OpenAI response status:', response.status, response.statusText)
+      console.log('📡 OpenAI response headers:', Object.fromEntries(response.headers.entries()))
+      
+      // ALWAYS check what we received, even if status is 200
+      const arrayBuffer = await response.arrayBuffer()
+      console.log('📦 Received arrayBuffer:', arrayBuffer.byteLength, 'bytes')
+      
+      // Decode first 500 bytes as text to see if it's an error message
+      const uint8Array = new Uint8Array(arrayBuffer)
+      const textDecoder = new TextDecoder()
+      const preview = textDecoder.decode(uint8Array.slice(0, Math.min(500, arrayBuffer.byteLength)))
+      console.log('📄 Response preview (first 500 bytes):', preview)
+      console.log('🔢 First 10 bytes:', Array.from(uint8Array.slice(0, 10)))
       
       if (response.ok) {
-        const arrayBuffer = await response.arrayBuffer()
+        
+        // Validate audio data
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          console.error('❌ OpenAI returned empty audio data')
+          throw new Error('Received empty audio data from OpenAI. Please check your API key and quota.')
+        }
+        
+        console.log(`✅ OpenAI TTS: Received ${arrayBuffer.byteLength} bytes`)
+        
+        // If received data is too small (< 1KB), it's likely an error response
+        if (arrayBuffer.byteLength < 1024) {
+          console.warn('⚠️ Received suspiciously small audio data:', arrayBuffer.byteLength, 'bytes')
+          const textDecoder = new TextDecoder()
+          const text = textDecoder.decode(arrayBuffer)
+          console.error('Small response content:', text)
+          throw new Error(`Invalid audio data (${arrayBuffer.byteLength} bytes). Response: ${text.substring(0, 200)}`)
+        }
+        
+        // Check if response is actually audio (MP3 starts with ID3 or 0xFF)
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const isValidMP3 = (uint8Array[0] === 0xFF && (uint8Array[1] & 0xE0) === 0xE0) || // MP3 frame header
+                           (uint8Array[0] === 0x49 && uint8Array[1] === 0x44 && uint8Array[2] === 0x33) // ID3 tag
+        
+        if (!isValidMP3) {
+          console.error('❌ Invalid audio format. First bytes:', Array.from(uint8Array.slice(0, 10)))
+          // Try to decode as text to see error message
+          const textDecoder = new TextDecoder()
+          const text = textDecoder.decode(arrayBuffer)
+          console.error('Response content:', text.substring(0, 500))
+          throw new Error('Invalid audio format received from OpenAI. Check console for details.')
+        }
         
         // Cache the audio blob
         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
         
         // Save to memory cache (instant) with timestamp
+        // LRU eviction: If cache full, remove oldest entry
+        if (memoryCache.value.size >= MAX_MEMORY_CACHE_SIZE) {
+          let oldestKey: string | null = null
+          let oldestTime = Date.now()
+          
+          for (const [key, timestamp] of memoryCacheTimestamps.value.entries()) {
+            if (timestamp < oldestTime) {
+              oldestTime = timestamp
+              oldestKey = key
+            }
+          }
+          
+          if (oldestKey) {
+            console.log('🗑️ Memory cache full, removing oldest entry:', oldestKey)
+            memoryCache.value.delete(oldestKey)
+            memoryCacheTimestamps.value.delete(oldestKey)
+          }
+        }
+        
         memoryCache.value.set(cacheKey, blob)
         memoryCacheTimestamps.value.set(cacheKey, Date.now())
         
-        // Save to database (async, fire and forget) - expires in 30 days
-        saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
-          console.error('Failed to save to database cache:', err)
-        })
+        // Save to database (async, fire and forget) - DISABLED: Backend not running in dev
+        // saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
+        //   console.error('Failed to save to database cache:', err)
+        // })
         
         return arrayBuffer
       } else {
@@ -226,6 +305,8 @@ export const useSpeechSynthesis = () => {
 
   // Main speak function with provider selection
   const speak = async (text: string, instanceId: string, options: SpeechOptions = {}) => {
+    console.log('🔊 SPEAK CALLED:', { text: text.substring(0, 50), instanceId, provider: options.provider })
+    
     // Ensure voices are loaded
     await loadWebSpeechVoices()
     
@@ -248,12 +329,18 @@ export const useSpeechSynthesis = () => {
         try {
           const audioBuffer = await speakWithOpenAI(text, instanceId, options)
           
+          console.log('🎵 Creating audio blob from buffer:', audioBuffer.byteLength, 'bytes')
+          
           // Play audio from buffer using Web Audio API for playback rate control
           const blob = new Blob([audioBuffer], { type: 'audio/mpeg' })
+          console.log('🎵 Blob created:', blob.size, 'bytes, type:', blob.type)
+          
           const audioUrl = URL.createObjectURL(blob)
+          console.log('🎵 Blob URL created:', audioUrl)
           
           // Create audio element
           const audio = new Audio(audioUrl)
+          console.log('🎵 Audio element created, readyState:', audio.readyState)
           
           audioInstances.value.set(instanceId, audio)
           audio.volume = options.volume || 1.0
@@ -276,12 +363,29 @@ export const useSpeechSynthesis = () => {
             }
 
             audio.onerror = (event) => {
-              console.error('❌ Audio error:', event, audio.error)
+              console.error('❌ Audio playback error:', event, audio.error)
+              
+              let errorMessage = 'Audio playback failed'
               if (audio.error) {
-                console.error('   Error code:', audio.error.code, 'Message:', audio.error.message)
+                const errorCode = audio.error.code
+                const errorMsg = audio.error.message
+                
+                console.error('   Error code:', errorCode, 'Message:', errorMsg)
+                
+                // Provide helpful error messages based on error code
+                if (errorCode === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED or DEMUXER_ERROR
+                  errorMessage = 'Audio format not supported or corrupted. This may be due to an invalid OpenAI API key or quota exceeded.'
+                } else if (errorCode === 3) { // MEDIA_ERR_DECODE
+                  errorMessage = 'Failed to decode audio. The audio data may be corrupted.'
+                } else if (errorCode === 2) { // MEDIA_ERR_NETWORK
+                  errorMessage = 'Network error while loading audio.'
+                } else if (errorCode === 1) { // MEDIA_ERR_ABORTED
+                  errorMessage = 'Audio loading was aborted.'
+                }
               }
+              
               cleanup()
-              reject(audio.error || new Error('Audio loading failed'))
+              reject(new Error(errorMessage))
             }
             
             audio.onloadeddata = () => {
@@ -336,6 +440,8 @@ export const useSpeechSynthesis = () => {
   }
 
   const stop = (instanceId?: string) => {
+    console.log('⏹️ STOP CALLED:', instanceId || 'ALL')
+    
     if (instanceId) {
       const audio = audioInstances.value.get(instanceId)
       if (audio) {
@@ -458,18 +564,16 @@ export const useSpeechSynthesis = () => {
   }
 
   // Clear audio cache (useful for memory management)
-  const clearCache = async () => {
+  const clearCache = () => {
+    const count = memoryCache.value.size
     memoryCache.value.clear()
-    memoryCacheTimestamps.value.clear() // Also clear timestamps
-    const deleted = await cleanupAPICache(100, true)
-    console.log(`🧹 Audio cache cleared (${deleted} entries deleted)`)
-    return deleted
+    memoryCacheTimestamps.value.clear()
+    console.log(`🧹 Memory cache cleared (${count} entries deleted)`)
+    return count
   }
 
   // Get cache stats
-  const getCacheStats = async () => {
-    const dbStats = await getAPICacheStats()
-    
+  const getCacheStats = () => {
     // Calculate oldest entry age
     const now = Date.now()
     let oldestAge = 0
@@ -478,20 +582,50 @@ export const useSpeechSynthesis = () => {
       if (age > oldestAge) oldestAge = age
     }
     
-    return {
+    const stats = {
       memory: {
         count: memoryCache.value.size,
+        maxSize: MAX_MEMORY_CACHE_SIZE,
         size: Array.from(memoryCache.value.values()).reduce((sum, blob) => sum + blob.size, 0),
         ttl: MEMORY_CACHE_TTL,
         oldestEntryAge: oldestAge
-      },
-      database: dbStats ? {
-        count: dbStats.totalEntries,
-        size: dbStats.totalSizeBytes,
-        hits: dbStats.totalHits,
-        expired: dbStats.expiredEntries
-      } : null
+      }
     }
+    
+    // Pretty print to console
+    console.log('📊 Audio Cache Statistics:')
+    console.log(`   Entries: ${stats.memory.count} / ${stats.memory.maxSize}`)
+    console.log(`   Total Size: ${(stats.memory.size / 1024 / 1024).toFixed(2)} MB`)
+    console.log(`   TTL: ${stats.memory.ttl / 1000 / 60} minutes`)
+    console.log(`   Oldest Entry: ${(stats.memory.oldestEntryAge / 1000).toFixed(0)} seconds ago`)
+    
+    return stats
+  }
+  
+  // List all cached entries (for debugging)
+  const listCachedEntries = () => {
+    const now = Date.now()
+    const entries: Array<{key: string, size: number, age: number}> = []
+    
+    for (const [key, blob] of memoryCache.value.entries()) {
+      const timestamp = memoryCacheTimestamps.value.get(key) || now
+      const age = now - timestamp
+      entries.push({
+        key,
+        size: blob.size,
+        age: Math.floor(age / 1000) // seconds
+      })
+    }
+    
+    // Sort by age (newest first)
+    entries.sort((a, b) => a.age - b.age)
+    
+    console.log('📋 Cached Audio Entries:')
+    entries.forEach((entry, i) => {
+      console.log(`   ${i + 1}. ${entry.key.substring(0, 50)}... (${(entry.size / 1024).toFixed(1)} KB, ${entry.age}s ago)`)
+    })
+    
+    return entries
   }
 
   return {
@@ -509,6 +643,7 @@ export const useSpeechSynthesis = () => {
     openaiVoices: readonly(openaiVoices),
     clearCache,
     getCacheStats,
+    listCachedEntries, // NEW: List all cached entries
     cleanupExpiredMemoryCache, // Expose for manual cleanup
     stopBackgroundCleanup // Expose for cleanup on unmount
   }

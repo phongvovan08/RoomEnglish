@@ -465,15 +465,23 @@ const updateExample = () => {
     setExample(props.example)
     resetComponent()
     
-    // Auto play audio when example changes
+    // Auto play audio when example changes - DISABLED to prevent auto-play loop
+    // User can manually click play button
+    // setTimeout(() => {
+    //   playAudio()
+    //   
+    //   // Auto focus on input textarea
+    //   if (inputTextarea.value && !showResult.value) {
+    //     inputTextarea.value.focus()
+    //   }
+    // }, 300)
+    
+    // Just auto-focus, no auto-play
     setTimeout(() => {
-      playAudio()
-      
-      // Auto focus on input textarea
       if (inputTextarea.value && !showResult.value) {
         inputTextarea.value.focus()
       }
-    }, 300)
+    }, 100)
   }
 }
 

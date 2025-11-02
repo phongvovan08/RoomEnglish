@@ -47,6 +47,9 @@ export const useVocabulary = () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access vocabulary categories')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -87,6 +90,9 @@ export const useVocabulary = () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access vocabulary words')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -111,6 +117,9 @@ export const useVocabulary = () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to access word details')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -137,6 +146,9 @@ export const useVocabulary = () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to start a learning session')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
@@ -166,6 +178,9 @@ export const useVocabulary = () => {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please login to complete the session')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
