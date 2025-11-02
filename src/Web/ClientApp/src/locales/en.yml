@@ -19,6 +19,9 @@ menu:
   changeLanguage: Change Language
   search: Search
 
+vocabulary:
+  myProgress: My Progress
+  
 auth:
   login: Login
   register: Register

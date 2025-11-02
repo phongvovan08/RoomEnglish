@@ -12,7 +12,7 @@ import type {
   PaginatedList
 } from '../types/vocabulary.types'
 
-const API_BASE = API_CONFIG.baseURL
+const API_BASE = '/api'
 
 export const useVocabulary = () => {
   const categories = ref<VocabularyCategory[]>([])

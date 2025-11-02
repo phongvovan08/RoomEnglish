@@ -133,6 +133,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: Routes.Vocabulary.children.Categories.path,
+      name: Routes.Vocabulary.children.Categories.name,
+      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
+        console.error('Failed to load Categories:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.Vocabulary.children.Progress.path,
+      name: Routes.Vocabulary.children.Progress.name,
+      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
+        console.error('Failed to load Progress:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+    {
       path: Routes.Vocabulary.children.Management.path,
       name: Routes.Vocabulary.children.Management.name,
       component: () => import("../modules/vocabulary/views/VocabularyManagement.vue").catch(err => {
