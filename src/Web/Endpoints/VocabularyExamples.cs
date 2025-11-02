@@ -296,7 +296,8 @@ public class VocabularyExamples : EndpointGroupBase
 
     public record ImportJsonRequest(string JsonData, int VocabularyId);
     public record ImportWordsRequest(
-        List<string> Words,
+        int? VocabularyId = null,
+        List<string>? Words = null,
         int ExampleCount = 10,
         bool IncludeGrammar = true,
         bool IncludeContext = true,
@@ -328,11 +329,57 @@ public class VocabularyExamples : EndpointGroupBase
     [Authorize]
     public async Task<IResult> ImportWords(
         ISender sender,
+        IApplicationDbContext context,
+        ILogger<VocabularyExamples> logger,
         ImportWordsRequest request)
     {
+        logger.LogInformation("📥 ImportWords endpoint called with VocabularyId: {VocabularyId}, Words: {Words}, ExampleCount: {ExampleCount}", 
+            request.VocabularyId, request.Words != null ? string.Join(", ", request.Words) : "null", request.ExampleCount);
+        
+        List<string> words;
+        
+        // If VocabularyId is provided, fetch the word from database
+        if (request.VocabularyId.HasValue && request.VocabularyId.Value > 0)
+        {
+            logger.LogInformation("🔍 Fetching vocabulary word for ID: {VocabularyId}", request.VocabularyId.Value);
+            
+            var vocabulary = await context.VocabularyWords
+                .Where(v => v.Id == request.VocabularyId.Value && v.IsActive)
+                .FirstOrDefaultAsync();
+            
+            if (vocabulary == null)
+            {
+                logger.LogWarning("⚠️ Vocabulary with ID {VocabularyId} not found", request.VocabularyId.Value);
+                
+                return Results.BadRequest(new 
+                { 
+                    success = false,
+                    message = $"Vocabulary with ID {request.VocabularyId.Value} not found",
+                    errors = new[] { $"Vocabulary ID {request.VocabularyId.Value} does not exist or is inactive" }
+                });
+            }
+            
+            words = new List<string> { vocabulary.Word };
+            logger.LogInformation("✅ Found vocabulary word: {Word}", vocabulary.Word);
+        }
+        // Otherwise use the Words list
+        else if (request.Words != null && request.Words.Any())
+        {
+            words = request.Words;
+        }
+        else
+        {
+            return Results.BadRequest(new 
+            { 
+                success = false,
+                message = "Either VocabularyId or Words list must be provided",
+                errors = new[] { "No vocabulary specified for example generation" }
+            });
+        }
+        
         var command = new ImportExamplesFromWordsCommand 
         { 
-            Words = request.Words ?? new List<string>(),
+            Words = words,
             ExampleCount = request.ExampleCount,
             IncludeGrammar = request.IncludeGrammar,
             IncludeContext = request.IncludeContext,

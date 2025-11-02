@@ -78,13 +78,17 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         {
             // Get vocabulary words that exist in the database
             var dbQueryStopwatch = Stopwatch.StartNew();
+            
+            // Normalize words to lowercase for case-insensitive comparison
+            var normalizedWords = request.Words.Select(w => w.ToLower()).ToList();
+            
             var existingVocabularyWords = await _context.VocabularyWords
-                .Where(v => request.Words.Contains(v.Word) && v.IsActive)
+                .Where(v => normalizedWords.Contains(v.Word.ToLower()) && v.IsActive)
                 .ToListAsync(cancellationToken);
             dbQueryStopwatch.Stop();
 
-            _logger.LogInformation("Database query completed in {ElapsedMs}ms. Found {FoundCount}/{TotalCount} vocabulary words", 
-                dbQueryStopwatch.ElapsedMilliseconds, existingVocabularyWords.Count, request.Words.Count);
+            _logger.LogInformation("Database query completed in {ElapsedMs}ms. Found {FoundCount}/{TotalCount} vocabulary words. Searched words: {SearchedWords}", 
+                dbQueryStopwatch.ElapsedMilliseconds, existingVocabularyWords.Count, request.Words.Count, string.Join(", ", request.Words));
 
             if (!existingVocabularyWords.Any())
             {
@@ -104,13 +108,20 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             _logger.LogInformation("Parallel processing completed in {ElapsedMs}ms for {WordCount} words", 
                 processingStopwatch.ElapsedMilliseconds, existingVocabularyWords.Count);
 
-            // Check for words that weren't found in the database
-            var foundWords = existingVocabularyWords.Select(v => v.Word).ToHashSet();
-            var notFoundWords = request.Words.Where(word => !foundWords.Contains(word)).ToList();
+            // Check for words that weren't found in the database (case-insensitive)
+            var foundWords = existingVocabularyWords.Select(v => v.Word.ToLower()).ToHashSet();
+            var notFoundWords = request.Words
+                .Where(word => !foundWords.Contains(word.ToLower()))
+                .ToList();
+            
+            if (notFoundWords.Any())
+            {
+                _logger.LogWarning("Words not found in database: {NotFoundWords}", string.Join(", ", notFoundWords));
+            }
             
             foreach (var notFoundWord in notFoundWords)
             {
-                result.Errors.Add($"Vocabulary word '{notFoundWord}' not found in database");
+                result.Errors.Add($"Vocabulary word '{notFoundWord}' not found in database. Please check spelling and case.");
                 result.ErrorCount++;
             }
 

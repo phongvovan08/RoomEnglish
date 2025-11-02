@@ -343,24 +343,32 @@ export function useExamplesManagement() {
       includeContext?: boolean,
       difficultyLevel?: number | null
     }) => {
+      const requestBody = { 
+        vocabularyId, 
+        exampleCount,
+        includeGrammar,
+        includeContext,
+        difficultyLevel
+      }
+      
+      console.log('📤 Sending generate examples request:', requestBody)
+      
       const response = await fetch(MANAGEMENT_API_ENDPOINTS.EXAMPLES_IMPORT_WORDS, {
         method: 'POST',
         headers: createAuthHeaders(),
-        body: JSON.stringify({ 
-          vocabularyId, 
-          exampleCount,
-          includeGrammar,
-          includeContext,
-          difficultyLevel
-        })
+        body: JSON.stringify(requestBody)
       })
+
+      console.log('📥 Response status:', response.status, response.statusText)
 
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('❌ Generate examples error response:', errorText)
         return JSON.parse(errorText);
       }
 
       const result = await response.json()
+      console.log('✅ Generate examples result:', result)
       
       // Auto reload after successful import
       setTimeout(() => {
