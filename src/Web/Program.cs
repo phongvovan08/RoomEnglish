@@ -37,6 +37,13 @@ else
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
+
+// Add OpenAPI/Swagger middleware BEFORE static files
+app.UseOpenApi(settings =>
+{
+    settings.Path = "/api/specification.json";
+});
+
 app.UseStaticFiles();
 
 // Enable CORS
