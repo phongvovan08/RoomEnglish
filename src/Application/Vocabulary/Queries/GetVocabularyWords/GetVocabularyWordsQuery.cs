@@ -5,6 +5,10 @@ using RoomEnglish.Application.Common.Models;
 using RoomEnglish.Application.Common.Mappings;
 using AutoMapper;
 using System.Linq;
+using RoomEnglish.Application.Vocabulary.Commands.TranslateVietnameseMeaning;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace RoomEnglish.Application.Vocabulary.Queries.GetVocabularyWords;
 
@@ -21,17 +25,29 @@ public record GetVocabularyWordsQuery : IRequest<PaginatedList<VocabularyWordDto
     public string? UserId { get; init; }
     public string? SortBy { get; init; }
     public string? SortOrder { get; init; } = "asc";
+    public bool? AutoTranslate { get; init; } // Auto-translate missing Vietnamese meanings (default: false to save tokens)
 }
 
 public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWordsQuery, PaginatedList<VocabularyWordDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly ILogger<GetVocabularyWordsQueryHandler> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public GetVocabularyWordsQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetVocabularyWordsQueryHandler(
+        IApplicationDbContext context, 
+        IMapper mapper,
+        IServiceScopeFactory serviceScopeFactory,
+        ILogger<GetVocabularyWordsQueryHandler> logger,
+        IHostEnvironment environment)
     {
         _context = context;
         _mapper = mapper;
+        _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
+        _environment = environment;
     }
 
     public async Task<PaginatedList<VocabularyWordDto>> Handle(GetVocabularyWordsQuery request, CancellationToken cancellationToken)
@@ -76,7 +92,7 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
         // Apply sorting
         query = ApplySorting(query, request.SortBy, request.SortOrder);
 
-        return await query
+        var result = await query
             .Select(x => new VocabularyWordDto
             {
                 Id = x.Id,
@@ -134,6 +150,63 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                     }).FirstOrDefault()
             })
             .PaginatedListAsync(request.PageNumber, request.PageSize);
+
+        // Background translation for words missing Vietnamese meaning
+        // Default: true in Production, false in Development to save tokens
+        var shouldAutoTranslate = request.AutoTranslate ?? _environment.IsProduction();
+        
+        if (shouldAutoTranslate)
+        {
+            if (!_environment.IsProduction())
+            {
+                _logger.LogInformation("⚠️ Auto-translate requested but skipped: Not in Production environment (Current: {Environment})", 
+                    _environment.EnvironmentName);
+            }
+            else
+            {
+                _ = Task.Run(async () => 
+                {
+                    try
+                    {
+                        // Create new scope for background task to avoid ObjectDisposedException
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+                        var logger = scope.ServiceProvider.GetRequiredService<ILogger<GetVocabularyWordsQueryHandler>>();
+
+                        var wordsNeedingTranslation = result.Items
+                            .Where(w => string.IsNullOrEmpty(w.VietnameseMeaning) && !string.IsNullOrEmpty(w.Definition))
+                            .Take(10) // Limit to 10 words per request to avoid overwhelming ChatGPT
+                            .ToList();
+
+                        if (wordsNeedingTranslation.Any())
+                        {
+                            logger.LogInformation("🌐 [Production] Auto-translating {Count} words with missing Vietnamese meanings", 
+                                wordsNeedingTranslation.Count);
+
+                            foreach (var word in wordsNeedingTranslation)
+                            {
+                                var translateCommand = new TranslateVietnameseMeaningCommand
+                                {
+                                    WordId = word.Id,
+                                    TranslateAll = false
+                                };
+
+                                await sender.Send(translateCommand);
+                            }
+
+                            logger.LogInformation("✅ [Production] Background translation completed for {Count} words", 
+                                wordsNeedingTranslation.Count);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "⚠️ Background translation failed but query succeeded");
+                    }
+                });
+            }
+        }
+
+        return result;
     }
 
     private static IQueryable<Domain.Entities.VocabularyWord> ApplySorting(
