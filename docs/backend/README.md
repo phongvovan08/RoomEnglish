@@ -1,8 +1,8 @@
-# RoomEnglish Documentation
+# Backend Documentation
 
-Tài liệu kỹ thuật và hướng dẫn cho dự án RoomEnglish.
+Tài liệu về ASP.NET Core backend, database và architecture.
 
-## 📚 Mục lục
+## 📋 Danh sách tài liệu
 
 ### Performance & Optimization
 - [Performance Optimization](./PERFORMANCE_OPTIMIZATION_README.md) - Hướng dẫn tối ưu hiệu suất
@@ -19,14 +19,9 @@ Tài liệu kỹ thuật và hướng dẫn cho dự án RoomEnglish.
 - [Database Relationships Verification](./DATABASE_RELATIONSHIPS_VERIFICATION.md) - Xác minh mối quan hệ database
 - [Guide: Add Database Column](./GUIDE_ADD_DATABASE_COLUMN.md) - Hướng dẫn thêm cột database
 
-### Deployment & Build
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy
+### Build & Deployment
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy backend
 - [Clean Build](./CLEAN_BUILD_README.md) - Hướng dẫn build sạch
 
 ### Troubleshooting
 - [Fix Summary](./FIX_SUMMARY.md) - Tổng hợp các fix đã thực hiện
-
----
-
-**Project:** RoomEnglish - English Learning Platform  
-**Architecture:** Clean Architecture với ASP.NET Core + Vue.js
