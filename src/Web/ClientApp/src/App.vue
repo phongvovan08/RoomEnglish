@@ -2,6 +2,7 @@
 import DefaultLayout from "./modules/shared/layouts/DefaultLayout.vue";
 import { useHead } from "@unhead/vue";
 import NotificationToast from '@/components/ui/NotificationToast.vue'
+import VersionBadge from '@/components/VersionBadge.vue'
 
 const { t } = useI18n();
 
@@ -14,5 +15,6 @@ useHead({
   <DefaultLayout>
     <RouterView />
     <NotificationToast />
+    <VersionBadge />
   </DefaultLayout>
 </template>

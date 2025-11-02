@@ -353,9 +353,30 @@ watch(() => props.showPanel, (isOpen) => {
   padding: 2rem;
   min-width: 400px;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   z-index: 2000;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
+}
+
+/* Custom scrollbar */
+.speech-settings-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.speech-settings-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.speech-settings-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #e75e8d, #74c0fc);
+  border-radius: 10px;
+}
+
+.speech-settings-panel::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #74c0fc, #e75e8d);
 }
 
 .panel-header {
