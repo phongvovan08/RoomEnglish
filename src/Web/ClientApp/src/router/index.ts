@@ -122,10 +122,14 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     
-    // Vocabulary Learning routes
+    // Vocabulary Learning routes - Same component, different URLs
     {
       path: Routes.Vocabulary.children.Learning.path,
-      name: Routes.Vocabulary.children.Learning.name,
+      redirect: Routes.Vocabulary.children.Learning.children.Categories.path,
+    },
+    {
+      path: Routes.Vocabulary.children.Learning.children.Categories.path,
+      name: Routes.Vocabulary.children.Learning.children.Categories.name,
       component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
         console.error('Failed to load VocabularyLearningView:', err);
         return import("../modules/shared/views/AccessDenied.vue");
@@ -133,10 +137,19 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: Routes.Vocabulary.children.Categories.path,
-      name: Routes.Vocabulary.children.Categories.name,
+      path: Routes.Vocabulary.children.Learning.children.Words.path,
+      name: Routes.Vocabulary.children.Learning.children.Words.name,
       component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
-        console.error('Failed to load Categories:', err);
+        console.error('Failed to load VocabularyLearningView:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: Routes.Vocabulary.children.Learning.children.Examples.path,
+      name: Routes.Vocabulary.children.Learning.children.Examples.name,
+      component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
+        console.error('Failed to load VocabularyLearningView:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
       meta: { requiresAuth: true },
@@ -146,15 +159,6 @@ const router = createRouter({
       name: Routes.Vocabulary.children.Progress.name,
       component: () => import("../modules/vocabulary/views/VocabularyLearningView.vue").catch(err => {
         console.error('Failed to load Progress:', err);
-        return import("../modules/shared/views/AccessDenied.vue");
-      }),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: Routes.Vocabulary.children.Management.path,
-      name: Routes.Vocabulary.children.Management.name,
-      component: () => import("../modules/vocabulary/views/VocabularyManagement.vue").catch(err => {
-        console.error('Failed to load VocabularyManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
       meta: { requiresAuth: true },

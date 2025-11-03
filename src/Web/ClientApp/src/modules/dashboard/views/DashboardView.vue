@@ -230,16 +230,9 @@ const continueLearning = async () => {
     // Small delay for smooth animation (button feedback)
     await new Promise(resolve => setTimeout(resolve, 200))
     
-    // Navigate to vocabulary learning with all position details
-    // isNavigating will stay true until user leaves this page
+    // Navigate to vocabulary learning categories
     await router.push({
-      path: '/vocabulary/learning',
-      query: {
-        categoryId: lastPosition.value.categoryId.toString(),
-        wordId: lastPosition.value.wordId.toString(),
-        groupIndex: lastPosition.value.groupIndex.toString(),
-        exampleIndex: lastPosition.value.lastExampleIndex.toString()
-      }
+      name: 'VocabularyLearningCategories'
     })
   }
 }

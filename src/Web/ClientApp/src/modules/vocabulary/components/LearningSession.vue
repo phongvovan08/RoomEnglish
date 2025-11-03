@@ -752,6 +752,9 @@ const selectExampleGroup = async (groupIndex: number) => {
   currentExampleIndex.value = targetIndex
   currentSessionType.value = 'dictation'
   
+  // Emit session type change to parent
+  emit('update:sessionType', 'dictation')
+  
   console.log('Switched to dictation mode for group', groupIndex)
   console.log('Starting at example index', targetIndex, '(first incomplete in group)')
 }

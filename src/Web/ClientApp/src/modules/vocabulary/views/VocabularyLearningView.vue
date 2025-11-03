@@ -86,8 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
 import type { VocabularyCategory, LearningSession } from '../types/vocabulary.types'
@@ -95,6 +95,7 @@ import LearningSessionComponent from '../components/LearningSession.vue'
 import SessionResult from '../components/SessionResult.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 const { 
   categories, 
@@ -134,15 +135,32 @@ const getIconClass = (iconName: string) => {
 }
 
 const selectCategory = (category: VocabularyCategory) => {
+  // Update URL without navigating to different component
+  router.push({
+    name: 'VocabularyLearningWords',
+    query: {
+      categoryId: category.id
+    }
+  })
+  
+  // Keep original logic - show learning session in same view
   selectedCategory.value = category
   isCompleted.value = false
   sessionResult.value = null
+  sessionType.value = 'vocabulary' // Reset to vocabulary mode when selecting new category
 }
 
 const goBack = () => {
+  // Navigate back to categories
+  router.push({
+    name: 'VocabularyLearningCategories'
+  })
+  
+  // Clear selected category and reset session type
   selectedCategory.value = null
   isCompleted.value = false
   sessionResult.value = null
+  sessionType.value = 'vocabulary' // Reset to default
 }
 
 const handleSessionComplete = async (result: LearningSession) => {
@@ -174,8 +192,33 @@ const getCategoryProgress = (categoryId: number): number => {
   return categoryProgress ? categoryProgress.completionPercentage : 0
 }
 
+// Watch sessionType to update URL when switching to dictation/examples
+watch(sessionType, (newType, oldType) => {
+  console.log('[VocabularyLearningView] sessionType changed:', oldType, '→', newType)
+  
+  if (selectedCategory.value && newType === 'dictation') {
+    console.log('[VocabularyLearningView] Switching to examples URL')
+    // Update URL to examples route
+    router.replace({
+      name: 'VocabularyLearningExamples',
+      query: {
+        categoryId: selectedCategory.value.id
+      }
+    })
+  } else if (selectedCategory.value && newType === 'vocabulary') {
+    console.log('[VocabularyLearningView] Switching to words URL')
+    // Update URL back to words route
+    router.replace({
+      name: 'VocabularyLearningWords',
+      query: {
+        categoryId: selectedCategory.value.id
+      }
+    })
+  }
+})
+
 onMounted(async () => {
-  // Check if we're auto-selecting from URL (Continue Learning flow)
+  // Check if we're auto-selecting from URL
   const categoryId = route.query.categoryId
   if (categoryId) {
     isAutoSelecting.value = true
@@ -184,11 +227,14 @@ onMounted(async () => {
   await loadCategories()
   await getUserProgress()
   
-  // Auto-select category from query params if provided (for "Continue Learning")
+  // Auto-select category from query params if provided
   if (categoryId && categories.value.length > 0) {
     const category = categories.value.find(c => c.id === Number(categoryId))
     if (category) {
-      selectCategory(category)
+      // Set category directly without pushing router again
+      selectedCategory.value = category
+      isCompleted.value = false
+      sessionResult.value = null
     }
     isAutoSelecting.value = false
   }

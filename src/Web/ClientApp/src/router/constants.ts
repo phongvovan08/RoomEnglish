@@ -120,15 +120,21 @@ export const Routes = {
     children: {
       Learning: {
         name: "VocabularyLearning",
-        path: "/vocabulary/learning",
-      },
-      Categories: {
-        name: "VocabularyCategories", 
-        path: "/vocabulary/categories",
-      },
-      Words: {
-        name: "VocabularyWords",
-        path: "/vocabulary/words",
+        path: "/learning",
+        children: {
+          Categories: {
+            name: "VocabularyLearningCategories",
+            path: "/learning/categories",
+          },
+          Words: {
+            name: "VocabularyLearningWords",
+            path: "/learning/words",
+          },
+          Examples: {
+            name: "VocabularyLearningExamples",
+            path: "/learning/examples",
+          },
+        },
       },
       Practice: {
         name: "VocabularyPractice",
@@ -141,10 +147,6 @@ export const Routes = {
       Progress: {
         name: "VocabularyProgress",
         path: "/vocabulary/progress",
-      },
-      Management: {
-        name: "VocabularyManagement",
-        path: "/vocabulary/management",
       },
     },
   },
