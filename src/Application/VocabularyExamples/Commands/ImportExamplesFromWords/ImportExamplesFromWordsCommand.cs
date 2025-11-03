@@ -380,7 +380,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     private string CreatePromptForExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
     {
         var grammarInstruction = request.IncludeGrammar 
-            ? "For each English sentence that uses a specific vocabulary word, analyze and explain the grammar used in detail in Vietnamese.\r\n\r\nFocus on:\r\n- The grammatical role of the vocabulary word (e.g., noun, verb, object, etc.)\r\n- Sentence structure \r\n- Any useful grammatical pattern used\r\n\r\nExplain in one detail sentence suitable for English learners. Output only the analysis.\r\n\r\nVocabulary word: \"computer\"\r\nSentence: \"I use my computer to write emails every morning.\"\r\n→ Grammar: \"Cấu trúc: S + hope + (that) + S + will be + able + to V; 'able' là tính từ theo sau động từ 'be'.\""
+            ? "For each English sentence that uses a specific vocabulary word, analyze and explain the grammar used in detail in Vietnamese.\r\n\r\nFocus on:\r\n- The grammatical role of the vocabulary word (e.g., noun, verb, object, etc.)\r\n- Sentence structure \r\n- Any useful grammatical pattern used\r\n\r\nExplain in one detail sentence suitable for English learners. Output only the analysis.\r\n\r\nVocabulary word: \"computer\"\r\nSentence: \"I use my computer to write emails every morning.\"\r\n→ Grammar: describe these sentences in detail"
             : "Grammar explanations are optional.";
         
         var contextInstruction = request.IncludeContext 
@@ -406,7 +406,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
           {{
             ""Sentence"": ""English sentence using '{vocabularyWord}'"",
             ""Translation"": ""Natural Vietnamese translation"", 
-            ""Grammar"": ""Brief grammar explanation""
+            ""Grammar"": ""Describe these sentences in detail""
           }}
         ]
         
