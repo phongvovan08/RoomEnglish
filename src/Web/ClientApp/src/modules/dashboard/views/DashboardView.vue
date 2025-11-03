@@ -226,13 +226,19 @@ const loadLastPosition = async () => {
 const continueLearning = async () => {
   if (lastPosition.value && !isNavigating.value) {
     isNavigating.value = true
-    
+
     // Small delay for smooth animation (button feedback)
     await new Promise(resolve => setTimeout(resolve, 200))
-    
-    // Navigate to vocabulary learning categories
+
+    // Navigate to vocabulary learning with position info
     await router.push({
-      name: 'VocabularyLearningCategories'
+      name: 'VocabularyLearningWords',
+      query: {
+        categoryId: lastPosition.value.categoryId,
+        wordId: lastPosition.value.wordId,
+        groupIndex: lastPosition.value.groupIndex,
+        exampleIndex: lastPosition.value.lastExampleIndex
+      }
     })
   }
 }

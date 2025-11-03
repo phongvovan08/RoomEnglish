@@ -117,6 +117,7 @@ const sessionType = ref<'vocabulary' | 'dictation' | 'mixed'>('vocabulary')
 const isCompleted = ref(false)
 const sessionResult = ref<LearningSession | null>(null)
 const isAutoSelecting = ref(false) // Loading state when auto-selecting from URL
+const isNavigatingBack = ref(false) // Flag to prevent watch from interfering during goBack
 
 const getCategoryColor = (color: string) => {
   const colors: Record<string, string> = {
@@ -151,16 +152,46 @@ const selectCategory = (category: VocabularyCategory) => {
 }
 
 const goBack = () => {
-  // Navigate back to categories
-  router.push({
-    name: 'VocabularyLearningCategories'
-  })
-  
-  // Clear selected category and reset session type
+  console.log('[VocabularyLearningView] goBack called')
+  console.log('[VocabularyLearningView] Current route:', route.name, route.query)
+  console.log('[VocabularyLearningView] Current sessionType:', sessionType.value)
+
+  // Save categoryId before clearing
+  const categoryId = selectedCategory.value?.id
+  console.log('[VocabularyLearningView] CategoryId to navigate:', categoryId)
+
+  // Set flag to prevent watch from interfering
+  isNavigatingBack.value = true
+
+  // FIRST: Update the URL immediately before changing any state
+  if (categoryId) {
+    console.log('[VocabularyLearningView] Replacing URL to VocabularyLearningWords')
+    router.replace({
+      name: 'VocabularyLearningWords',
+      query: {
+        categoryId: categoryId
+      }
+    }).then(() => {
+      console.log('[VocabularyLearningView] URL replaced successfully')
+    })
+  } else {
+    console.log('[VocabularyLearningView] Replacing URL to VocabularyLearningCategories')
+    router.replace({
+      name: 'VocabularyLearningCategories'
+    })
+  }
+
+  // THEN: Clear the state after URL is updated
   selectedCategory.value = null
   isCompleted.value = false
   sessionResult.value = null
-  sessionType.value = 'vocabulary' // Reset to default
+  sessionType.value = 'vocabulary' // Reset to vocabulary mode
+
+  // Reset flag after a delay
+  setTimeout(() => {
+    isNavigatingBack.value = false
+    console.log('[VocabularyLearningView] Navigation back completed')
+  }, 200)
 }
 
 const handleSessionComplete = async (result: LearningSession) => {
@@ -194,26 +225,41 @@ const getCategoryProgress = (categoryId: number): number => {
 
 // Watch sessionType to update URL when switching to dictation/examples
 watch(sessionType, (newType, oldType) => {
-  console.log('[VocabularyLearningView] sessionType changed:', oldType, '→', newType)
-  
+  console.log('[VocabularyLearningView] sessionType watch triggered:', oldType, '→', newType)
+  console.log('[VocabularyLearningView] isNavigatingBack:', isNavigatingBack.value)
+  console.log('[VocabularyLearningView] selectedCategory:', selectedCategory.value?.id)
+  console.log('[VocabularyLearningView] Current route:', route.name)
+
+  // Don't interfere if we're navigating back
+  if (isNavigatingBack.value) {
+    console.log('[VocabularyLearningView] ✋ Skipping URL update - navigating back')
+    return
+  }
+
   if (selectedCategory.value && newType === 'dictation') {
-    console.log('[VocabularyLearningView] Switching to examples URL')
+    console.log('[VocabularyLearningView] 📝 Switching to examples URL')
     // Update URL to examples route
     router.replace({
       name: 'VocabularyLearningExamples',
       query: {
         categoryId: selectedCategory.value.id
       }
+    }).then(() => {
+      console.log('[VocabularyLearningView] ✅ URL changed to examples')
     })
   } else if (selectedCategory.value && newType === 'vocabulary') {
-    console.log('[VocabularyLearningView] Switching to words URL')
+    console.log('[VocabularyLearningView] 📚 Switching to words URL')
     // Update URL back to words route
     router.replace({
       name: 'VocabularyLearningWords',
       query: {
         categoryId: selectedCategory.value.id
       }
+    }).then(() => {
+      console.log('[VocabularyLearningView] ✅ URL changed to words')
     })
+  } else {
+    console.log('[VocabularyLearningView] ⏭️ No URL change needed')
   }
 })
 

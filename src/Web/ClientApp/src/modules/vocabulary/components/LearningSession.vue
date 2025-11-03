@@ -547,15 +547,26 @@ const handleDictationSubmit = async (result: any) => {
     
     // Update all words' completedExampleCount again to ensure accuracy
     updateAllWordsCompletionCount()
-    
-    // Save current position to database
+
+    // Save next position to database (so when user returns, they continue from next example)
     if (currentWord.value && selectedGroupIndex.value !== null) {
-      await saveLearningPosition(
-        currentWord.value.id,
-        selectedGroupIndex.value,
-        currentExampleIndex.value
-      )
-      console.log(`Saved position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${currentExampleIndex.value}`)
+      const groupStartIndex = selectedGroupIndex.value * 10
+      const groupEndIndex = Math.min(groupStartIndex + 10, currentWord.value.examples.length)
+      const nextExampleIndex = currentExampleIndex.value + 1
+
+      // Only save if there's a next example in the current group
+      if (nextExampleIndex < groupEndIndex) {
+        await saveLearningPosition(
+          currentWord.value.id,
+          selectedGroupIndex.value,
+          nextExampleIndex
+        )
+        console.log(`Saved next position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${nextExampleIndex}`)
+      } else {
+        // Group is about to be completed, clear the position
+        await clearLearningPosition(currentWord.value.id)
+        console.log(`Last example in group completed, cleared position for word ${currentWord.value.id}`)
+      }
     }
   } finally {
     // Clear loading state
@@ -794,13 +805,13 @@ const jumpToWord = (wordIndex: number) => {
 
 const backToExampleGrid = async () => {
   console.log('=== Going back to word list ===')
-  
+
   // Reload progress to get updated completed examples
   await getUserProgress()
-  
+
   // Update all words' completion counts
   updateAllWordsCompletionCount()
-  
+
   // Update completedExamples array
   if (userProgressData.value && currentWord.value) {
     const exampleProgressList = userProgressData.value.exampleProgress
@@ -812,26 +823,30 @@ const backToExampleGrid = async () => {
         return isCompleted ? index : -1
       })
       .filter(index => index !== -1)
-    
+
     // Clear saved progress for current group if all examples completed
     if (selectedGroupIndex.value !== null && currentWord.value) {
       const groupStart = selectedGroupIndex.value * 10
       const groupEnd = Math.min(groupStart + 10, currentWord.value.examples.length)
       const groupCompleted = Array.from({ length: groupEnd - groupStart }, (_, i) => groupStart + i)
         .every(i => completedExamples.value.includes(i))
-      
+
       if (groupCompleted) {
         await clearLearningPosition(currentWord.value.id)
         console.log(`Cleared database position for completed group ${selectedGroupIndex.value}`)
       }
     }
   }
-  
+
   // Return to vocabulary card (word list)
   showExampleGrid.value = false
   currentSessionType.value = 'vocabulary'
   selectedGroupIndex.value = null
   currentExampleIndex.value = 0
+
+  // Emit session type change to parent so it can update URL
+  emit('update:sessionType', 'vocabulary')
+  console.log('=== Emitted update:sessionType to vocabulary ===')
 }
 
 const finishSession = () => {
@@ -923,12 +938,12 @@ onMounted(async () => {
       }
       
       restoreInfo.value = 'Đang chuyển đến ví dụ...'
-      
-      // Select the group and jump to example
+
+      // Select the group - it will automatically restore to the saved position from database
+      // or find the first incomplete example if the saved position is already completed
       await selectExampleGroup(targetGroupIndex)
-      currentExampleIndex.value = targetExampleIndex
-      
-      console.log(`✅ Restored to example ${targetExampleIndex} in group ${targetGroupIndex}`)
+
+      console.log(`✅ Restored to group ${targetGroupIndex}, example ${currentExampleIndex.value}`)
       console.log(`✅ Completed examples in this word:`, completedExamples.value)
       
       // Wait a bit before removing overlay for smooth transition
