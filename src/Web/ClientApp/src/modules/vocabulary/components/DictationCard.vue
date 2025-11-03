@@ -166,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watchEffect, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useDictation } from '../composables/useDictation'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
@@ -393,17 +393,28 @@ const resetComponent = () => {
 
 // Keyboard shortcut handler
 const handleKeyDown = (event: KeyboardEvent) => {
-  // Ctrl key to play audio
+  console.log('🎹 Key pressed:', {
+    key: event.key,
+    ctrl: event.ctrlKey,
+    target: (event.target as HTMLElement).tagName,
+    userInputBefore: userInput.value
+  })
+  
+  // Ctrl key to play audio (works even when typing in textarea)
   if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
     // Only trigger if not in result view and has audio button
     if (!showResult.value && props.example?.sentence && listenButton.value) {
       event.preventDefault()
+      
+      console.log('▶️ Playing audio via Ctrl shortcut')
       
       // Programmatically click the Listen button
       const buttonElement = listenButton.value.$el as HTMLButtonElement
       if (buttonElement && !buttonElement.disabled) {
         buttonElement.click()
       }
+      
+      console.log('🎹 User input after play:', userInput.value)
     }
   }
 }
@@ -430,26 +441,26 @@ onMounted(() => {
 })
 
 // Watch dictationResult for debugging
-watchEffect(() => {
-  console.log('👀 DictationResult changed:', dictationResult.value)
+watch(dictationResult, (newVal) => {
+  console.log('👀 DictationResult changed:', newVal)
   console.log('👀 showResult:', showResult.value)
 })
 
 // Watch userInput to start timer when user starts typing
-watchEffect(() => {
-  if (userInput.value.length > 0 && !startTime.value && !showResult.value) {
+watch(userInput, (newVal) => {
+  if (newVal.length > 0 && !startTime.value && !showResult.value) {
     startTimer()
   }
 })
 
 // Watch userInput changes after submit - reset hasSubmitted when user modifies input
 let previousInput = ''
-watchEffect(() => {
-  if (hasSubmitted.value && userInput.value !== previousInput) {
+watch(userInput, (newVal) => {
+  if (hasSubmitted.value && newVal !== previousInput) {
     // User is editing after submit, hide correct words again
     hasSubmitted.value = false
   }
-  previousInput = userInput.value
+  previousInput = newVal
 })
 
 onUnmounted(() => {
@@ -459,22 +470,16 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-// Watch for example changes
-const updateExample = () => {
-  if (props.example) {
-    setExample(props.example)
+// Watch for example changes ONLY
+watch(() => props.example, (newExample) => {
+  console.log('🔄 Example changed to:', newExample?.id)
+  console.log('🔄 userInput before reset:', userInput.value)
+  
+  if (newExample) {
+    setExample(newExample)
     resetComponent()
     
-    // Auto play audio when example changes - DISABLED to prevent auto-play loop
-    // User can manually click play button
-    // setTimeout(() => {
-    //   playAudio()
-    //   
-    //   // Auto focus on input textarea
-    //   if (inputTextarea.value && !showResult.value) {
-    //     inputTextarea.value.focus()
-    //   }
-    // }, 300)
+    console.log('🔄 userInput after reset:', userInput.value)
     
     // Just auto-focus, no auto-play
     setTimeout(() => {
@@ -483,12 +488,7 @@ const updateExample = () => {
       }
     }, 100)
   }
-}
-
-// Watch for example changes
-watchEffect(() => {
-  updateExample()
-})
+}, { immediate: true })
 </script>
 
 <style scoped>

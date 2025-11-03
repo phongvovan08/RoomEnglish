@@ -130,12 +130,16 @@ export const useDictation = () => {
 
   // Speech recognition controls
   const startRecording = () => {
+    console.log('🎤 startRecording called, userInput before clear:', userInput.value)
+    console.trace('🎤 Call stack:')
+    
     if (!recognition.value) {
       initSpeechRecognition()
     }
     
     if (recognition.value && !isRecording.value) {
       userInput.value = ''
+      console.log('🎤 userInput cleared!')
       dictationResult.value = null
       recognition.value.start()
     }
