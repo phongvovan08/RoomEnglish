@@ -1,0 +1,11 @@
+# RoomEnglish - Robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemaps
+Sitemap: https://webroomenglish-b3e5a8ghf9f2geaa.southeastasia-01.azurewebsites.net/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 10

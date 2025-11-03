@@ -26,6 +26,11 @@ coverage
 
 # IMPORTANT: These folders cause Static Web Assets duplicate key errors
 public
+# But include SEO files
+!public/robots.txt
+!public/sitemap.xml
+!public/manifest.json
+!public/about.txt
 .vite
 node_modules/.vite
 

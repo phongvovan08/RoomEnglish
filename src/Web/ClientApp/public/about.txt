@@ -1,0 +1,22 @@
+# RoomEnglish - Học Từ Vựng Tiếng Anh Qua Ví Dụ Thực Tế
+
+## Giới thiệu
+RoomEnglish là nền tảng học từ vựng tiếng Anh thông minh, tập trung vào việc học qua **ví dụ cụ thể** thay vì chỉ học nghĩa đơn thuần.
+
+## Tính năng chính
+- ✅ Học từ vựng qua ví dụ thực tế
+- 🤖 AI tạo câu mẫu tự động (ChatGPT)
+- 🎤 Luyện dictation với phản hồi real-time
+- 📊 Theo dõi tiến độ học tập
+- 📱 Responsive, học mọi lúc mọi nơi
+- 🆓 Hoàn toàn miễn phí
+
+## Công nghệ
+- Backend: ASP.NET Core 8, Clean Architecture
+- Frontend: Vue 3 + TypeScript
+- AI: OpenAI ChatGPT API
+- Database: SQL Server
+
+## Liên hệ
+- Email: support@roomenglish.com
+- Website: https://roomenglish.com
