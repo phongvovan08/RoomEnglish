@@ -152,36 +152,19 @@ const selectCategory = (category: VocabularyCategory) => {
 }
 
 const goBack = () => {
-  console.log('[VocabularyLearningView] goBack called')
-  console.log('[VocabularyLearningView] Current route:', route.name, route.query)
-  console.log('[VocabularyLearningView] Current sessionType:', sessionType.value)
-
-  // Save categoryId before clearing
-  const categoryId = selectedCategory.value?.id
-  console.log('[VocabularyLearningView] CategoryId to navigate:', categoryId)
+  console.log('[VocabularyLearningView] goBack called - navigating to categories')
 
   // Set flag to prevent watch from interfering
   isNavigatingBack.value = true
 
-  // FIRST: Update the URL immediately before changing any state
-  if (categoryId) {
-    console.log('[VocabularyLearningView] Replacing URL to VocabularyLearningWords')
-    router.replace({
-      name: 'VocabularyLearningWords',
-      query: {
-        categoryId: categoryId
-      }
-    }).then(() => {
-      console.log('[VocabularyLearningView] URL replaced successfully')
-    })
-  } else {
-    console.log('[VocabularyLearningView] Replacing URL to VocabularyLearningCategories')
-    router.replace({
-      name: 'VocabularyLearningCategories'
-    })
-  }
+  // Navigate to categories (no categoryId needed)
+  router.replace({
+    name: 'VocabularyLearningCategories'
+  }).then(() => {
+    console.log('[VocabularyLearningView] URL replaced to categories successfully')
+  })
 
-  // THEN: Clear the state after URL is updated
+  // Clear the state
   selectedCategory.value = null
   isCompleted.value = false
   sessionResult.value = null
@@ -191,7 +174,7 @@ const goBack = () => {
   setTimeout(() => {
     isNavigatingBack.value = false
     console.log('[VocabularyLearningView] Navigation back completed')
-  }, 200)
+  }, 100)
 }
 
 const handleSessionComplete = async (result: LearningSession) => {
