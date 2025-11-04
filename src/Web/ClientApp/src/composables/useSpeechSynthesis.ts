@@ -1,6 +1,8 @@
 import { ref, readonly } from 'vue'
 // import { OpenAITTS } from '@lobehub/tts'  // REMOVED: Using direct fetch instead
-// import { useAudioCacheAPI } from './useAudioCacheAPI'  // REMOVED: Backend cache not needed for dev
+import { useAudioCacheAPI } from './useAudioCacheAPI'
+
+const { getCachedAudio, saveAudioToCache } = useAudioCacheAPI()
 
 // Shared state (singleton pattern) - all components use same cache
 const isSupported = ref(typeof window !== 'undefined' && 'speechSynthesis' in window)
@@ -116,26 +118,59 @@ export const useSpeechSynthesis = () => {
     
     if (cachedBlob) {
       console.log('💾 Using cached audio from memory:', cachedBlob.size, 'bytes')
-      return cachedBlob.arrayBuffer()
+      
+      // VALIDATE cached audio before using it
+      if (cachedBlob.size < 1024) {
+        console.warn('⚠️ Cached memory audio too small, clearing and refetching:', cachedBlob.size, 'bytes')
+        memoryCache.value.delete(cacheKey)
+        memoryCacheTimestamps.value.delete(cacheKey)
+        // Continue to check database or fetch from API
+      } else {
+        // Validate MP3 format
+        const arrayBuffer = await cachedBlob.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const isValidMP3 = (uint8Array[0] === 0xFF && (uint8Array[1] & 0xE0) === 0xE0) || // MP3 frame header
+                           (uint8Array[0] === 0x49 && uint8Array[1] === 0x44 && uint8Array[2] === 0x33) // ID3 tag
+        
+        if (!isValidMP3) {
+          console.warn('⚠️ Cached memory audio has invalid MP3 format, clearing and refetching. First bytes:', Array.from(uint8Array.slice(0, 10)))
+          memoryCache.value.delete(cacheKey)
+          memoryCacheTimestamps.value.delete(cacheKey)
+          // Continue to check database or fetch from API
+        } else {
+          return arrayBuffer
+        }
+      }
     }
     
-    // Check database cache - DISABLED: Backend not running in dev
-    // const dbCachedBlob = await getCachedAudio(text, voiceName, normalSpeed, provider)
+    // Check database cache
+    const dbCachedBlob = await getCachedAudio(text, voiceName, normalSpeed, provider)
     
-    // if (dbCachedBlob) {
-    //   console.log('💾 Using cached audio from database:', dbCachedBlob.size, 'bytes')
+    if (dbCachedBlob) {
+      console.log('💾 Using cached audio from database:', dbCachedBlob.size, 'bytes')
       
-    //   // VALIDATE cached audio before using it
-    //   if (dbCachedBlob.size < 1024) {
-    //     console.warn('⚠️ Cached audio too small, deleting and refetching:', dbCachedBlob.size, 'bytes')
-    //     // Don't use corrupted cache, continue to fetch from API
-    //   } else {
-    //     // Save to memory for faster future access
-    //     memoryCache.value.set(cacheKey, dbCachedBlob)
-    //     memoryCacheTimestamps.value.set(cacheKey, Date.now())
-    //     return dbCachedBlob.arrayBuffer()
-    //   }
-    // }
+      // VALIDATE cached audio before using it
+      if (dbCachedBlob.size < 1024) {
+        console.warn('⚠️ Cached database audio too small, ignoring and refetching:', dbCachedBlob.size, 'bytes')
+        // Don't use corrupted cache, continue to fetch from API
+      } else {
+        // Validate MP3 format
+        const arrayBuffer = await dbCachedBlob.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const isValidMP3 = (uint8Array[0] === 0xFF && (uint8Array[1] & 0xE0) === 0xE0) || // MP3 frame header
+                           (uint8Array[0] === 0x49 && uint8Array[1] === 0x44 && uint8Array[2] === 0x33) // ID3 tag
+        
+        if (!isValidMP3) {
+          console.warn('⚠️ Cached database audio has invalid MP3 format, ignoring. First bytes:', Array.from(uint8Array.slice(0, 10)))
+          // Don't use corrupted cache, continue to fetch from API
+        } else {
+          // Save to memory for faster future access
+          memoryCache.value.set(cacheKey, dbCachedBlob)
+          memoryCacheTimestamps.value.set(cacheKey, Date.now())
+          return arrayBuffer
+        }
+      }
+    }
     
     console.log('🌐 No cache found, fetching from OpenAI API...')
 
@@ -242,10 +277,10 @@ export const useSpeechSynthesis = () => {
         memoryCache.value.set(cacheKey, blob)
         memoryCacheTimestamps.value.set(cacheKey, Date.now())
         
-        // Save to database (async, fire and forget) - DISABLED: Backend not running in dev
-        // saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
-        //   console.error('Failed to save to database cache:', err)
-        // })
+        // Save to database (async, fire and forget)
+        saveAudioToCache(text, voiceName, normalSpeed, provider, blob, 30).catch(err => {
+          console.error('Failed to save to database cache:', err)
+        })
         
         return arrayBuffer
       } else {
@@ -350,6 +385,13 @@ export const useSpeechSynthesis = () => {
           const playbackRate = options.rate !== undefined ? options.rate : 1.0
           audio.playbackRate = playbackRate
 
+          // Store cache key for cleanup on error
+          const allVoices = getAllVoices()
+          const selectedVoice = allVoices[options.voiceIndex || 0]
+          const voiceName = selectedVoice.voiceName
+          const normalSpeed = 1.0
+          const cacheKey = `${text}_${voiceName}_${normalSpeed}`
+
           return new Promise<void>((resolve, reject) => {
             const cleanup = () => {
               playingInstances.value.delete(instanceId)
@@ -375,8 +417,20 @@ export const useSpeechSynthesis = () => {
                 // Provide helpful error messages based on error code
                 if (errorCode === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED or DEMUXER_ERROR
                   errorMessage = 'Audio format not supported or corrupted. This may be due to an invalid OpenAI API key or quota exceeded.'
+                  
+                  // Clear corrupted cache
+                  console.warn('🗑️ Clearing corrupted audio from memory cache:', cacheKey)
+                  memoryCache.value.delete(cacheKey)
+                  memoryCacheTimestamps.value.delete(cacheKey)
+                  
                 } else if (errorCode === 3) { // MEDIA_ERR_DECODE
                   errorMessage = 'Failed to decode audio. The audio data may be corrupted.'
+                  
+                  // Clear corrupted cache
+                  console.warn('🗑️ Clearing corrupted audio from memory cache:', cacheKey)
+                  memoryCache.value.delete(cacheKey)
+                  memoryCacheTimestamps.value.delete(cacheKey)
+                  
                 } else if (errorCode === 2) { // MEDIA_ERR_NETWORK
                   errorMessage = 'Network error while loading audio.'
                 } else if (errorCode === 1) { // MEDIA_ERR_ABORTED
@@ -628,6 +682,21 @@ export const useSpeechSynthesis = () => {
     return entries
   }
 
+  // Clear specific cache entry (useful when corrupted)
+  const clearCacheEntry = (text: string, voice?: string, rate?: number) => {
+    const cacheKey = `${text}_${voice || 'alloy'}_${(rate || 1.0).toFixed(2)}`
+    const deleted = memoryCache.value.delete(cacheKey)
+    memoryCacheTimestamps.value.delete(cacheKey)
+    
+    if (deleted) {
+      console.log(`🗑️ Cleared cache entry: ${cacheKey}`)
+    } else {
+      console.warn(`⚠️ Cache entry not found: ${cacheKey}`)
+    }
+    
+    return deleted
+  }
+
   return {
     isPlaying,
     isSupported: readonly(isSupported),
@@ -642,6 +711,7 @@ export const useSpeechSynthesis = () => {
     webSpeechVoices: readonly(webSpeechVoices),
     openaiVoices: readonly(openaiVoices),
     clearCache,
+    clearCacheEntry, // NEW: Clear specific cache entry
     getCacheStats,
     listCachedEntries, // NEW: List all cached entries
     cleanupExpiredMemoryCache, // Expose for manual cleanup
