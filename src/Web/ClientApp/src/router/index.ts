@@ -172,7 +172,7 @@ const router = createRouter({
         console.error('Failed to load CategoriesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: Routes.Management.children.Vocabularies.children.List.path,
@@ -181,7 +181,7 @@ const router = createRouter({
         console.error('Failed to load VocabulariesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
       path: Routes.Management.children.Examples.children.List.path,
@@ -190,7 +190,7 @@ const router = createRouter({
         console.error('Failed to load ExamplesManagement:', err);
         return import("../modules/shared/views/AccessDenied.vue");
       }),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     
     // Legacy posts routes
@@ -200,6 +200,7 @@ const router = createRouter({
 
 // Import auth service directly instead of composable
 import { AuthService } from '@/services/authService'
+import { useAuthStore } from '@/stores/auth'
 
 router.beforeEach(async (to, from) => {
 
@@ -211,6 +212,22 @@ router.beforeEach(async (to, from) => {
       return {
         name: Routes.Auth.children.Login.name,
         query: { redirect: to.fullPath }
+      }
+    }
+
+    // Check if route requires admin role
+    if (to.meta.requiresAdmin) {
+      const authStore = useAuthStore()
+      
+      // Make sure user data is loaded
+      if (!authStore.user) {
+        await authStore.loadUserProfile()
+      }
+      
+      // Check if user has Administrator role
+      if (!authStore.hasRole('Administrator')) {
+        console.warn('Access denied: User does not have Administrator role')
+        return { name: 'AccessDenied' }
       }
     }
   }
