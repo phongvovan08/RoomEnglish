@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { AuthService, type LoginRequest, type RegisterRequest, type UserInfo } from '@/services/authService'
 import { useNotifications } from '@/utils/notifications'
+import { useAuthStore } from '@/stores/auth'
 
 const user = ref<UserInfo | null>(null)
 const isLoading = ref(false)
@@ -33,14 +34,21 @@ export function useAuth() {
     try {
       isLoading.value = true
 
+      console.log('🔐 Logging in with useAuth...')
       const authResponse = await AuthService.login(credentials)
       AuthService.saveTokens(authResponse)
 
       // Get user info
       const userInfo = await AuthService.getUserInfo()
       user.value = userInfo
+      
+      // Sync with authStore
+      const authStore = useAuthStore()
+      authStore.setToken(authResponse.accessToken)
+      await authStore.loadUserProfile()
+      console.log('✅ Auth synced to authStore, user:', authStore.user)
 
-  showSuccess('Login Successful! 🎮', `Welcome back, ${userInfo.email}!`)
+      showSuccess('Login Successful! 🎮', `Welcome back, ${userInfo.email}!`)
       
       // Redirect to dashboard or intended route
       const redirectTo = router.currentRoute.value.query.redirect as string
@@ -80,10 +88,16 @@ export function useAuth() {
     try {
       isLoading.value = true
       
+      console.log('🔓 Logging out...')
       await AuthService.logout()
       user.value = null
       
-  showSuccess('Logged Out Successfully! 👋', 'See you next time!')
+      // Also clear authStore
+      const authStore = useAuthStore()
+      authStore.clearAuth()
+      console.log('✅ Auth cleared from both useAuth and authStore')
+      
+      showSuccess('Logged Out Successfully! 👋', 'See you next time!')
       
       // Redirect to login page
       router.push('/auth/login')
@@ -93,6 +107,11 @@ export function useAuth() {
       // Even if logout fails, clear local state
       user.value = null
       AuthService.clearTokens()
+      
+      // Clear authStore
+      const authStore = useAuthStore()
+      authStore.clearAuth()
+      
       router.push('/auth/login')
     } finally {
       isLoading.value = false

@@ -1,11 +1,10 @@
 ﻿using RoomEnglish.Application.Common.Interfaces;
 using RoomEnglish.Application.Common.Security;
-using RoomEnglish.Domain.Constants;
 
 namespace RoomEnglish.Application.TodoLists.Commands.PurgeTodoLists;
 
-[Authorize(Roles = Roles.Administrator)]
-[Authorize(Policy = Policies.CanPurge)]
+[Authorize(Roles = RoomEnglish.Domain.Constants.Roles.Administrator)]
+[Authorize(Policy = RoomEnglish.Domain.Constants.Policies.CanPurge)]
 public record PurgeTodoListsCommand : IRequest;
 
 public class PurgeTodoListsCommandHandler : IRequestHandler<PurgeTodoListsCommand>

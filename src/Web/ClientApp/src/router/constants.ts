@@ -180,6 +180,14 @@ export const Routes = {
           },
         },
       },
+      Users: {
+        name: "ManageUsers",
+        path: "/management/users",
+      },
+      Roles: {
+        name: "ManageRoles",
+        path: "/management/roles",
+      },
     },
   },
   

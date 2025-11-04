@@ -102,21 +102,12 @@ export class AuthService {
   }
 
   static async logout(): Promise<void> {
-    // Clear tokens from storage
+    // Clear tokens from storage first
     this.clearTokens()
     
-    // Optionally call logout endpoint if available
-    try {
-      await fetch(`${this.BASE_URL}${appConfig.endpoints.auth.logout}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
-      })
-    } catch (error) {
-      // Ignore logout endpoint errors
-      console.warn('Logout endpoint failed:', error)
-    }
+    // MapIdentityApi doesn't provide a logout endpoint
+    // Tokens are stateless, so clearing client-side is sufficient
+    console.log('✅ Logged out successfully (client-side)')
   }
 
   // Token management

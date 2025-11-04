@@ -205,6 +205,7 @@
 import { Routes } from '@/router/constants'
 import { loadLanguageAsync } from '@/plugins/ui/i18n'
 import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/auth'
 
 // Reactive data
 const searchQuery = ref('')
@@ -219,65 +220,95 @@ const route = useRoute()
 
 // Authentication
 const { isAuthenticated, user, logout: authLogout, initAuth } = useAuth()
+const authStore = useAuthStore()
 
 // Menu configuration
-const menuItems = computed(() => [
-  {
-    name: 'home',
-    label: 'menu.home',
-    path: Routes.Home.path,
-    icon: 'mdi:home',
-    hasChildren: false,
-  },
-  {
-    name: 'vocabulary',
-    label: 'Vocabulary Learning',
-    path: Routes.Vocabulary.children.Learning.children.Categories.path,
-    icon: 'mdi:book-alphabet',
-    hasChildren: true,
-    children: [
-      {
-        name: 'learningCategories',
-        label: 'Categories',
-        path: Routes.Vocabulary.children.Learning.children.Categories.path,
-        icon: 'mdi:folder-multiple',
-      },
-      {
-        name: 'learningWords',
-        label: 'Words',
-        path: Routes.Vocabulary.children.Learning.children.Words.path,
-        icon: 'mdi:book-open-variant',
-      },
-      {
-        name: 'learningExamples',
-        label: 'Examples',
-        path: Routes.Vocabulary.children.Learning.children.Examples.path,
-        icon: 'mdi:format-list-bulleted',
-      },
-      {
-        name: 'vocabularyProgress',
-        label: 'My Progress',
-        path: Routes.Vocabulary.children.Progress.path,
-        icon: 'mdi:chart-line',
-      },
-    ],
-  },
-  {
-    name: 'management',
-    label: 'Quản lý',
-    path: Routes.Management.children.Categories.path,
-    icon: 'mdi:cog',
-    hasChildren: true,
-    children: [
-      {
-        name: 'manageCategories',
-        label: 'Quản lý Danh mục',
-        path: Routes.Management.children.Categories.path,
-        icon: 'mdi:folder-multiple',
-      },
-    ],
-  },
-])
+const menuItems = computed(() => {
+  // Access authStore.user to make this computed reactive to user changes
+  const currentUser = authStore.user
+  
+  const items = [
+    {
+      name: 'home',
+      label: 'menu.home',
+      path: Routes.Home.path,
+      icon: 'mdi:home',
+      hasChildren: false,
+    },
+    {
+      name: 'vocabulary',
+      label: 'Vocabulary Learning',
+      path: Routes.Vocabulary.children.Learning.children.Categories.path,
+      icon: 'mdi:book-alphabet',
+      hasChildren: true,
+      children: [
+        {
+          name: 'learningCategories',
+          label: 'Categories',
+          path: Routes.Vocabulary.children.Learning.children.Categories.path,
+          icon: 'mdi:folder-multiple',
+        },
+        {
+          name: 'learningWords',
+          label: 'Words',
+          path: Routes.Vocabulary.children.Learning.children.Words.path,
+          icon: 'mdi:book-open-variant',
+        },
+        {
+          name: 'learningExamples',
+          label: 'Examples',
+          path: Routes.Vocabulary.children.Learning.children.Examples.path,
+          icon: 'mdi:format-list-bulleted',
+        },
+        {
+          name: 'vocabularyProgress',
+          label: 'My Progress',
+          path: Routes.Vocabulary.children.Progress.path,
+          icon: 'mdi:chart-line',
+        },
+      ],
+    },
+  ]
+
+  // Only add Management menu if user has Administrator role
+  const isAdmin = authStore.hasRole('Administrator')
+  console.log('🔍 Menu rendering - User:', currentUser?.email, 'Is Admin:', isAdmin)
+  
+  if (isAdmin) {
+    console.log('✅ Adding Management menu')
+    items.push({
+      name: 'management',
+      label: 'Quản lý',
+      path: Routes.Management.children.Categories.path,
+      icon: 'mdi:cog',
+      hasChildren: true,
+      children: [
+        {
+          name: 'manageCategories',
+          label: 'Quản lý Danh mục',
+          path: Routes.Management.children.Categories.path,
+          icon: 'mdi:folder-multiple',
+        },
+        {
+          name: 'manageUsers',
+          label: 'Quản lý Tài khoản',
+          path: Routes.Management.children.Users.path,
+          icon: 'mdi:account-multiple',
+        },
+        {
+          name: 'manageRoles',
+          label: 'Quản lý Vai trò',
+          path: Routes.Management.children.Roles.path,
+          icon: 'mdi:shield-account',
+        },
+      ],
+    })
+  } else {
+    console.log('⚠️ Management menu hidden (not admin)')
+  }
+
+  return items
+})
 
 // Methods
 const isActiveRoute = (path: string) => {

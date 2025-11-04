@@ -192,6 +192,24 @@ const router = createRouter({
       }),
       meta: { requiresAuth: true, requiresAdmin: true },
     },
+    {
+      path: Routes.Management.children.Users.path,
+      name: Routes.Management.children.Users.name,
+      component: () => import("../modules/management/views/UsersManagement.vue").catch(err => {
+        console.error('Failed to load UsersManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: Routes.Management.children.Roles.path,
+      name: Routes.Management.children.Roles.name,
+      component: () => import("../modules/management/views/RolesManagement.vue").catch(err => {
+        console.error('Failed to load RolesManagement:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
     
     // Legacy posts routes
     ...postsRoutes,
@@ -219,16 +237,28 @@ router.beforeEach(async (to, from) => {
     if (to.meta.requiresAdmin) {
       const authStore = useAuthStore()
       
+      console.log('🔐 Admin check for route:', to.path)
+      console.log('Current user:', authStore.user)
+      console.log('User roles:', authStore.user?.roles)
+      
       // Make sure user data is loaded
       if (!authStore.user) {
+        console.log('⏳ User data not loaded, loading...')
         await authStore.loadUserProfile()
+        console.log('✅ User data loaded:', authStore.user)
       }
       
       // Check if user has Administrator role
-      if (!authStore.hasRole('Administrator')) {
-        console.warn('Access denied: User does not have Administrator role')
+      const hasAdminRole = authStore.hasRole('Administrator')
+      console.log('Has Administrator role?', hasAdminRole)
+      
+      if (!hasAdminRole) {
+        console.warn('❌ Access denied: User does not have Administrator role')
+        console.warn('User roles:', authStore.user?.roles)
         return { name: 'AccessDenied' }
       }
+      
+      console.log('✅ Admin access granted')
     }
   }
 
