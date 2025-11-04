@@ -16,7 +16,7 @@ public record SaveAudioCacheCommand : IRequest<Unit>
     public string Provider { get; init; } = "openai";
     public byte[] AudioData { get; init; } = Array.Empty<byte>();
     public string MimeType { get; init; } = "audio/mpeg";
-    public int? ExpiryDays { get; init; } = 30; // Default 30 days for database
+    public int? ExpiryDays { get; init; } = 365; // Default 30 days for database
 }
 
 public class SaveAudioCacheCommandHandler : IRequestHandler<SaveAudioCacheCommand, Unit>
