@@ -91,7 +91,7 @@
           :current-word-index="currentIndex"
           :has-more="hasMoreWords"
           :is-loading-more="isLoadingMore"
-          :is-initial-loading="isLoading"
+          :is-initial-loading="isInitialLoading"
           :total-words="totalWords"
           @select-word="jumpToWord"
           @load-more="loadMoreWords"
@@ -99,7 +99,7 @@
         
         <VocabularyCard 
           :word="currentWord || {}"
-          :is-loading="isLoading"
+          :is-loading="isInitialLoading"
           @next="nextWord"
           @learn-example="switchToDictation"
         />
@@ -195,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
@@ -270,6 +270,7 @@ const currentPage = ref(1)
 const totalCount = ref(0)
 const hasMoreWords = ref(true)
 const isLoadingMore = ref(false)
+const isInitialLoading = ref(true) // Separate initial loading state
 
 // Timer
 let timer: number | null = null
@@ -405,7 +406,9 @@ const updateAllWordsCompletionCount = () => {
 const loadSessionWords = async () => {
   try {
     clearError()
+    isInitialLoading.value = true
     currentPage.value = 1
+    
     const result = await getWords({
       categoryId: props.category.id,
       includeExamples: true,
@@ -450,8 +453,16 @@ const loadSessionWords = async () => {
     })
 
     startTimer()
+    
+    // Wait for Vue to render before hiding loading
+    await nextTick()
+    // Add small delay to ensure smooth transition
+    setTimeout(() => {
+      isInitialLoading.value = false
+    }, 100)
   } catch (err) {
     console.error('Failed to load session:', err)
+    isInitialLoading.value = false
   }
 }
 
