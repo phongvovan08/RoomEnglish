@@ -3,9 +3,7 @@
     <!-- Main Banner -->
     <div class="main-banner cyborg-card hover-glow">
       <div class="banner-content">
-        <h6>Welcome To</h6>
-        <h4><em>Room</em>English Dashboard</h4>
-        <p>{{ $t('dashboard.welcome') }}</p>
+        <h6>{{ $t('dashboard.welcome') }}</h6>
 
         <!-- Continue Learning Button -->
         <div v-if="lastPosition" class="main-button">
@@ -52,77 +50,25 @@
         </div>
       </div>
     </div>
-    
-    <!-- Gaming Library Stats -->
-    <div class="gaming-library">
-      <div class="section-heading">
-        <h6>Your Dashboard</h6>
-        <h4>Library <em>Statistics</em></h4>
-      </div>
-      
-      <div class="cyborg-grid cyborg-grid-4">
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:format-list-bulleted-square" class="stat-icon todo-lists" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.todoLists }}</h4>
-            <span>{{ $t('menu.todoLists') }}</span>
-            <div class="download">
-              <span>Total Lists: {{ stats.todoLists }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:checkbox-marked-circle" class="stat-icon todo-items" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.todoItems }}</h4>
-            <span>{{ $t('menu.todoItems') }}</span>
-            <div class="download">
-              <span>Active Tasks: {{ stats.todoItems }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:weather-cloudy" class="stat-icon weather" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.temperature }}°C</h4>
-            <span>{{ $t('dashboard.currentTemp') }}</span>
-            <div class="download">
-              <span>Current Weather</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:post" class="stat-icon posts" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.posts }}</h4>
-            <span>{{ $t('menu.posts') }}</span>
-            <div class="download">
-              <span>Blog Posts</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Most Popular Games (Quick Actions) -->
     <div class="most-popular cyborg-section">
-      <div class="section-heading">
-        <h6>Most Popular</h6>
-        <h4>Quick <em>Actions</em> Right Now</h4>
-      </div>
-      
       <div class="cyborg-grid cyborg-grid-4">
+        <div class="game-item hover-glow">
+          <div class="thumb review-thumb">
+            <router-link to="/learning/review">
+              <Icon icon="mdi:refresh-circle" class="game-thumb-icon" />
+            </router-link>
+          </div>
+          <div class="down-content">
+            <h4>Daily Review</h4>
+            <span>Vocabulary Practice</span>
+            <ul>
+              <li><i class="fa fa-star"></i> 5.0</li>
+              <li><i class="fa fa-download"></i> Hot</li>
+            </ul>
+          </div>
+        </div>
+
         <div class="game-item hover-glow">
           <div class="thumb">
             <router-link :to="Routes.TodoLists.children.Create.path">
@@ -167,22 +113,6 @@
             <ul>
               <li><i class="fa fa-star"></i> 4.7</li>
               <li><i class="fa fa-download"></i> 1.2M</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="game-item hover-glow">
-          <div class="thumb">
-            <router-link :to="Routes.WeatherForecasts.path">
-              <Icon icon="mdi:weather-partly-cloudy" class="game-thumb-icon" />
-            </router-link>
-          </div>
-          <div class="down-content">
-            <h4>Weather Forecast</h4>
-            <span>Information</span>
-            <ul>
-              <li><i class="fa fa-star"></i> 4.6</li>
-              <li><i class="fa fa-download"></i> 980K</li>
             </ul>
           </div>
         </div>
@@ -598,6 +528,10 @@ onMounted(async () => {
   justify-content: center;
   position: relative;
   overflow: hidden;
+}
+
+.game-item .thumb.review-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .game-item .thumb::before {

@@ -163,6 +163,15 @@ const router = createRouter({
       }),
       meta: { requiresAuth: true },
     },
+    {
+      path: "/learning/review",
+      name: "VocabularyReview",
+      component: () => import("../modules/vocabulary/views/ReviewView.vue").catch(err => {
+        console.error('Failed to load ReviewView:', err);
+        return import("../modules/shared/views/AccessDenied.vue");
+      }),
+      meta: { requiresAuth: true },
+    },
 
     // Management System routes
     {

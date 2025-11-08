@@ -5,7 +5,6 @@
       <div class="cyborg-grid cyborg-grid-2" style="align-items: center;">
         <div class="banner-content">
           <h6>Welcome To</h6>
-          <h4><em>Room</em>English Gaming Dashboard</h4>
           <p>Browse your tasks, check weather, and manage everything in one place with our awesome gaming-style interface.</p>
           <div class="main-button">
             <router-link :to="Routes.TodoLists.children.Create.path" class="cyborg-btn">
@@ -20,74 +19,8 @@
       </div>
     </div>
 
-    <!-- Gaming Library Stats -->
-    <div class="gaming-library">
-      <div class="section-heading">
-        <h6>Your Gaming</h6>
-        <h4>Library <em>Statistics</em></h4>
-      </div>
-      
-      <div class="cyborg-grid cyborg-grid-4">
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:format-list-bulleted-square" class="stat-icon todo-lists" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.todoLists }}</h4>
-            <span>{{ $t('menu.todoLists') }}</span>
-            <div class="download">
-              <span>Total Lists: {{ stats.todoLists }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:checkbox-marked-circle" class="stat-icon todo-items" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.todoItems }}</h4>
-            <span>{{ $t('menu.todoItems') }}</span>
-            <div class="download">
-              <span>Active Tasks: {{ stats.todoItems }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:weather-cloudy" class="stat-icon weather" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.temperature }}°C</h4>
-            <span>{{ $t('dashboard.currentTemp') }}</span>
-            <div class="download">
-              <span>Current Weather</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="gaming-library-item hover-slide">
-          <div class="left-image">
-            <Icon icon="mdi:post" class="stat-icon posts" />
-          </div>
-          <div class="right-content">
-            <h4>{{ stats.posts }}</h4>
-            <span>{{ $t('menu.posts') }}</span>
-            <div class="download">
-              <span>Blog Posts</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Most Popular Games (Quick Actions) -->
     <div class="most-popular cyborg-section">
-      <div class="section-heading">
-        <h6>Most Popular</h6>
-        <h4>Quick <em>Actions</em> Right Now</h4>
-      </div>
       
       <div class="cyborg-grid cyborg-grid-4">
         <div class="game-item hover-glow">

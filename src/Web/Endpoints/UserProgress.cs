@@ -5,6 +5,7 @@ using RoomEnglish.Application.Vocabulary.Queries.GetUserProgress;
 using RoomEnglish.Application.Vocabulary.Commands.UpdateUserProgress;
 using RoomEnglish.Application.Vocabulary.Queries;
 using RoomEnglish.Application.Vocabulary.Commands;
+using RoomEnglish.Application.Vocabulary.Queries.GetReviewExamples;
 using RoomEnglish.Web.Infrastructure;
 
 namespace RoomEnglish.Web.Endpoints;
@@ -58,6 +59,11 @@ public class UserProgress : EndpointGroupBase
              .WithName("ClearLearningPosition")
              .WithSummary("Clear learning position")
              .WithDescription("Clears user's saved learning position for a word");
+
+        group.MapGet("review", GetReviewExamples)
+             .WithName("GetReviewExamples")
+             .WithSummary("Get review examples")
+             .WithDescription("Gets random examples for review (one example per word)");
     }
 
     [Authorize]
@@ -151,5 +157,19 @@ public class UserProgress : EndpointGroupBase
     {
         await sender.Send(new ClearLearningPositionCommand { WordId = wordId });
         return Results.Ok();
+    }
+
+    [Authorize]
+    public async Task<IResult> GetReviewExamples(
+        ISender sender,
+        [FromQuery] int count = 20,
+        [FromHeader(Name = "User-Id")] string? userId = null)
+    {
+        var result = await sender.Send(new GetReviewExamplesQuery 
+        { 
+            Count = count,
+            UserId = userId
+        });
+        return Results.Ok(result);
     }
 }

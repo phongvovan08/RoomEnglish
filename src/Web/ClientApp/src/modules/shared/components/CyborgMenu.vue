@@ -261,6 +261,12 @@ const menuItems = computed(() => {
           icon: 'mdi:format-list-bulleted',
         },
         {
+          name: 'vocabularyReview',
+          label: 'Daily Review',
+          path: '/learning/review',
+          icon: 'mdi:refresh-circle',
+        },
+        {
           name: 'vocabularyProgress',
           label: 'My Progress',
           path: Routes.Vocabulary.children.Progress.path,

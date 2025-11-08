@@ -1,27 +1,19 @@
 <template>
   <div class="dictation-card">
     <div class="card-container">
-      <!-- Header -->
-      <div class="dictation-header">
-        
-        <div v-if="example?.sentence && showSentence && !showResult" class="example-sentence">
-
-          <div class="sentence-text">
-            {{ example.sentence }}
+      <!-- Word Context Header -->
+      <div class="word-context-header" v-if="word && !showResult">
+        <div class="word-info">
+          <div class="word-line-1">
+            <span class="word-text">{{ word.word }}</span>
+            <span v-if="word.phonetic" class="word-phonetic">{{ word.phonetic }}</span>
+            <span v-if="word.partOfSpeech" class="part-of-speech">({{ word.partOfSpeech }})</span>
           </div>
-          <button @click="showSentence = false" class="hide-sentence-btn">
-            <Icon icon="mdi:eye-off" class="w-5 h-5" />
-            Hide (Practice mode)
-          </button>
+          <div class="word-line-2">
+            <span class="word-meaning">{{ word.meaning }}</span>
+            <span v-if="word.vietnameseMeaning" class="word-vietnamese">{{ word.vietnameseMeaning }}</span>
+          </div>
         </div>
-        <button 
-          v-else-if="example?.sentence && !showSentence && !showResult"
-          @click="showSentence = true" 
-          class="show-sentence-btn"
-        >
-          <Icon icon="mdi:eye" class="w-5 h-5" />
-          Show Sentence (Study mode)
-        </button>
       </div>
 
       <!-- Audio Player - Using GlobalSpeechButton -->
@@ -212,7 +204,6 @@ const {
 // Local state
 const showResult = ref(false)
 const showHintModal = ref(false)
-const showSentence = ref(false)
 const playCount = ref(0)
 const playbackSpeed = ref(1)
 const speechRecognitionSupported = ref(false)
@@ -380,7 +371,6 @@ const changePlaybackSpeed = (speed: number) => {
 const resetComponent = () => {
   showResult.value = false
   showHintModal.value = false
-  showSentence.value = false
   playCount.value = 0
   // Don't reset playbackSpeed - keep user preference
   // playbackSpeed.value = 1
@@ -570,8 +560,8 @@ watch(() => props.example, (newExample) => {
   color: #74c0fc;
   font-size: 0.95rem;
   font-style: italic;
-  padding-left: 0.5rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-right: 0.5rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .audio-player-section {
@@ -750,69 +740,73 @@ watch(() => props.example, (newExample) => {
   }
 }
 
-.example-sentence {
-  margin-top: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(116, 192, 252, 0.1), rgba(231, 94, 141, 0.1));
-  border: 2px solid rgba(116, 192, 252, 0.3);
+/* Word Context Header */
+.word-context-header {
+  background: linear-gradient(135deg, rgba(22, 33, 62, 0.9), rgba(15, 52, 96, 0.7));
+  border: 1px solid rgba(116, 192, 252, 0.3);
   border-radius: 15px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
   animation: fadeIn 0.5s ease-in-out;
 }
 
-.sentence-label {
+.word-info {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  color: #74c0fc;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.sentence-text {
-  color: white;
-  font-size: 1.3rem;
-  line-height: 1.6;
-  margin-bottom: 1rem;
-  font-weight: 500;
   text-align: center;
-  padding: 0.5rem 0;
 }
 
-.hide-sentence-btn,
-.show-sentence-btn {
-  background: rgba(231, 94, 141, 0.2);
-  color: #e75e8d;
-  border: 1px solid rgba(231, 94, 141, 0.5);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  cursor: pointer;
+.word-line-1 {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  margin: 0 auto;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.hide-sentence-btn:hover,
-.show-sentence-btn:hover {
-  background: rgba(231, 94, 141, 0.3);
-  border-color: #e75e8d;
-  transform: translateY(-2px);
-}
-
-.show-sentence-btn {
-  background: rgba(116, 192, 252, 0.2);
+.word-text {
+  font-size: 1.5rem;
+  font-weight: bold;
   color: #74c0fc;
-  border-color: rgba(116, 192, 252, 0.5);
+  line-height: 1.3;
 }
 
-.show-sentence-btn:hover {
-  background: rgba(116, 192, 252, 0.3);
-  border-color: #74c0fc;
+.word-phonetic {
+  font-size: 1rem;
+  color: #adb5bd;
+  font-style: italic;
+}
+
+.part-of-speech {
+  color: #e75e8d;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.word-line-2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.word-meaning {
+  color: white;
+  font-size: 1rem;
+}
+
+.separator {
+  color: #adb5bd;
+  font-size: 0.9rem;
+}
+
+.word-vietnamese {
+  color: #adb5bd;
+  font-size: 0.95rem;
+  font-style: italic;
 }
 
 @keyframes fadeIn {
