@@ -135,6 +135,18 @@ public static class GoogleOAuthHandler
             return null;
         }
 
+        // Assign default "User" role
+        var roleResult = await userManager.AddToRoleAsync(user, Domain.Constants.Roles.User);
+        if (!roleResult.Succeeded)
+        {
+            logger.LogWarning("Google OAuth: Failed to assign User role to {Email}. Errors: {Errors}",
+                email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+        }
+        else
+        {
+            logger.LogInformation("Google OAuth: Assigned User role to {Email}", email);
+        }
+
         logger.LogInformation("Google OAuth: Successfully created user {Email} with UserName {UserName} and DisplayName {DisplayName}", 
             email, userName, displayName);
         return user;

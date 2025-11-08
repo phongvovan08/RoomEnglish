@@ -43,6 +43,17 @@ public class IdentityService : IIdentityService
         };
 
         var result = await _userManager.CreateAsync(user, password);
+        
+        if (result.Succeeded)
+        {
+            // Assign default "User" role
+            var roleResult = await _userManager.AddToRoleAsync(user, Domain.Constants.Roles.User);
+            if (!roleResult.Succeeded)
+            {
+                // Log warning but don't fail the user creation
+                // The role can be assigned later by an administrator
+            }
+        }
 
         return (result.ToApplicationResult(), user.Id);
     }
