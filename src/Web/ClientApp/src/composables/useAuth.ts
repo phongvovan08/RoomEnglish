@@ -11,8 +11,9 @@ const isInitialized = ref(false)
 export function useAuth() {
   const router = useRouter()
   const { showSuccess, showError } = useNotifications()
+  const authStore = useAuthStore()
 
-  const isAuthenticated = computed(() => !!user.value && AuthService.isAuthenticated())
+  const isAuthenticated = computed(() => authStore.isAuthenticated)
 
   const initAuth = async () => {
     if (isInitialized.value) return
@@ -21,6 +22,13 @@ export function useAuth() {
       if (AuthService.isAuthenticated()) {
         const userInfo = await AuthService.getUserInfo()
         user.value = userInfo
+        
+        // Sync with authStore
+        const token = localStorage.getItem('access_token')
+        if (token) {
+          authStore.setToken(token)
+          await authStore.loadUserProfile()
+        }
       }
     } catch (error) {
       console.warn('Failed to initialize auth:', error)
@@ -145,7 +153,7 @@ export function useAuth() {
 
   return {
     // State
-    user: computed(() => user.value),
+    user: computed(() => authStore.user),
     isAuthenticated,
     isLoading: computed(() => isLoading.value),
     isInitialized: computed(() => isInitialized.value),

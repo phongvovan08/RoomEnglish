@@ -36,18 +36,65 @@ public static class DependencyInjection
         // Read token expiration from configuration (default 7 days)
         var tokenExpirationDays = builder.Configuration.GetValue<int>("Authentication:BearerToken:ExpirationDays", 7);
 
-        builder.Services.AddAuthentication()
-            .AddBearerToken(IdentityConstants.BearerScheme, options =>
+        // Check if Google OAuth is configured
+        var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+        var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        var hasGoogleAuth = !string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret);
+
+        // Configure authentication with appropriate defaults
+        // For API calls: use BearerScheme as default to handle Bearer tokens
+        // For Google OAuth: ApplicationScheme for sign-in, ExternalScheme for challenge
+        var authBuilder = builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = IdentityConstants.BearerScheme;
+            options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
+            options.DefaultChallengeScheme = hasGoogleAuth 
+                ? IdentityConstants.ApplicationScheme 
+                : IdentityConstants.BearerScheme;
+        });
+
+        authBuilder.AddBearerToken(IdentityConstants.BearerScheme, options =>
+        {
+            // Configure Bearer Token expiration from appsettings.json
+            options.BearerTokenExpiration = TimeSpan.FromDays(tokenExpirationDays);
+        });
+
+        // Add Identity cookies for Google OAuth sign-in flow
+        authBuilder.AddIdentityCookies();
+
+        // Add Google Authentication if credentials are configured
+        if (hasGoogleAuth)
+        {
+            authBuilder.AddGoogle(options =>
             {
-                // Configure Bearer Token expiration from appsettings.json
-                options.BearerTokenExpiration = TimeSpan.FromDays(tokenExpirationDays);
+                options.ClientId = googleClientId!;
+                options.ClientSecret = googleClientSecret!;
+                
+                // Google callback path - must be registered in Google Cloud Console
+                options.CallbackPath = "/signin-google";
+
+                // Request email and profile information from Google
+                options.Scope.Add("email");
+                options.Scope.Add("profile");
+
+                // Save tokens for later use (optional)
+                options.SaveTokens = true;
+                
+                // Use External scheme to preserve login info between requests
+                options.SignInScheme = IdentityConstants.ExternalScheme;
+                
+                // Handle authentication callbacks with custom logic
+                // See GoogleOAuthHandler for user creation and token generation
+                options.Events = GoogleOAuthHandler.CreateGoogleOAuthEvents();
             });
+        }
 
         builder.Services.AddAuthorizationBuilder();
 
         builder.Services
             .AddIdentityCore<ApplicationUser>()
             .AddRoles<IdentityRole>()
+            .AddSignInManager()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddApiEndpoints();
 

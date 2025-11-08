@@ -58,6 +58,10 @@ app.UseSwaggerUi(settings =>
 
 app.UseExceptionHandler(options => { });
 
+// Add Authentication & Authorization middleware (REQUIRED for Google OAuth)
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Redirect root to API docs (temporarily - will be replaced by SPA)
 // app.Map("/", () => Results.Redirect("/api"));
 

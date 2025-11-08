@@ -86,6 +86,22 @@
           {{ isLoading ? 'Logging in...' : 'Login' }}
         </button>
 
+        <!-- Divider -->
+        <div class="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <!-- Google Sign In -->
+        <button
+          type="button"
+          @click="handleGoogleLogin"
+          class="google-signin-btn"
+          :disabled="isLoading"
+        >
+          <Icon icon="mdi:google" />
+          Sign in with Google
+        </button>
+
         <!-- Register Link -->
         <div class="auth-footer">
           <p>Don't have an account?</p>
@@ -105,11 +121,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useAuth } from '@/composables/useAuth'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import appConfig from '@/config/app.config'
 
 const { login, isLoading } = useAuth()
+const authStore = useAuthStore()
+const router = useRouter()
 
 const showPassword = ref(false)
 
@@ -126,6 +147,46 @@ const errors = reactive({
 
 const isFormValid = computed(() => {
   return form.email.includes('@') && form.password.length >= 6
+})
+
+// Handle Google OAuth callback on component mount
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const token = urlParams.get('token')
+  const error = urlParams.get('error')
+
+  if (token) {
+    // Store the token using the app config key
+    localStorage.setItem(appConfig.auth.tokenKey, token)
+    
+    // Set token expiry - backend tokens expire in 7 days by default
+    const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days in milliseconds
+    localStorage.setItem(appConfig.auth.tokenExpiryKey, expiresAt.toString())
+    
+    // Sync with auth store to update menu and UI
+    authStore.setToken(token)
+    await authStore.loadUserProfile()
+    
+    // Clean up URL before redirect
+    window.history.replaceState({}, document.title, window.location.pathname)
+    
+    // Redirect to dashboard
+    router.push('/learning')
+  } else if (error) {
+    // Show error message based on error type
+    const errorMessages: Record<string, string> = {
+      'external_login_failed': 'Failed to retrieve Google login information',
+      'account_locked': 'Your account has been locked',
+      'email_not_provided': 'Google did not provide your email address',
+      'link_account_failed': 'Failed to link Google account',
+      'create_user_failed': 'Failed to create user account'
+    }
+    
+    alert(errorMessages[error] || 'An error occurred during Google sign-in')
+    
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
 })
 
 const togglePassword = () => {
@@ -171,6 +232,33 @@ const handleLogin = async () => {
     // Error handling is done in useAuth composable
     console.error('Login failed:', error)
   }
+}
+
+const handleGoogleLogin = () => {
+  // Redirect to Google OAuth endpoint
+  // The returnUrl should point to the frontend app (Vue dev server in development)
+  
+  // In development mode, always use Vue dev server URL
+  // In production, use current origin
+  const isDevelopment = import.meta.env.DEV || window.location.port === '5001'
+  const frontendUrl = isDevelopment ? 'http://localhost:3000' : window.location.origin
+  const returnUrl = encodeURIComponent(`${frontendUrl}/auth/login`)
+  
+  // Backend API URL for initiating Google OAuth
+  // In development: backend runs on https://localhost:5001
+  // In production: use same origin
+  const apiBaseUrl = isDevelopment ? 'https://localhost:5001' : window.location.origin
+  
+  console.log('🔍 Google Login Debug:', {
+    isDevelopment,
+    currentPort: window.location.port,
+    frontendUrl,
+    apiBaseUrl,
+    returnUrl,
+    fullUrl: `${apiBaseUrl}/api/google-auth/login-google?returnUrl=${returnUrl}`
+  })
+    
+  window.location.href = `${apiBaseUrl}/api/google-auth/login-google?returnUrl=${returnUrl}`
 }
 </script>
 
@@ -348,6 +436,74 @@ const handleLogin = async () => {
 .auth-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+}
+
+.auth-divider::before {
+  left: 0;
+}
+
+.auth-divider::after {
+  right: 0;
+}
+
+.auth-divider span {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 0 1rem;
+  background: var(--bg-secondary);
+}
+
+.google-signin-btn {
+  width: 100%;
+  padding: 1rem;
+  background: white;
+  color: #1f1f1f;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.google-signin-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: #f8f8f8;
+}
+
+.google-signin-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.google-signin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-signin-btn .iconify {
+  font-size: 1.5rem;
 }
 
 .auth-footer {
