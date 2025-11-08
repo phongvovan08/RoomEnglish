@@ -1,5 +1,6 @@
 using OfficeOpenXml;
 using RoomEnglish.Infrastructure.Data;
+using RoomEnglish.Web.Middleware;
 using RoomEnglish.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +41,12 @@ else
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
+
+// Check and apply migrations on first request (production fallback)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseMigrationCheck();
+}
 
 // Add OpenAPI/Swagger middleware BEFORE static files
 app.UseOpenApi(settings =>
