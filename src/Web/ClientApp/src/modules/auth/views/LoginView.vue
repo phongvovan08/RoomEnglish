@@ -98,7 +98,7 @@
           class="google-signin-btn"
           :disabled="isLoading"
         >
-          <Icon icon="mdi:google" />
+          <Icon icon="logos:google-icon" />
           Sign in with Google
         </button>
 
