@@ -3,6 +3,7 @@ using RoomEnglish.Domain.Entities;
 using RoomEnglish.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -54,8 +55,10 @@ public class ApplicationDbContextInitialiser
             // Check if we can connect to the database
             if (await _context.Database.CanConnectAsync())
             {
-                _logger.LogInformation("Database connection available, ensuring database is created.");
-                await _context.Database.EnsureCreatedAsync();
+                _logger.LogInformation("Database connection available, applying pending migrations.");
+                // Apply pending migrations (important for production deployments)
+                await _context.Database.MigrateAsync();
+                _logger.LogInformation("Migrations applied successfully.");
             }
             else
             {

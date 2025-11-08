@@ -98,19 +98,32 @@ public static class GoogleOAuthHandler
         if (user != null)
         {
             logger.LogInformation("Google OAuth: Found existing user {Email}", email);
+            
+            // Update DisplayName if it's empty and we have a name from Google
+            if (string.IsNullOrEmpty(user.DisplayName) && !string.IsNullOrEmpty(name))
+            {
+                user.DisplayName = name;
+                await userManager.UpdateAsync(user);
+                logger.LogInformation("Google OAuth: Updated DisplayName to {DisplayName} for existing user {Email}", name, email);
+            }
+            
             return user;
         }
 
         // Create new user
         logger.LogInformation("Google OAuth: Creating new user {Email} with name {Name}", email, name);
         
-        // Use Google name if available, otherwise use email prefix
-        var userName = !string.IsNullOrEmpty(name) ? name : email.Split('@')[0];
+        // UserName: unique identifier (lowercase email prefix or custom)
+        var userName = email.Split('@')[0].ToLower(); // e.g., "phongvv198"
+        
+        // Display name from Google (e.g., "Phòng Võ")
+        var displayName = !string.IsNullOrEmpty(name) ? name : userName;
         
         user = new ApplicationUser
         {
             UserName = userName,
             Email = email,
+            DisplayName = displayName, // Store full name with special characters
             EmailConfirmed = true // Google has verified the email
         };
 
@@ -122,7 +135,8 @@ public static class GoogleOAuthHandler
             return null;
         }
 
-        logger.LogInformation("Google OAuth: Successfully created user {Email} with UserName {UserName}", email, userName);
+        logger.LogInformation("Google OAuth: Successfully created user {Email} with UserName {UserName} and DisplayName {DisplayName}", 
+            email, userName, displayName);
         return user;
     }
 

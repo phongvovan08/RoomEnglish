@@ -42,7 +42,7 @@ public class Users : EndpointGroupBase
                 email = user.Email,
                 firstName = "",
                 lastName = "",
-                displayName = user.UserName ?? user.Email,
+                displayName = user.DisplayName ?? user.UserName ?? user.Email,
                 phone = user.PhoneNumber ?? "",
                 bio = "",
                 avatar = "",

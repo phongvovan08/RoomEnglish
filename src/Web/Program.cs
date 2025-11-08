@@ -27,10 +27,13 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //await app.InitialiseDatabaseAsync();  // Disabled to avoid database conflicts
+    //await app.InitialiseDatabaseAsync();  // Disabled to avoid database conflicts during development
 }
 else
 {
+    // Auto-apply migrations on production startup
+    await app.InitialiseDatabaseAsync();
+    
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
