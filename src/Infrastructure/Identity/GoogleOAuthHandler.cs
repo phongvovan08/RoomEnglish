@@ -45,7 +45,7 @@ public static class GoogleOAuthHandler
 
         try
         {
-            // Extract email from Google claims
+            // Extract email and name from Google claims
             var email = context.Principal?.FindFirst(ClaimTypes.Email)?.Value;
             if (string.IsNullOrEmpty(email))
             {
@@ -55,10 +55,11 @@ public static class GoogleOAuthHandler
                 return;
             }
 
-            logger.LogInformation("Google OAuth: Processing login for {Email}", email);
+            var name = context.Principal?.FindFirst(ClaimTypes.Name)?.Value;
+            logger.LogInformation("Google OAuth: Processing login for {Email}, Name: {Name}", email, name);
 
             // Get or create user
-            var user = await GetOrCreateUserAsync(userManager, email, logger);
+            var user = await GetOrCreateUserAsync(userManager, email, name, logger);
             if (user == null)
             {
                 context.Response.Redirect($"{returnUrl}?error=create_user_failed");
@@ -89,6 +90,7 @@ public static class GoogleOAuthHandler
     private static async Task<ApplicationUser?> GetOrCreateUserAsync(
         UserManager<ApplicationUser> userManager,
         string email,
+        string? name,
         ILogger logger)
     {
         // Try to find existing user
@@ -100,10 +102,14 @@ public static class GoogleOAuthHandler
         }
 
         // Create new user
-        logger.LogInformation("Google OAuth: Creating new user {Email}", email);
+        logger.LogInformation("Google OAuth: Creating new user {Email} with name {Name}", email, name);
+        
+        // Use Google name if available, otherwise use email prefix
+        var userName = !string.IsNullOrEmpty(name) ? name : email.Split('@')[0];
+        
         user = new ApplicationUser
         {
-            UserName = email.Split('@')[0],
+            UserName = userName,
             Email = email,
             EmailConfirmed = true // Google has verified the email
         };
@@ -116,7 +122,7 @@ public static class GoogleOAuthHandler
             return null;
         }
 
-        logger.LogInformation("Google OAuth: Successfully created user {Email}", email);
+        logger.LogInformation("Google OAuth: Successfully created user {Email} with UserName {UserName}", email, userName);
         return user;
     }
 

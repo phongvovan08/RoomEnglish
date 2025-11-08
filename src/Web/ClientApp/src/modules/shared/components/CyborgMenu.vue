@@ -69,7 +69,7 @@
           <!-- User Profile (when authenticated) -->
           <li class="profile-menu" v-else>
             <button @click="toggleUserMenu" class="profile-btn">
-              <span class="user-name">{{ user?.email || $t('menu.profile') }}</span>
+              <span class="user-name">{{ authStore.userDisplayName }}</span>
               <div class="profile-avatar-placeholder"></div>
             </button>
             
@@ -173,7 +173,7 @@
         <div v-else class="mobile-user">
           <div class="mobile-user-info">
             <Icon icon="mdi:account-circle" class="w-6 h-6 mr-2" />
-            <span>{{ user?.email || $t('menu.profile') }}</span>
+            <span>{{ authStore.userDisplayName }}</span>
           </div>
           <router-link :to="Routes.Users.children.Profile.path" class="mobile-link" @click="closeMobileMenu">
             <Icon icon="mdi:account" class="w-5 h-5 mr-3" />
