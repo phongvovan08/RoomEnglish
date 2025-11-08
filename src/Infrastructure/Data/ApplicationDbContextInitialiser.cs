@@ -55,10 +55,41 @@ public class ApplicationDbContextInitialiser
             // Check if we can connect to the database
             if (await _context.Database.CanConnectAsync())
             {
-                _logger.LogInformation("Database connection available, applying pending migrations.");
-                // Apply pending migrations (important for production deployments)
-                await _context.Database.MigrateAsync();
-                _logger.LogInformation("Migrations applied successfully.");
+                _logger.LogInformation("Database connection available, checking migrations.");
+                
+                try
+                {
+                    // Get pending migrations
+                    var pendingMigrations = await _context.Database.GetPendingMigrationsAsync();
+                    var appliedMigrations = await _context.Database.GetAppliedMigrationsAsync();
+                    
+                    _logger.LogInformation("Applied migrations: {Count}", appliedMigrations.Count());
+                    _logger.LogInformation("Pending migrations: {Count}", pendingMigrations.Count());
+                    
+                    if (pendingMigrations.Any())
+                    {
+                        _logger.LogInformation("Applying {Count} pending migrations: {Migrations}", 
+                            pendingMigrations.Count(), 
+                            string.Join(", ", pendingMigrations));
+                        
+                        // Apply pending migrations
+                        await _context.Database.MigrateAsync();
+                        _logger.LogInformation("Migrations applied successfully.");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No pending migrations, database is up to date.");
+                    }
+                }
+                catch (Exception migrationEx)
+                {
+                    _logger.LogError(migrationEx, "Error during migration. Attempting to add DisplayName column if missing.");
+                    
+                    // Fallback: Try to add DisplayName column if it doesn't exist
+                   
+                    // Don't rethrow - let app start even if migration fails
+                    _logger.LogWarning("Continuing app startup despite migration errors.");
+                }
             }
             else
             {

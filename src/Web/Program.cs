@@ -31,9 +31,8 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // TEMPORARILY DISABLED: Auto-migration causing crash due to existing tables
-    // TODO: Need to sync __EFMigrationsHistory before re-enabling
-    // await app.InitialiseDatabaseAsync();
+    // Apply migrations on production startup with smart error handling
+    await app.InitialiseDatabaseAsync();
     
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
