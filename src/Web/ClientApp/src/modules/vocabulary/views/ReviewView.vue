@@ -95,8 +95,8 @@
         :example="{
           id: currentItem.exampleId,
           sentence: currentItem.sentence,
-          translation: currentItem.translation,
-          audioUrl: currentItem.audioUrl,
+          translation: currentItem.translation || '',
+          audioUrl: currentItem.audioUrl || '',
           difficultyLevel: currentItem.difficultyLevel,
           isActive: true,
           displayOrder: 0,
@@ -105,10 +105,22 @@
         :word="{
           id: currentItem.wordId,
           word: currentItem.word,
-          phonetic: currentItem.phonetic,
-          partOfSpeech: currentItem.partOfSpeech,
+          phonetic: currentItem.phonetic || '',
+          partOfSpeech: currentItem.partOfSpeech || '',
           meaning: currentItem.meaning,
-          vietnameseMeaning: currentItem.vietnameseMeaning
+          definition: '',
+          vietnameseMeaning: currentItem.vietnameseMeaning || '',
+          difficultyLevel: currentItem.difficultyLevel,
+          isActive: true,
+          viewCount: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          categoryId: 0,
+          categoryName: currentItem.categoryName,
+          exampleCount: 0,
+          completedExampleCount: 0,
+          exampleCompletionPercentage: 0,
+          examples: []
         }"
         :show-back-to-grid="false"
         @submit="handleSubmit"
