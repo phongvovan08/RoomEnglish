@@ -1,6 +1,5 @@
 using OfficeOpenXml;
 using RoomEnglish.Infrastructure.Data;
-using RoomEnglish.Web.Middleware;
 using RoomEnglish.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,8 +31,9 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // Auto-apply migrations on production startup
-    await app.InitialiseDatabaseAsync();
+    // TEMPORARILY DISABLED: Auto-migration causing crash due to existing tables
+    // TODO: Need to sync __EFMigrationsHistory before re-enabling
+    // await app.InitialiseDatabaseAsync();
     
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
@@ -41,12 +41,6 @@ else
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
-
-// Check and apply migrations on first request (production fallback)
-if (!app.Environment.IsDevelopment())
-{
-    app.UseMigrationCheck();
-}
 
 // Add OpenAPI/Swagger middleware BEFORE static files
 app.UseOpenApi(settings =>
