@@ -310,16 +310,18 @@ const currentExampleNumber = computed(() => {
 })
 
 // Group-specific progress tracking
+const GROUP_SIZE = 100 // Constant for group size
+
 const currentExampleInGroup = computed(() => {
   if (selectedGroupIndex.value === null) return 0
-  const groupStart = selectedGroupIndex.value * 10
+  const groupStart = selectedGroupIndex.value * GROUP_SIZE
   return currentExampleIndex.value - groupStart + 1
 })
 
 const currentGroupSize = computed(() => {
   if (selectedGroupIndex.value === null || !currentWord.value) return 0
-  const groupStart = selectedGroupIndex.value * 10
-  const groupEnd = Math.min(groupStart + 10, currentWord.value.examples?.length || 0)
+  const groupStart = selectedGroupIndex.value * GROUP_SIZE
+  const groupEnd = Math.min(groupStart + GROUP_SIZE, currentWord.value.examples?.length || 0)
   return groupEnd - groupStart
 })
 
@@ -327,7 +329,7 @@ const groupProgress = computed(() => {
   if (currentGroupSize.value === 0 || selectedGroupIndex.value === null) return 0
   
   // Calculate based on completed examples in this group
-  const groupStart = selectedGroupIndex.value * 10
+  const groupStart = selectedGroupIndex.value * GROUP_SIZE
   const groupEnd = groupStart + currentGroupSize.value
   
   const completedInGroup = completedExamples.value.filter(
@@ -792,16 +794,15 @@ const backToVocabulary = () => {
 // Get examples for current group
 const getCurrentGroupExamples = () => {
   if (!currentWord.value || selectedGroupIndex.value === null) return []
-  const groupSize = 10
-  const startIndex = selectedGroupIndex.value * groupSize
-  const endIndex = Math.min(startIndex + groupSize, currentWord.value.examples?.length || 0)
+  const startIndex = selectedGroupIndex.value * GROUP_SIZE
+  const endIndex = Math.min(startIndex + GROUP_SIZE, currentWord.value.examples?.length || 0)
   return currentWord.value.examples?.slice(startIndex, endIndex) || []
 }
 
 // Jump to a specific example in the group
 const jumpToExample = (localIndex: number) => {
   if (selectedGroupIndex.value === null) return
-  const globalIndex = selectedGroupIndex.value * 10 + localIndex
+  const globalIndex = selectedGroupIndex.value * GROUP_SIZE + localIndex
   currentExampleIndex.value = globalIndex
   console.log(`Jumped to example ${globalIndex} (local index ${localIndex} in group ${selectedGroupIndex.value})`)
 }

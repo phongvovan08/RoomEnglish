@@ -33,19 +33,46 @@
     </div>
 
     <div v-else class="examples-section">
-      <h2>Practice Examples</h2>
+      <div class="section-header">
+        <h2>Practice Examples ({{ displayedExamples.length }} of {{ allExamples.length }})</h2>
+        <button 
+          v-if="hasMore" 
+          @click="loadMoreExamples" 
+          class="load-more-btn"
+          :disabled="loadingMore"
+        >
+          <Icon v-if="loadingMore" icon="mdi:loading" class="animate-spin" />
+          <span v-else>Load More</span>
+        </button>
+      </div>
       <div class="examples-grid">
         <DictationCard
-          v-for="(example, index) in examples"
+          v-for="(example, index) in displayedExamples"
           :key="example.id"
           :example="example"
           :index="index"
           @next="handleNext(index)"
         />
       </div>
+      
+      <!-- Load more trigger - always render when hasMore -->
+      <div 
+        v-if="hasMore" 
+        ref="loadMoreTrigger" 
+        class="load-more-trigger"
+      >
+        <Icon icon="mdi:loading" class="animate-spin w-6 h-6" />
+        <span v-if="loadingMore">Loading more examples...</span>
+        <span v-else>Scroll to load more...</span>
+      </div>
+      
+      <div v-if="!hasMore && allExamples.length > 0" class="all-loaded">
+        <Icon icon="mdi:check-circle" class="w-6 h-6" />
+        <span>All {{ allExamples.length }} examples loaded</span>
+      </div>
     </div>
 
-    <div v-if="!loading && examples.length === 0" class="empty-state">
+    <div v-if="!loading && allExamples.length === 0" class="empty-state">
       <Icon icon="mdi:text-box-outline" class="w-16 h-16 opacity-50" />
       <p>No examples found for this word</p>
     </div>
@@ -53,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useVocabularyWords } from '../composables/use-vocabulary-words'
@@ -67,9 +94,17 @@ const { loadWordById, currentWord } = useVocabularyWords()
 
 const wordId = ref<number>(Number(route.query.wordId))
 const word = ref<any>(null)
-const examples = ref<any[]>([])
+const allExamples = ref<any[]>([])
+const displayedExamples = ref<any[]>([])
 const loading = ref(false)
+const loadingMore = ref(false)
 const error = ref<string | null>(null)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+const BATCH_SIZE = 10 // Load 10 examples at a time
+let observer: IntersectionObserver | null = null
+
+const hasMore = computed(() => displayedExamples.value.length < allExamples.value.length)
 
 const loadData = async () => {
   loading.value = true
@@ -85,10 +120,12 @@ const loadData = async () => {
     console.log('[WordExamplesView] Word loaded:', word.value)
     
     if (word.value && word.value.examples) {
-      examples.value = word.value.examples
+      allExamples.value = word.value.examples
+      // Initially load first batch
+      loadMoreExamples()
     }
     
-    console.log('[WordExamplesView] Examples loaded:', examples.value.length, 'examples')
+    console.log('[WordExamplesView] Total examples:', allExamples.value.length)
   } catch (err: any) {
     console.error('Failed to load word examples:', err)
     error.value = err.message || 'Failed to load examples'
@@ -97,13 +134,76 @@ const loadData = async () => {
   }
 }
 
-const handleNext = (currentIndex: number) => {
-  console.log('Next example after:', currentIndex)
-  // Could add logic to auto-scroll to next card
+const loadMoreExamples = () => {
+  if (!hasMore.value) return
+  
+  const currentLength = displayedExamples.value.length
+  const nextBatch = allExamples.value.slice(currentLength, currentLength + BATCH_SIZE)
+  displayedExamples.value.push(...nextBatch)
+  
+  console.log('[WordExamplesView] Loaded batch:', nextBatch.length, 'examples. Total displayed:', displayedExamples.value.length)
 }
 
-onMounted(() => {
-  loadData()
+const setupIntersectionObserver = async () => {
+  await nextTick()
+
+  if (!loadMoreTrigger.value) {
+    console.log('[WordExamplesView] Load trigger element not found')
+    return
+  }
+
+  console.log('[WordExamplesView] Setting up intersection observer')
+  
+  observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      console.log('[WordExamplesView] Observer callback - isIntersecting:', entry.isIntersecting, 'hasMore:', hasMore.value, 'loadingMore:', loadingMore.value)
+      
+      if (entry.isIntersecting && hasMore.value && !loadingMore.value) {
+        console.log('[WordExamplesView] ✅ Loading more examples...')
+        loadingMore.value = true
+        
+        // Use setTimeout to prevent blocking
+        setTimeout(() => {
+          loadMoreExamples()
+          loadingMore.value = false
+        }, 100)
+      }
+    },
+    {
+      root: null,
+      rootMargin: '200px',
+      threshold: 0.1
+    }
+  )
+
+  observer.observe(loadMoreTrigger.value)
+  console.log('[WordExamplesView] ✅ Observer attached')
+}
+
+const handleNext = (currentIndex: number) => {
+  console.log('Next example after:', currentIndex)
+}
+
+onMounted(async () => {
+  console.log('[WordExamplesView] Component mounted')
+  await loadData()
+  
+  console.log('[WordExamplesView] After loadData - allExamples:', allExamples.value.length, 'displayed:', displayedExamples.value.length, 'hasMore:', hasMore.value)
+  
+  // Setup intersection observer after initial load
+  if (hasMore.value) {
+    await setupIntersectionObserver()
+  } else {
+    console.log('[WordExamplesView] No more items to load, skipping observer setup')
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
 })
 </script>
 
@@ -192,10 +292,45 @@ onMounted(() => {
   color: #ff6b6b;
 }
 
-.examples-section h2 {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.section-header h2 {
   font-size: 1.8rem;
   color: #74c0fc;
-  margin-bottom: 1.5rem;
+  margin: 0;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #74c0fc 0%, #4dabf7 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(116, 192, 252, 0.4);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .examples-grid {
@@ -206,5 +341,27 @@ onMounted(() => {
 
 .empty-state {
   color: #adb5bd;
+}
+
+.load-more-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 0.5rem;
+  color: #74c0fc;
+  font-size: 0.95rem;
+}
+
+.all-loaded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 0.5rem;
+  color: #51cf66;
+  font-size: 0.95rem;
 }
 </style>

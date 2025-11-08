@@ -12,12 +12,15 @@
       </div>
       <div class="progress-info">
         Group {{ groupIndex + 1 }}: {{ completedCount }}/{{ examples.length }} completed
+        <span v-if="displayedCount < examples.length" class="showing-count">
+          (showing {{ displayedCount }})
+        </span>
       </div>
     </div>
     
-    <div class="example-list">
+    <div class="example-list" ref="listContainer">
       <div 
-        v-for="(example, index) in examples" 
+        v-for="(example, index) in displayedExamples" 
         :key="example.id"
         :ref="el => setItemRef(el, index)"
         class="example-item"
@@ -59,12 +62,18 @@
           />
         </div>
       </div>
+      
+      <!-- Load more trigger -->
+      <div v-if="hasMore" ref="loadMoreTrigger" class="load-more-trigger">
+        <Icon icon="mdi:dots-horizontal" class="w-6 h-6" />
+        <span class="load-more-text">{{ loadingMore ? 'Loading...' : 'Scroll for more' }}</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import type { VocabularyExample, VocabularyWord } from '../types/vocabulary.types'
 
@@ -85,6 +94,23 @@ defineEmits<{
 }>()
 
 const itemRefs = ref<(HTMLElement | null)[]>([])
+const listContainer = ref<HTMLElement | null>(null)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+// Lazy loading state
+const INITIAL_BATCH = 20 // Load 20 items initially
+const LOAD_MORE_BATCH = 20 // Load 20 more items each time
+const displayedCount = ref(INITIAL_BATCH)
+const loadingMore = ref(false)
+let observer: IntersectionObserver | null = null
+
+const displayedExamples = computed(() => {
+  return props.examples.slice(0, displayedCount.value)
+})
+
+const hasMore = computed(() => {
+  return displayedCount.value < props.examples.length
+})
 
 const setItemRef = (el: any, index: number) => {
   if (el) {
@@ -101,8 +127,55 @@ const completedCount = computed(() => {
   return props.examples.filter((_, index) => isCompleted(index)).length
 })
 
+const loadMoreExamples = () => {
+  if (!hasMore.value || loadingMore.value) return
+  
+  loadingMore.value = true
+  const newCount = Math.min(displayedCount.value + LOAD_MORE_BATCH, props.examples.length)
+  
+  // Simulate small delay for smooth UX
+  setTimeout(() => {
+    displayedCount.value = newCount
+    loadingMore.value = false
+    console.log(`[ExampleSidebar] Loaded ${newCount} / ${props.examples.length} examples`)
+  }, 100)
+}
+
+const setupIntersectionObserver = async () => {
+  await nextTick()
+  
+  if (!loadMoreTrigger.value || !hasMore.value) {
+    return
+  }
+  
+  if (observer) {
+    observer.disconnect()
+  }
+  
+  observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting && hasMore.value && !loadingMore.value) {
+        loadMoreExamples()
+      }
+    },
+    {
+      root: listContainer.value,
+      rootMargin: '50px',
+      threshold: 0.1
+    }
+  )
+  
+  observer.observe(loadMoreTrigger.value)
+}
+
 // Watch for currentIndex changes and scroll to the current item
 watch(() => props.currentIndex, async (newIndex) => {
+  // If current index is beyond displayed items, load more
+  if (newIndex >= displayedCount.value) {
+    displayedCount.value = Math.min(newIndex + LOAD_MORE_BATCH, props.examples.length)
+  }
+  
   await nextTick()
   const currentItem = itemRefs.value[newIndex]
   if (currentItem) {
@@ -112,6 +185,33 @@ watch(() => props.currentIndex, async (newIndex) => {
     })
   }
 }, { immediate: true })
+
+// Watch for hasMore changes to setup/teardown observer
+watch(hasMore, async (newHasMore) => {
+  if (newHasMore) {
+    await setupIntersectionObserver()
+  } else if (observer) {
+    observer.disconnect()
+  }
+})
+
+// Reset displayed count when examples change
+watch(() => props.examples.length, () => {
+  displayedCount.value = Math.min(INITIAL_BATCH, props.examples.length)
+})
+
+onMounted(async () => {
+  if (hasMore.value) {
+    await setupIntersectionObserver()
+  }
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+})
 </script>
 
 <style scoped>
@@ -191,6 +291,15 @@ watch(() => props.currentIndex, async (newIndex) => {
   color: #74c0fc;
   font-size: 0.9rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.showing-count {
+  color: rgba(116, 192, 252, 0.7);
+  font-size: 0.85rem;
 }
 
 .example-list {
@@ -314,6 +423,22 @@ watch(() => props.currentIndex, async (newIndex) => {
   50% {
     opacity: 0.5;
   }
+}
+
+.load-more-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  gap: 0.5rem;
+  color: rgba(116, 192, 252, 0.6);
+  font-size: 0.85rem;
+  min-height: 60px;
+}
+
+.load-more-text {
+  font-style: italic;
 }
 
 /* Scrollbar styling */
