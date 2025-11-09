@@ -551,7 +551,7 @@ const handleGenerateExamples = async (config: any) => {
       ExampleCount: config.exampleCount,
       IncludeGrammar: config.includeGrammar,
       IncludeContext: config.includeContext,
-      DifficultyLevel: config.difficultyLevel
+      DifficultyLevels: config.difficultyLevels
     }
     
     console.log('📤 Sending request payload:', requestPayload)
@@ -620,98 +620,6 @@ const handleGenerateExamples = async (config: any) => {
     showError('Lỗi', 'Có lỗi xảy ra khi tạo ví dụ')
   } finally {
     isGeneratingExamples.value = false
-  }
-}
-
-const generateExamplesForSelected = async () => {
-  if (selectedVocabularies.value.length === 0) {
-    showWarning('Vui lòng chọn ít nhất một từ vựng để tạo ví dụ')
-    return
-  }
-
-  const startTime = performance.now()
-  console.log(`🚀 Started generating examples for ${selectedVocabularies.value.length} words:`, 
-    selectedVocabularies.value.map(v => v.word))
-
-  try {
-    isGeneratingExamples.value = true
-    
-    // Extract just the words from selected vocabularies
-    const words = selectedVocabularies.value.map(vocab => vocab.word)
-    
-    // Call the import examples API
-    const response = await fetch('/api/vocabulary-examples/import-words', {
-      method: 'POST',
-      headers: {
-        ...createAuthHeaders(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        Words: words,
-        ExampleCount: 10,
-        IncludeGrammar: true,
-        IncludeContext: true,
-        DifficultyLevel: 1 // Easy level by default
-      })
-    })
-
-    if (response.ok) {
-      const endTime = performance.now()
-      const totalTime = Math.round(endTime - startTime)
-      
-      const result = await response.json()
-      console.log(`✅ Generate examples completed in ${totalTime}ms:`, result)
-      
-      if (result.successCount > 0) {
-        let message = `Đã tạo thành công ${result.successCount} ví dụ cho ${words.length} từ vựng trong ${(totalTime/1000).toFixed(1)}s`
-        
-        if (result.errorCount > 0) {
-          message += `, ${result.errorCount} ví dụ bị trùng hoặc lỗi`
-          showWarning(message)
-        } else {
-          showSuccess(message)
-        }
-        
-        // Performance logging
-        const avgTimePerWord = totalTime / words.length
-        console.log(`📊 Performance metrics:
-          - Total time: ${totalTime}ms (${(totalTime/1000).toFixed(1)}s)
-          - Average per word: ${avgTimePerWord.toFixed(0)}ms
-          - Success rate: ${((result.successCount / (result.successCount + result.errorCount)) * 100).toFixed(1)}%
-          - Words processed: ${words.length}
-        `)
-      } else {
-        if (result.errorCount > 0) {
-          showWarning(`Không tạo được ví dụ mới. ${result.errorCount} ví dụ bị trùng hoặc lỗi`)
-        } else {
-          showWarning('Không thể tạo ví dụ cho các từ vựng đã chọn')
-        }
-      }
-      
-      // Clear selection after generating examples
-      clearSelection()
-      
-      // Refresh the vocabulary list to show updated example counts
-      setTimeout(() => {
-        loadVocabularies()
-      }, 1000)
-    } else {
-      const endTime = performance.now()
-      const totalTime = Math.round(endTime - startTime)
-      
-      const errorText = await response.text()
-      console.error(`❌ Generate examples failed after ${totalTime}ms:`, errorText)
-      showError('Lỗi tạo ví dụ', `Không thể tạo ví dụ. ${errorText}`)
-    }
-  } catch (error) {
-    const endTime = performance.now()
-    const totalTime = Math.round(endTime - startTime)
-    
-    console.error(`❌ Generate examples error after ${totalTime}ms:`, error)
-    showError('Lỗi', 'Có lỗi xảy ra khi tạo ví dụ')
-  } finally {
-    isGeneratingExamples.value = false
-    console.log('🏁 Generate examples process completed')
   }
 }
 

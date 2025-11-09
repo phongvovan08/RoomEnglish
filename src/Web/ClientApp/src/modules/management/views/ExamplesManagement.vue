@@ -404,12 +404,15 @@ interface ExampleGenerationConfig {
   count: number
   includeGrammar: boolean
   includeContext: boolean
-  difficultyLevel: number | null
+  difficultyLevels: number[]
 }
 
 const handleGenerateExamples = async (config: ExampleGenerationConfig) => {
   try {
-    console.log('TRY handleGenerateExamples', config)
+    console.log('🔥 handleGenerateExamples received config:', config)
+    console.log('🔥 config.difficultyLevels:', config.difficultyLevels)
+    console.log('🔥 typeof config.difficultyLevels:', typeof config.difficultyLevels)
+    console.log('🔥 Array.isArray(config.difficultyLevels):', Array.isArray(config.difficultyLevels))
     
     // Call the API with all the configuration
     const result = await importFromWords({ 
@@ -417,7 +420,7 @@ const handleGenerateExamples = async (config: ExampleGenerationConfig) => {
       exampleCount: config.count,
       includeGrammar: config.includeGrammar,
       includeContext: config.includeContext,
-      difficultyLevel: config.difficultyLevel
+      difficultyLevels: config.difficultyLevels
     })
     
     // Check if result exists and has expected properties

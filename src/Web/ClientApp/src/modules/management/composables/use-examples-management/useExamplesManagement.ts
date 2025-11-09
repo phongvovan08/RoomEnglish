@@ -336,19 +336,19 @@ export function useExamplesManagement() {
   // Import from Word List (using ChatGPT)
   const { execute: importFromWords, isLoading: isImportingWords } = usePromiseWrapper({
     key: 'import-examples-words',
-    promiseFn: async ({ vocabularyId, exampleCount = 10, includeGrammar = true, includeContext = true, difficultyLevel = null }: { 
+    promiseFn: async ({ vocabularyId, exampleCount = 10, includeGrammar = true, includeContext = true, difficultyLevels = null }: { 
       vocabularyId: number,
       exampleCount?: number,
       includeGrammar?: boolean,
       includeContext?: boolean,
-      difficultyLevel?: number | null
+      difficultyLevels?: number[] | null
     }) => {
       const requestBody = { 
         vocabularyId, 
         exampleCount,
         includeGrammar,
         includeContext,
-        difficultyLevel
+        difficultyLevels
       }
       
       console.log('📤 Sending generate examples request:', requestBody)

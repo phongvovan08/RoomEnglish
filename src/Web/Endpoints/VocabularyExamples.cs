@@ -301,7 +301,7 @@ public class VocabularyExamples : EndpointGroupBase
         int ExampleCount = 10,
         bool IncludeGrammar = true,
         bool IncludeContext = true,
-        DifficultyLevel? DifficultyLevel = null);
+        List<DifficultyLevel>? DifficultyLevels = null);
 
     [Authorize]
     public async Task<IResult> ImportJson(
@@ -383,7 +383,7 @@ public class VocabularyExamples : EndpointGroupBase
             ExampleCount = request.ExampleCount,
             IncludeGrammar = request.IncludeGrammar,
             IncludeContext = request.IncludeContext,
-            DifficultyLevel = request.DifficultyLevel
+            DifficultyLevels = request.DifficultyLevels
         };
         
         var result = await sender.Send(command);

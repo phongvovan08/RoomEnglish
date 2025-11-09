@@ -55,49 +55,46 @@
           <div class="form-group">
             <label class="form-label">
               <Icon icon="mdi:signal" class="w-4 h-4" />
-              Mức độ khó
+              Mức độ khó (có thể chọn nhiều)
             </label>
-            <div class="radio-group">
-              <label class="radio-option">
+            <div class="checkbox-group">
+              <label class="checkbox-option">
                 <input 
-                  type="radio" 
-                  v-model="config.difficultyLevel" 
+                  type="checkbox" 
+                  v-model="config.difficultyLevels" 
                   :value="1"
-                  name="difficulty"
                 />
-                <span class="radio-label">
+                <span class="checkbox-label">
                   <Icon icon="mdi:signal-variant" class="w-4 h-4 text-green-500" />
                   Dễ (Beginner)
                 </span>
-                <span class="radio-description">Câu đơn giản, từ vựng cơ bản</span>
+                <span class="checkbox-description">Câu đơn giản, từ vựng cơ bản</span>
               </label>
               
-              <label class="radio-option">
+              <label class="checkbox-option">
                 <input 
-                  type="radio" 
-                  v-model="config.difficultyLevel" 
+                  type="checkbox" 
+                  v-model="config.difficultyLevels" 
                   :value="2"
-                  name="difficulty"
                 />
-                <span class="radio-label">
+                <span class="checkbox-label">
                   <Icon icon="mdi:signal-2g" class="w-4 h-4 text-yellow-500" />
                   Trung bình (Intermediate)
                 </span>
-                <span class="radio-description">Câu dài, từ vựng phong phú hơn</span>
+                <span class="checkbox-description">Câu dài, từ vựng phong phú hơn</span>
               </label>
               
-              <label class="radio-option">
+              <label class="checkbox-option">
                 <input 
-                  type="radio" 
-                  v-model="config.difficultyLevel" 
+                  type="checkbox" 
+                  v-model="config.difficultyLevels" 
                   :value="3"
-                  name="difficulty"
                 />
-                <span class="radio-label">
+                <span class="checkbox-label">
                   <Icon icon="mdi:signal-5g" class="w-4 h-4 text-red-500" />
                   Khó (Advanced)
                 </span>
-                <span class="radio-description">Câu phức tạp, ngữ pháp cao cấp</span>
+                <span class="checkbox-description">Câu phức tạp, ngữ pháp cao cấp</span>
               </label>
             </div>
           </div>
@@ -185,7 +182,7 @@ import { Icon } from '@iconify/vue'
 
 interface GenerateConfig {
   exampleCount: number
-  difficultyLevel: number
+  difficultyLevels: number[]
   includeGrammar: boolean
   includeContext: boolean
 }
@@ -209,15 +206,16 @@ const emit = defineEmits<Emits>()
 
 // Configuration state
 const config = ref<GenerateConfig>({
-  exampleCount: 10,
-  difficultyLevel: 1,
+  exampleCount: 5,
+  difficultyLevels: [1, 2, 3],
   includeGrammar: true,
   includeContext: true
 })
 
 // Computed properties
 const totalExamples = computed(() => {
-  return props.selectedWords.length * config.value.exampleCount
+  const levelsCount = config.value.difficultyLevels.length || 1
+  return props.selectedWords.length * config.value.exampleCount * levelsCount
 })
 
 const estimatedTime = computed(() => {
@@ -235,6 +233,7 @@ const estimatedTime = computed(() => {
 const isConfigValid = computed(() => {
   return config.value.exampleCount >= 1 && 
          config.value.exampleCount <= 20 &&
+         config.value.difficultyLevels.length > 0 &&
          props.selectedWords.length > 0
 })
 
@@ -254,8 +253,8 @@ watch(() => props.isOpen, (newValue) => {
   if (newValue) {
     // Reset to default values when opening
     config.value = {
-      exampleCount: 10,
-      difficultyLevel: 1,
+      exampleCount: 5,
+      difficultyLevels: [1, 2, 3],
       includeGrammar: true,
       includeContext: true
     }

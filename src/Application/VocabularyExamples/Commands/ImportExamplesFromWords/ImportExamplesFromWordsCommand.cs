@@ -23,7 +23,7 @@ public record ImportExamplesFromWordsCommand : IRequest<ImportExamplesWordsResul
     public int ExampleCount { get; init; } = 10;
     public bool IncludeGrammar { get; init; } = true;
     public bool IncludeContext { get; init; } = true;
-    public DifficultyLevel? DifficultyLevel { get; init; } = null;
+    public List<DifficultyLevel>? DifficultyLevels { get; init; } = null;
 }
 
 public class ImportExamplesWordsResult
@@ -177,8 +177,10 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     private async Task ProcessVocabularyWordsInBatches(List<VocabularyWord> vocabularyWords, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
     {
         // Get batch size from configuration or use default
-        var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 5);
-        var semaphore = new SemaphoreSlim(batchSize, batchSize);
+        int coreCount = Environment.ProcessorCount;
+        int maxConcurrentRequests = coreCount * 5; // Ví dụ API chậm
+        var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 10);
+        var semaphore = new SemaphoreSlim(batchSize, maxConcurrentRequests);
         
         _logger.LogInformation("Starting parallel processing with batch size: {BatchSize} for {WordCount} words", 
             batchSize, vocabularyWords.Count);
@@ -223,6 +225,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             
             var examplesAddedCount = 0;
             var examplesSkippedCount = 0;
+            var exampleIndex = 0;
             
             foreach (var exampleData in examplesData)
             {
@@ -235,6 +238,14 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
 
                     if (!isDuplicate)
                     {
+                        // Determine difficulty level by example index
+                        var difficultyLevels = request.DifficultyLevels ?? new List<DifficultyLevel> { DifficultyLevel.Easy };
+                        var examplesPerLevel = request.ExampleCount;
+                        var levelIndex = exampleIndex / examplesPerLevel;
+                        var difficultyLevel = levelIndex < difficultyLevels.Count 
+                            ? (int)difficultyLevels[levelIndex] 
+                            : (int)DifficultyLevel.Easy;
+                        
                         var newExample = new VocabularyExample
                         {
                             Sentence = exampleData.Sentence,
@@ -242,7 +253,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                             Grammar = exampleData.Grammar,
                             WordId = vocabularyWord.Id,
                             IsActive = true,
-                            DifficultyLevel = (int)(request.DifficultyLevel ?? Commands.ImportExamplesFromWords.DifficultyLevel.Easy),
+                            DifficultyLevel = difficultyLevel,
                             DisplayOrder = 0
                         };
 
@@ -254,6 +265,8 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                     {
                         examplesSkippedCount++;
                     }
+                    
+                    exampleIndex++; // Increment index for next example
                 }
                 catch (Exception ex)
                 {
@@ -262,6 +275,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                         result.Errors.Add($"Error processing example '{exampleData.Sentence}': {ex.Message}");
                         result.ErrorCount++;
                     }
+                    exampleIndex++; // Increment even on error
                 }
             }
             
@@ -387,18 +401,34 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             ? "Give examples in different contexts (daily life, common usage in life, in meetings, in work, in IT, in software development)."
             : "Use common everyday contexts.";
         
-        var difficultyInstruction = request.DifficultyLevel switch
+        // Build difficulty levels instruction
+        var difficultyLevels = request.DifficultyLevels ?? new List<DifficultyLevel> { DifficultyLevel.Easy };
+        var difficultyCount = difficultyLevels.Count;
+        var examplesPerLevel = request.ExampleCount;
+        var totalExamples = examplesPerLevel * difficultyCount;
+        
+        var difficultyInstructions = new List<string>();
+        foreach (var level in difficultyLevels)
         {
-            DifficultyLevel.Easy => "Create simple, easy-to-understand examples suitable for beginners.",
-            DifficultyLevel.Medium => "Create an example by combining 2 understandable sentences.",
-            DifficultyLevel.Hard => "Create an example by combining 3 understandable sentences.",
-            _ => "Keep examples at beginner to intermediate level."
-        };
+            var instruction = level switch
+            {
+                DifficultyLevel.Easy => $"- Level 1 (Easy - {examplesPerLevel} examples): Create simple, easy-to-understand examples suitable for beginners.",
+                DifficultyLevel.Medium => $"- Level 2 (Medium - {examplesPerLevel} examples): Create an example by combining 2 understandable sentences diverse sentence structures.",
+                DifficultyLevel.Hard => $"- Level 3 (Hard - {examplesPerLevel} examples): Create an example by combining 3 understandable sentences diverse sentence structures.",
+                _ => $"- Level 1 (Easy - {examplesPerLevel} examples): Keep examples at beginner to intermediate level."
+            };
+            difficultyInstructions.Add(instruction);
+        }
+        
+        var difficultyInstruction = string.Join("\n", difficultyInstructions);
 
-        return $@"Create {request.ExampleCount} practical example sentences using the vocabulary word '{vocabularyWord}'.
+        return $@"Create {totalExamples} practical example sentences using the vocabulary word '{vocabularyWord}' with {difficultyCount} difficulty level(s).
 
         {contextInstruction}
+        
+        Difficulty levels to create ({examplesPerLevel} examples for each level):
         {difficultyInstruction}
+        
         {grammarInstruction}
 
         Return ONLY a valid JSON array with this exact format:
@@ -414,9 +444,11 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         - Each sentence must use the word '{vocabularyWord}' naturally
         - Sentences should be practical and commonly used
         - Vietnamese translations must be natural and accurate
-        - Create exactly {request.ExampleCount} unique examples
+        - Create exactly {totalExamples} unique examples ({examplesPerLevel} examples × {difficultyCount} levels)
+        - Distribute examples evenly across all requested difficulty levels
         - Focus on demonstrating different uses of '{vocabularyWord}'
         - Avoid repetitive sentence structures
+        - Mix difficulty levels in the output array
         ";
     }
 }

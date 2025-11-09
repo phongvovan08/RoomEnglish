@@ -51,14 +51,14 @@
                   <span class="checkmark"></span>
                   Bao gồm giải thích ngữ pháp
                 </label>
-                <label class="checkbox-label">
+                <label>
                   <input v-model="includeContext" type="checkbox" />
                   <span class="checkmark"></span>
                   Tạo ví dụ đa dạng ngữ cảnh
                 </label>
                 <div class="form-group">
-                  <label for="difficultyLevel">Mức độ khó:</label>
-                  <select v-model="difficultyLevel" id="difficultyLevel" class="form-select">
+                  <label for="selectedDifficultyLevel">Mức độ khó:</label>
+                  <select v-model="selectedDifficultyLevel" id="selectedDifficultyLevel" class="form-select">
                     <option :value="1">Dễ</option>
                     <option :value="2">Trung bình</option>
                     <option :value="3">Khó</option>
@@ -130,7 +130,7 @@ interface ExampleGenerationConfig {
   count: number
   includeGrammar: boolean
   includeContext: boolean
-  difficultyLevel: number | null
+  difficultyLevels: number[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -142,7 +142,7 @@ const emit = defineEmits<Emits>()
 const exampleCount = ref(10)
 const includeGrammar = ref(true)
 const includeContext = ref(true)
-const difficultyLevel = ref<number | null>(1)
+const selectedDifficultyLevel = ref(1)
 const validationErrors = ref<string[]>([])
 const isGenerating = ref(false)
 const showSuccess = ref(false)
@@ -175,8 +175,11 @@ const handleGenerate = async () => {
       count: exampleCount.value,
       includeGrammar: includeGrammar.value,
       includeContext: includeContext.value,
-      difficultyLevel: difficultyLevel.value
+      difficultyLevels: [selectedDifficultyLevel.value]
     }
+    
+    console.log('🎯 ExampleGenerationModal emitting config:', config)
+    console.log('🎯 difficultyLevels value:', config.difficultyLevels)
     
     emit('generate-examples', config)
     // Don't reset form here - let parent handle success/error
@@ -232,7 +235,7 @@ const resetForm = () => {
   exampleCount.value = 10
   includeGrammar.value = true
   includeContext.value = true
-  difficultyLevel.value = 1
+  selectedDifficultyLevel.value = 1
   validationErrors.value = []
   showSuccess.value = false
   isGenerating.value = false
