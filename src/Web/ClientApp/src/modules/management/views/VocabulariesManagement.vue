@@ -11,7 +11,6 @@
         Quản lý Từ vựng
         <span v-if="currentCategory" class="category-name">- {{ currentCategory.name }}</span>
       </h1>
-      <p>Quản lý từ vựng trong danh mục {{ currentCategory?.name || 'đã chọn' }}</p>
     </div>
 
     <div class="action-bar">
@@ -640,7 +639,7 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .back-btn {

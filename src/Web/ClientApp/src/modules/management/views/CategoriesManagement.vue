@@ -5,7 +5,6 @@
         <Icon icon="mdi:folder-multiple" class="w-8 h-8 mr-3" />
         Quản lý Danh mục
       </h1>
-      <p>Quản lý tất cả danh mục từ vựng trong hệ thống</p>
     </div>
 
     <div class="action-bar">
@@ -347,7 +346,7 @@ onMounted(() => {
 
 .page-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .page-header h1 {

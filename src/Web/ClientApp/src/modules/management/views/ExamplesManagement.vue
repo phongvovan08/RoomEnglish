@@ -559,7 +559,7 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .back-btn {

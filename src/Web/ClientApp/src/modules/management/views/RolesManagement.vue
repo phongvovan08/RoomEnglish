@@ -6,7 +6,6 @@
           <Icon icon="mdi:shield-account" class="w-8 h-8 mr-3" />
           Quản lý Vai trò
         </h1>
-        <p>Quản lý vai trò và phân quyền trong hệ thống</p>
       </div>
       <button @click="openCreateModal" class="create-btn">
         <Icon icon="mdi:plus" class="w-5 h-5 mr-2" />
@@ -337,7 +336,7 @@ onMounted(() => {
 
 .page-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
