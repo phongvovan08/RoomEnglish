@@ -9,23 +9,25 @@ namespace RoomEnglish.Application.Vocabulary.Queries.GetReviewExamples;
 public record GetReviewExamplesQuery : IRequest<ReviewExamplesDto>
 {
     public int Count { get; init; } = 20;
-    public string? UserId { get; init; }
 }
 
 public class GetReviewExamplesQueryHandler : IRequestHandler<GetReviewExamplesQuery, ReviewExamplesDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUser _user;
 
-    public GetReviewExamplesQueryHandler(IApplicationDbContext context)
+    public GetReviewExamplesQueryHandler(IApplicationDbContext context, IUser user)
     {
         _context = context;
+        _user = user;
     }
 
     public async Task<ReviewExamplesDto> Handle(GetReviewExamplesQuery request, CancellationToken cancellationToken)
     {
-        // Get all examples that have been studied (have user progress)
+        var userId = _user.Id ?? throw new UnauthorizedAccessException();
+        
         var studiedExamples = await _context.UserExampleProgress
-            .Where(p => p.UserId == request.UserId && p.LastAttemptedAt != null)
+            .Where(p => p.UserId == userId && p.LastAttemptedAt != null)
             .Include(p => p.Example)
                 .ThenInclude(e => e.Word)
                 .ThenInclude(w => w.Category)
@@ -50,7 +52,7 @@ public class GetReviewExamplesQueryHandler : IRequestHandler<GetReviewExamplesQu
 
             // Get word progress
             var wordProgress = await _context.UserWordProgress
-                .Where(p => p.UserId == request.UserId && p.WordId == word.Id)
+                .Where(p => p.UserId == userId && p.WordId == word.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
             reviewItems.Add(new ReviewExampleItemDto

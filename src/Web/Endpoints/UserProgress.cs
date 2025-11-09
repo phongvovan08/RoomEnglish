@@ -7,6 +7,7 @@ using RoomEnglish.Application.Vocabulary.Queries;
 using RoomEnglish.Application.Vocabulary.Commands;
 using RoomEnglish.Application.Vocabulary.Queries.GetReviewExamples;
 using RoomEnglish.Web.Infrastructure;
+using System.Security.Claims;
 
 namespace RoomEnglish.Web.Endpoints;
 
@@ -162,13 +163,11 @@ public class UserProgress : EndpointGroupBase
     [Authorize]
     public async Task<IResult> GetReviewExamples(
         ISender sender,
-        [FromQuery] int count = 20,
-        [FromHeader(Name = "User-Id")] string? userId = null)
+        [FromQuery] int count = 20)
     {
         var result = await sender.Send(new GetReviewExamplesQuery 
         { 
-            Count = count,
-            UserId = userId
+            Count = count
         });
         return Results.Ok(result);
     }
