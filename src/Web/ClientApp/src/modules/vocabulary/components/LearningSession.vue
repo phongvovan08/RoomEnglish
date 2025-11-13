@@ -74,18 +74,8 @@
 
     <!-- Learning Content -->
     <div class="learning-content">
-      <!-- Example Grid -->
-      <ExampleGrid
-        v-if="showExampleGrid && currentWord"
-        :word="currentWord"
-        :examples="currentWord.examples || []"
-        :completed-examples="completedExamples"
-        @select-group="selectExampleGroup"
-        @back="backToVocabulary"
-      />
-
       <!-- Vocabulary Mode -->
-      <div v-else-if="currentSessionType === 'vocabulary'" class="vocabulary-container">
+      <div v-if="currentSessionType === 'vocabulary'" class="vocabulary-container">
         <WordSidebar 
           :words="sessionWords"
           :current-word-index="currentIndex"
@@ -108,24 +98,24 @@
       <!-- Dictation Mode -->
       <div v-else-if="currentSessionType === 'dictation'" class="dictation-container">
         <ExampleSidebar 
-          v-if="selectedGroupIndex !== null && currentWord && currentWord.examples"
-          :examples="getCurrentGroupExamples()"
-          :group-index="selectedGroupIndex"
-          :current-index="currentExampleIndex - (selectedGroupIndex * 10)"
+          v-if="currentWord && currentWord.examples"
+          :examples="currentWord.examples"
+          :group-index="0"
+          :current-index="currentExampleIndex"
           :completed-examples="completedExamples"
-          :group-start-index="selectedGroupIndex * 10"
+          :group-start-index="0"
           :word="currentWord"
           :submitting-example-index="submittingExampleIndex ?? undefined"
-          @select-example="jumpToExample"
+          @select-example="jumpToExampleDirect"
         />
         
         <DictationCard 
           :example="currentExample"
           :word="currentWord"
-          :show-back-to-grid="selectedGroupIndex !== null"
+          :show-back-to-grid="true"
           @submit="handleDictationSubmit"
           @next="nextWord"
-          @back-to-grid="backToExampleGrid"
+          @back-to-grid="backToVocabulary"
         />
       </div>
 
@@ -203,7 +193,6 @@ import { useToast } from '@/composables/useToast'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
-import ExampleGrid from '../components/ExampleGrid.vue'
 import ExampleSidebar from '../components/ExampleSidebar.vue'
 import WordSidebar from '../components/WordSidebar.vue'
 import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
@@ -258,7 +247,6 @@ const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
 const showSpeechSettings = ref(false)
 const originalSessionType = ref(props.sessionType) // Remember original type
-const showExampleGrid = ref(false) // Show example grid
 const completedExamples = ref<number[]>([]) // Track completed example indices
 const selectedGroupIndex = ref<number | null>(null) // Track selected group
 const submittingExampleIndex = ref<number | null>(null) // Track example being submitted
@@ -341,13 +329,14 @@ const groupProgress = computed(() => {
 
 const progress = computed(() => {
   if (currentSessionType.value === 'dictation') {
-    // If in group mode, show group progress
-    if (selectedGroupIndex.value !== null) {
-      return groupProgress.value
-    }
-    // For dictation mode, calculate based on examples
-    if (totalExamples.value === 0) return 0
-    return (currentExampleNumber.value / totalExamples.value) * 100
+    // Calculate based on current word's examples
+    const currentWordExampleCount = currentWord.value?.examples?.length || 0
+    if (currentWordExampleCount === 0) return 0
+    
+    // Count completed examples in current word
+    const completedInCurrentWord = completedExamples.value.length
+    
+    return (completedInCurrentWord / currentWordExampleCount) * 100
   } else {
     // For vocabulary mode, calculate based on completed words
     if (totalWords.value === 0) return 0
@@ -595,30 +584,17 @@ const nextWord = async () => {
   const word = currentWord.value
   console.log('Current word:', word?.word)
   
-  // If we were in dictation mode from a group selection
-  if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary' && selectedGroupIndex.value !== null) {
-    const groupSize = 10
-    const groupStartIndex = selectedGroupIndex.value * groupSize
+  // If we were in dictation mode (learning examples)
+  if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
     const totalExamplesInWord = word?.examples?.length || 0
-    const groupEndIndex = Math.min(groupStartIndex + groupSize, totalExamplesInWord) - 1
     
-    // Check if we're still within the selected group
-    if (currentExampleIndex.value < groupEndIndex) {
-      console.log('Moving to next example in group')
+    // Check if we're still within the examples
+    if (currentExampleIndex.value < totalExamplesInWord - 1) {
+      console.log('Moving to next example')
       currentExampleIndex.value++
       return
     } else {
-      console.log('Finished group, returning to example grid')
-      
-      // Check if the group is now 100% complete
-      const groupCompleted = Array.from({ length: groupEndIndex - groupStartIndex + 1 }, (_, i) => groupStartIndex + i)
-        .every(i => completedExamples.value.includes(i))
-      
-      // Clear saved position if group is fully completed
-      if (groupCompleted && word) {
-        await clearLearningPosition(word.id)
-        console.log(`✅ Group ${selectedGroupIndex.value} completed 100% - cleared database position`)
-      }
+      console.log('Finished all examples')
       
       // Check if ALL examples of the current word are completed
       const allExamplesCompleted = word?.examples && 
@@ -632,7 +608,6 @@ const nextWord = async () => {
         showSuccess(`Completed all examples for "${word?.word}"!`)
         
         currentSessionType.value = 'vocabulary'
-        showExampleGrid.value = false
         selectedGroupIndex.value = null
         currentExampleIndex.value = 0
         
@@ -645,22 +620,14 @@ const nextWord = async () => {
           finishSession()
         }
       } else {
-        // Return to example grid to show updated progress
+        // Not all examples completed - return to vocabulary mode
+        console.log('Not all examples completed, returning to vocabulary mode')
         currentSessionType.value = 'vocabulary'
-        showExampleGrid.value = true
         selectedGroupIndex.value = null
         currentExampleIndex.value = 0
       }
       return
     }
-  }
-  
-  // If we were in dictation mode for a single example (from grid), go back to vocabulary
-  if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary') {
-    console.log('Finished example, returning to vocabulary mode')
-    currentSessionType.value = 'vocabulary'
-    currentExampleIndex.value = 0
-    return
   }
   
   // Only cycle through examples in pure dictation mode
@@ -720,16 +687,29 @@ const switchToDictation = async () => {
       .filter(index => index !== -1)
   }
   
-  // Automatically select first group (group 0) and start learning
-  console.log('Auto-selecting first group (group 0) and starting dictation')
-  await selectExampleGroup(0)
+  // Start directly at first incomplete example (no grid selection)
+  console.log('Starting dictation mode with all examples')
+  
+  // Find first incomplete example
+  let startIndex = 0
+  for (let i = 0; i < word.examples.length; i++) {
+    if (!completedExamples.value.includes(i)) {
+      startIndex = i
+      break
+    }
+  }
+  
+  currentExampleIndex.value = startIndex
+  selectedGroupIndex.value = null // No group selection
+  currentSessionType.value = 'dictation'
+  
+  emit('update:sessionType', 'dictation')
+  console.log(`Started at example ${startIndex} (first incomplete)`)
 }
 
 const selectExampleGroup = async (groupIndex: number) => {
   console.log('=== Example group selected:', groupIndex, '===')
   
-  // Hide grid and show dictation card
-  showExampleGrid.value = false
   selectedGroupIndex.value = groupIndex
   
   // Calculate start and end index of the group (each group has 10 examples)
@@ -783,7 +763,6 @@ const selectExampleGroup = async (groupIndex: number) => {
 
 const backToVocabulary = () => {
   console.log('=== Going back to vocabulary ===')
-  showExampleGrid.value = false
   currentSessionType.value = originalSessionType.value
   currentExampleIndex.value = 0
   selectedGroupIndex.value = null
@@ -803,6 +782,12 @@ const jumpToExample = (localIndex: number) => {
   const globalIndex = selectedGroupIndex.value * GROUP_SIZE + localIndex
   currentExampleIndex.value = globalIndex
   console.log(`Jumped to example ${globalIndex} (local index ${localIndex} in group ${selectedGroupIndex.value})`)
+}
+
+// Jump to a specific example directly (no group)
+const jumpToExampleDirect = (exampleIndex: number) => {
+  currentExampleIndex.value = exampleIndex
+  console.log(`Jumped to example ${exampleIndex}`)
 }
 
 // Jump to a specific word
@@ -849,7 +834,6 @@ const backToExampleGrid = async () => {
   }
 
   // Return to vocabulary card (word list)
-  showExampleGrid.value = false
   currentSessionType.value = 'vocabulary'
   selectedGroupIndex.value = null
   currentExampleIndex.value = 0

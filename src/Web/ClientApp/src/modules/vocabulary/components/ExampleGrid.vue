@@ -1,7 +1,6 @@
 <template>
   <div class="example-grid-container">
     <div class="grid-header">
-      <h3>📝 Choose a Group to Practice</h3>
       <p class="word-info">Word: <strong>{{ word.word }}</strong></p>
       <p class="total-info">{{ examples.length }} examples in {{ groupedExamples.length }} groups</p>
     </div>
