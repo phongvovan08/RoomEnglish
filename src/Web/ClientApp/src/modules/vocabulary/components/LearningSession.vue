@@ -602,7 +602,8 @@ const nextWord = async () => {
   if (currentSessionType.value === 'dictation' && originalSessionType.value === 'vocabulary' && selectedGroupIndex.value !== null) {
     const groupSize = 10
     const groupStartIndex = selectedGroupIndex.value * groupSize
-    const groupEndIndex = Math.min(groupStartIndex + groupSize - 1, (word?.examples?.length || 0) - 1)
+    const totalExamplesInWord = word?.examples?.length || 0
+    const groupEndIndex = Math.min(groupStartIndex + groupSize, totalExamplesInWord) - 1
     
     // Check if we're still within the selected group
     if (currentExampleIndex.value < groupEndIndex) {
