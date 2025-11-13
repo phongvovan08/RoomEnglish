@@ -83,9 +83,6 @@ public static class DependencyInjection
                 // Use External scheme to preserve login info between requests
                 options.SignInScheme = IdentityConstants.ExternalScheme;
                 
-                // Force account selection on every sign-in
-                options.AuthorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account";
-                
                 // Handle authentication callbacks with custom logic
                 // See GoogleOAuthHandler for user creation and token generation
                 options.Events = GoogleOAuthHandler.CreateGoogleOAuthEvents();

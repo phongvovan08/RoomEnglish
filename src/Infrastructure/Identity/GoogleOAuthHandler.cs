@@ -23,6 +23,13 @@ public static class GoogleOAuthHandler
     {
         return new OAuthEvents
         {
+            OnRedirectToAuthorizationEndpoint = context =>
+            {
+                // Add prompt=select_account to force account selection
+                context.RedirectUri += "&prompt=select_account";
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
             OnTicketReceived = HandleTicketReceived
         };
     }
