@@ -73,10 +73,10 @@
     </div>
 
     <!-- Learning Content -->
-    <div class="learning-content" v-if="currentWord">
+    <div class="learning-content">
       <!-- Example Grid -->
       <ExampleGrid
-        v-if="showExampleGrid"
+        v-if="showExampleGrid && currentWord"
         :word="currentWord"
         :examples="currentWord.examples || []"
         :completed-examples="completedExamples"
@@ -458,10 +458,7 @@ const loadSessionWords = async () => {
     
     // Wait for Vue to render before hiding loading
     await nextTick()
-    // Add small delay to ensure smooth transition
-    setTimeout(() => {
-      isInitialLoading.value = false
-    }, 100)
+    isInitialLoading.value = false
   } catch (err) {
     console.error('Failed to load session:', err)
     isInitialLoading.value = false
