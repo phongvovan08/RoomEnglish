@@ -27,7 +27,7 @@ import NotificationToast from '@/components/ui/NotificationToast.vue'
   padding-top: 90px;
   padding-left: 15px;
   padding-right: 15px;
-  padding-bottom: 50px;
+  padding-bottom: 15px;
   max-width: 1320px;
   margin: 0 auto;
 }
