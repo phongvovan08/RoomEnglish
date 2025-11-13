@@ -124,7 +124,11 @@ const isCompleted = (localIndex: number) => {
 }
 
 const completedCount = computed(() => {
-  return props.examples.filter((_, index) => isCompleted(index)).length
+  // Count ALL completed examples, not just displayed ones
+  return props.completedExamples.filter(globalIndex => {
+    const localIndex = globalIndex - props.groupStartIndex
+    return localIndex >= 0 && localIndex < props.examples.length
+  }).length
 })
 
 const loadMoreExamples = () => {
