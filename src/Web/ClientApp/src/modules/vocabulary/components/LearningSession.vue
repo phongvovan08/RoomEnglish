@@ -1,76 +1,34 @@
 <template>
   <div class="learning-session-container">
     <!-- Restoring Position Overlay -->
-    <div v-if="isRestoringPosition" class="restoring-overlay">
-      <div class="restoring-content">
-        <div class="cyber-spinner-large"></div>
-        <h3>Đang khôi phục tiến trình...</h3>
-        <p class="restore-info" v-if="restoreInfo">{{ restoreInfo }}</p>
-      </div>
-    </div>
+    <RestorePositionOverlay 
+      v-if="isRestoringPosition"
+      :is-restoring="isRestoringPosition"
+      :info="restoreInfo"
+    />
 
     <!-- Main Content - Hidden during restore -->
     <template v-if="!isRestoringPosition">
       <!-- Session Header -->
-      <div class="session-header">
-      <button @click="$emit('back')" class="back-btn">
-        <i class="mdi mdi-arrow-left"></i>
-        Back to Categories
-      </button>
-      
-      <div class="session-info">
-        <h2>{{ category.name }}</h2>
-        <div class="session-stats">
-          <div class="stat-item">
-            <i class="mdi mdi-target"></i>
-            <span v-if="currentSessionType === 'dictation' && selectedGroupIndex !== null">
-              Example {{ currentExampleInGroup }} / {{ currentGroupSize }} (Group {{ selectedGroupIndex + 1 }})
-            </span>
-            <span v-else-if="currentSessionType === 'dictation'">
-              Example {{ currentExampleNumber }} / {{ totalExamples }}
-            </span>
-            <span v-else>
-              Word {{ currentIndex + 1 }} / {{ totalWords }}
-            </span>
-          </div>
-          <div class="stat-item">
-            <i class="mdi mdi-check-circle"></i>
-            <span>{{ correctCount }} correct</span>
-          </div>
-          <div class="stat-item">
-            <i class="mdi mdi-timer"></i>
-            <span>{{ formatTime(elapsedTime) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="session-controls">
-        <select :value="sessionType" class="session-type-select" @change="changeSessionType">
-          <option value="vocabulary">📚 Vocabulary</option>
-          <option value="dictation">🎤 Dictation</option>
-          <option value="mixed">🎯 Mixed</option>
-        </select>
-        <button 
-          @click="showSpeechSettings = true"
-          class="speech-settings-btn"
-          title="Speech Settings"
-        >
-          <Icon icon="mdi:cog" class="w-4 h-4" />
-          Settings
-        </button>
-      </div>
-    </div>
+      <SessionHeader
+        :category-name="category.name"
+        :session-type="currentSessionType"
+        :selected-group-index="selectedGroupIndex"
+        :current-index="currentIndex"
+        :current-example-in-group="currentExampleInGroup"
+        :current-group-size="currentGroupSize"
+        :current-example-number="currentExampleNumber"
+        :total-examples="totalExamples"
+        :total-words="totalWords"
+        :correct-count="correctCount"
+        :formatted-time="formatTime(elapsedTime)"
+        @back="$emit('back')"
+        @change-session-type="changeSessionType"
+        @open-settings="showSpeechSettings = true"
+      />
 
     <!-- Progress Bar -->
-    <div class="progress-container">
-      <div class="progress-bar">
-        <div 
-          class="progress-fill"
-          :style="{ width: `${progress}%` }"
-        ></div>
-      </div>
-      <span class="progress-text">{{ Math.round(progress) }}%</span>
-    </div>
+    <SessionProgress :progress="progress" />
 
     <!-- Learning Content -->
     <div class="learning-content">
@@ -190,13 +148,18 @@ import { useRoute } from 'vue-router'
 import { useVocabulary } from '../composables/useVocabulary'
 import { useUserProgress } from '../composables/useUserProgress'
 import { useToast } from '@/composables/useToast'
+import { useSessionTimer } from '../composables/use-learning-session'
+import { useSessionComputed, GROUP_SIZE } from '../composables/use-learning-session'
 import type { VocabularyCategory, VocabularyWord, VocabularyExample, LearningSession } from '../types/vocabulary.types'
 import VocabularyCard from '../components/VocabularyCard.vue'
 import DictationCard from '../components/DictationCard.vue'
 import ExampleSidebar from '../components/ExampleSidebar.vue'
 import WordSidebar from '../components/WordSidebar.vue'
+import SessionHeader from './session/SessionHeader.vue'
+import SessionProgress from './session/SessionProgress.vue'
+import SessionCompleteModal from './session/SessionCompleteModal.vue'
+import RestorePositionOverlay from './session/RestorePositionOverlay.vue'
 import SpeechSettingsPanel from '../../../components/SpeechSettingsPanel.vue'
-import { Icon } from '@iconify/vue'
 
 interface Props {
   category: VocabularyCategory
@@ -240,8 +203,6 @@ const currentIndex = ref(0)
 const currentExampleIndex = ref(0) // Track current example index
 const correctCount = ref(0)
 const totalAttempts = ref(0)
-const startTime = ref<number>(Date.now())
-const elapsedTime = ref(0)
 const isSessionComplete = ref(false)
 const currentSessionType = ref(props.sessionType)
 const currentMode = ref<'vocabulary' | 'dictation'>('vocabulary')
@@ -261,120 +222,34 @@ const isLoadingMore = ref(false)
 const isInitialLoading = ref(true) // Separate initial loading state
 
 // Timer
-let timer: number | null = null
+const { elapsedTime, startTimer, stopTimer, resetTimer, formatTime } = useSessionTimer()
 
-// Computed properties
-const currentWord = computed(() => sessionWords.value[currentIndex.value])
-const currentExample = computed(() => {
-  const word = currentWord.value
-  if (!word?.examples || word.examples.length === 0) return null
-  return word.examples[currentExampleIndex.value] || null
+// Computed properties using composable
+const {
+  currentWord,
+  currentExample,
+  totalWords,
+  completedWordsCount,
+  totalExamples,
+  currentExampleNumber,
+  currentExampleInGroup,
+  currentGroupSize,
+  groupProgress,
+  progress,
+  accuracy,
+  finalScore
+} = useSessionComputed({
+  sessionWords,
+  currentIndex,
+  currentExampleIndex,
+  totalCount,
+  selectedGroupIndex,
+  completedExamples,
+  currentSessionType,
+  correctCount,
+  totalAttempts,
+  elapsedTime
 })
-
-// Use totalCount from API instead of loaded words length
-const totalWords = computed(() => totalCount.value || sessionWords.value.length)
-
-// Count completed words (all examples done)
-const completedWordsCount = computed(() => {
-  return sessionWords.value.filter(word => {
-    if (!word.exampleCount || word.exampleCount === 0) return false
-    return (word.completedExampleCount || 0) === word.exampleCount
-  }).length
-})
-
-const totalExamples = computed(() => {
-  return sessionWords.value.reduce((total, word) => {
-    return total + (word.examples?.length || 0)
-  }, 0)
-})
-
-const currentExampleNumber = computed(() => {
-  let count = 0
-  for (let i = 0; i < currentIndex.value; i++) {
-    count += sessionWords.value[i]?.examples?.length || 0
-  }
-  count += currentExampleIndex.value + 1
-  return count
-})
-
-// Group-specific progress tracking
-const GROUP_SIZE = 100 // Constant for group size
-
-const currentExampleInGroup = computed(() => {
-  if (selectedGroupIndex.value === null) return 0
-  const groupStart = selectedGroupIndex.value * GROUP_SIZE
-  return currentExampleIndex.value - groupStart + 1
-})
-
-const currentGroupSize = computed(() => {
-  if (selectedGroupIndex.value === null || !currentWord.value) return 0
-  const groupStart = selectedGroupIndex.value * GROUP_SIZE
-  const groupEnd = Math.min(groupStart + GROUP_SIZE, currentWord.value.examples?.length || 0)
-  return groupEnd - groupStart
-})
-
-const groupProgress = computed(() => {
-  if (currentGroupSize.value === 0 || selectedGroupIndex.value === null) return 0
-  
-  // Calculate based on completed examples in this group
-  const groupStart = selectedGroupIndex.value * GROUP_SIZE
-  const groupEnd = groupStart + currentGroupSize.value
-  
-  const completedInGroup = completedExamples.value.filter(
-    index => index >= groupStart && index < groupEnd
-  ).length
-  
-  return (completedInGroup / currentGroupSize.value) * 100
-})
-
-const progress = computed(() => {
-  if (currentSessionType.value === 'dictation') {
-    // Calculate based on current word's examples
-    const currentWordExampleCount = currentWord.value?.examples?.length || 0
-    if (currentWordExampleCount === 0) return 0
-    
-    // Count completed examples in current word
-    const completedInCurrentWord = completedExamples.value.length
-    
-    return (completedInCurrentWord / currentWordExampleCount) * 100
-  } else {
-    // For vocabulary mode, calculate based on completed words
-    if (totalWords.value === 0) return 0
-    return (completedWordsCount.value / totalWords.value) * 100
-  }
-})
-
-const accuracy = computed(() => {
-  if (totalAttempts.value === 0) return 0
-  return (correctCount.value / totalAttempts.value) * 100
-})
-
-const finalScore = computed(() => {
-  const baseScore = correctCount.value * 100
-  const timeBonus = Math.max(0, 1000 - elapsedTime.value) 
-  const accuracyBonus = Math.round(accuracy.value * 10)
-  return baseScore + timeBonus + accuracyBonus
-})
-
-// Methods
-const startTimer = () => {
-  timer = window.setInterval(() => {
-    elapsedTime.value = Math.floor((Date.now() - startTime.value) / 1000)
-  }, 1000)
-}
-
-const stopTimer = () => {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-}
-
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
 
 // Update completedExampleCount for all words based on current progress
 const updateAllWordsCompletionCount = () => {
