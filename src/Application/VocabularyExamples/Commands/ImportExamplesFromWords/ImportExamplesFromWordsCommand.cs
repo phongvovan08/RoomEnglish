@@ -39,6 +39,7 @@ public class ImportExamplesWordsResult
 public class ChatGPTExampleResponse
 {
     public string Sentence { get; set; } = string.Empty;
+    public string? Phonetic { get; set; }
     public string Translation { get; set; } = string.Empty;
     public string Grammar { get; set; } = string.Empty;
 }
@@ -249,6 +250,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                         var newExample = new VocabularyExample
                         {
                             Sentence = exampleData.Sentence,
+                            Phonetic = exampleData.Phonetic,
                             Translation = exampleData.Translation,
                             Grammar = exampleData.Grammar,
                             WordId = vocabularyWord.Id,
@@ -435,6 +437,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         [
           {{
             ""Sentence"": ""English sentence using '{vocabularyWord}'"",
+            ""Phonetic"": ""IPA phonetic transcription of the entire sentence (e.g., /aɪ juːz maɪ kəmˈpjuːtər/)"",
             ""Translation"": ""Natural Vietnamese translation"", 
             ""Grammar"": ""Describe these sentences in detail in Vietnamese""
           }}
@@ -442,6 +445,9 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         
         Requirements:
         - Each sentence must use the word '{vocabularyWord}' naturally
+        - Provide accurate IPA (International Phonetic Alphabet) transcription for each sentence
+        - Include word stress markers (ˈ for primary stress, ˌ for secondary stress) in phonetic transcription
+        - Use standard American English pronunciation for phonetics
         - Sentences should be practical and commonly used
         - Vietnamese translations must be natural and accurate
         - Create exactly {totalExamples} unique examples ({examplesPerLevel} examples × {difficultyCount} levels)
