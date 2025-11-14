@@ -182,32 +182,73 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
     CancellationToken cancellationToken)
     {
         var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 10);
+        var semaphore = new SemaphoreSlim(batchSize, batchSize);
+        var allNewExamples = new List<VocabularyExample>();
+        var lockObject = new object();
 
-        _logger.LogInformation("Starting parallel processing with max {MaxDegree} concurrent tasks for {WordCount} words",
+        _logger.LogInformation("Starting parallel ChatGPT calls with max {MaxDegree} concurrent requests for {WordCount} words",
             batchSize, vocabularyWords.Count);
 
-        await Parallel.ForEachAsync(
-            vocabularyWords,
-            new ParallelOptions
+        // Phase 1: Call ChatGPT in parallel to get all examples
+        var tasks = vocabularyWords.Select(async word =>
+        {
+            await semaphore.WaitAsync(cancellationToken);
+            try
             {
-                MaxDegreeOfParallelism = batchSize,
-                CancellationToken = cancellationToken
-            },
-            async (word, ct) =>
+                var examples = await ProcessVocabularyWordGetExamples(word, result, request, cancellationToken);
+                
+                // Add to collection in thread-safe manner
+                if (examples.Any())
+                {
+                    lock (lockObject)
+                    {
+                        allNewExamples.AddRange(examples);
+                    }
+                }
+            }
+            catch (Exception ex)
             {
-                await ProcessVocabularyWord(word, result, request, ct);
-            });
+                _logger.LogError(ex, "Error processing word '{Word}': {ErrorMessage}", word.Word, ex.Message);
+                lock (result)
+                {
+                    result.Errors.Add($"Error processing word '{word.Word}': {ex.Message}");
+                    result.ErrorCount++;
+                }
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
-        _logger.LogInformation("Parallel processing completed for all {WordCount} words", vocabularyWords.Count);
+        await Task.WhenAll(tasks);
+
+        _logger.LogInformation("Completed parallel ChatGPT calls. Collected {TotalExamples} examples from {WordCount} words",
+            allNewExamples.Count, vocabularyWords.Count);
+
+        // Phase 2: Save all examples to database in one batch
+        if (allNewExamples.Any())
+        {
+            _logger.LogInformation("Saving {Count} examples to database...", allNewExamples.Count);
+            
+            _context.VocabularyExamples.AddRange(allNewExamples);
+
+            _logger.LogInformation("All examples added to context. Ready for SaveChanges.");
+        }
     }
 
-    private async Task ProcessVocabularyWord(VocabularyWord vocabularyWord, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
+    private async Task<List<VocabularyExample>> ProcessVocabularyWordGetExamples(
+        VocabularyWord vocabularyWord, 
+        ImportExamplesWordsResult result, 
+        ImportExamplesFromWordsCommand request, 
+        CancellationToken cancellationToken)
     {
         var wordStopwatch = Stopwatch.StartNew();
-        _logger.LogDebug("Starting processing for word: {Word}", vocabularyWord.Word);
+        _logger.LogDebug("Starting ChatGPT call for word: {Word}", vocabularyWord.Word);
         
         try
         {
+            // Call ChatGPT to get examples
             var chatGptStopwatch = Stopwatch.StartNew();
             var examplesData = await GetExamplesDataFromChatGPT(vocabularyWord.Word, request);
             chatGptStopwatch.Stop();
@@ -215,66 +256,66 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             _logger.LogDebug("ChatGPT API call completed for '{Word}' in {ElapsedMs}ms. Generated {ExampleCount} examples", 
                 vocabularyWord.Word, chatGptStopwatch.ElapsedMilliseconds, examplesData.Count);
             
-            // Get existing examples for this word in one query
-            var existingExamples = await _context.VocabularyExamples
-                .Where(e => e.WordId == vocabularyWord.Id)
-                .Select(e => e.Sentence.ToLower())
-                .ToListAsync(cancellationToken);
+            if (examplesData == null || !examplesData.Any())
+            {
+                _logger.LogWarning("No examples returned from ChatGPT for word '{Word}'", vocabularyWord.Word);
+                lock (result)
+                {
+                    result.Errors.Add($"No examples generated for word '{vocabularyWord.Word}'");
+                    result.ErrorCount++;
+                }
+                return new List<VocabularyExample>();
+            }
             
             var examplesAddedCount = 0;
-            var examplesSkippedCount = 0;
             var exampleIndex = 0;
+            var newExamplesToAdd = new List<VocabularyExample>();
             
             foreach (var exampleData in examplesData)
             {
                 try
                 {
-                    var sentencePrefix = exampleData.Sentence.ToLower().Substring(0, Math.Min(20, exampleData.Sentence.Length));
-                    
-                    // Check against in-memory list instead of database query
-                    var isDuplicate = existingExamples.Any(existing => existing.Contains(sentencePrefix));
-
-                    if (!isDuplicate)
+                    if (string.IsNullOrWhiteSpace(exampleData.Sentence))
                     {
-                        // Determine difficulty level by example index
-                        var difficultyLevels = request.DifficultyLevels ?? new List<DifficultyLevel> { DifficultyLevel.Easy };
-                        var examplesPerLevel = request.ExampleCount;
-                        var levelIndex = exampleIndex / examplesPerLevel;
-                        var difficultyLevel = levelIndex < difficultyLevels.Count 
-                            ? (int)difficultyLevels[levelIndex] 
-                            : (int)DifficultyLevel.Easy;
-                        
-                        var newExample = new VocabularyExample
-                        {
-                            Sentence = exampleData.Sentence,
-                            Phonetic = exampleData.Phonetic,
-                            Translation = exampleData.Translation,
-                            Grammar = exampleData.Grammar,
-                            WordId = vocabularyWord.Id,
-                            IsActive = true,
-                            DifficultyLevel = difficultyLevel,
-                            DisplayOrder = 0
-                        };
-
-                        _context.VocabularyExamples.Add(newExample);
-                        existingExamples.Add(exampleData.Sentence.ToLower()); // Add to in-memory cache
-                        examplesAddedCount++;
-                    }
-                    else
-                    {
-                        examplesSkippedCount++;
+                        _logger.LogWarning("Empty sentence in example data for word '{Word}'", vocabularyWord.Word);
+                        exampleIndex++;
+                        continue;
                     }
                     
-                    exampleIndex++; // Increment index for next example
+                    // Determine difficulty level by example index
+                    var difficultyLevels = request.DifficultyLevels ?? new List<DifficultyLevel> { DifficultyLevel.Easy };
+                    var examplesPerLevel = request.ExampleCount;
+                    var levelIndex = exampleIndex / examplesPerLevel;
+                    var difficultyLevel = levelIndex < difficultyLevels.Count 
+                        ? (int)difficultyLevels[levelIndex] 
+                        : (int)DifficultyLevel.Easy;
+                    
+                    var newExample = new VocabularyExample
+                    {
+                        Sentence = exampleData.Sentence,
+                        Phonetic = exampleData.Phonetic,
+                        Translation = exampleData.Translation,
+                        Grammar = exampleData.Grammar,
+                        WordId = vocabularyWord.Id,
+                        IsActive = true,
+                        DifficultyLevel = difficultyLevel,
+                        DisplayOrder = 0
+                    };
+
+                    newExamplesToAdd.Add(newExample);
+                    examplesAddedCount++;
+                    exampleIndex++;
                 }
                 catch (Exception ex)
                 {
-                    lock (result.Errors)
+                    _logger.LogError(ex, "Error processing individual example for word '{Word}': {ErrorMessage}", 
+                        vocabularyWord.Word, ex.Message);
+                    lock (result)
                     {
-                        result.Errors.Add($"Error processing example '{exampleData.Sentence}': {ex.Message}");
+                        result.Errors.Add($"Error processing example for '{vocabularyWord.Word}': {ex.Message}");
                         result.ErrorCount++;
                     }
-                    exampleIndex++; // Increment even on error
+                    exampleIndex++;
                 }
             }
             
@@ -282,19 +323,13 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             lock (result)
             {
                 result.SuccessCount += examplesAddedCount;
-                result.ErrorCount += examplesSkippedCount;
-                
-                if (examplesSkippedCount > 0)
-                {
-                    result.Errors.Add($"Skipped {examplesSkippedCount} duplicate examples for word '{vocabularyWord.Word}'");
-                }
             }
 
             wordStopwatch.Stop();
-            _logger.LogDebug("Completed processing for '{Word}' in {ElapsedMs}ms. Added: {AddedCount}, Skipped: {SkippedCount}", 
-                vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, examplesAddedCount, examplesSkippedCount);
+            _logger.LogDebug("Completed processing for '{Word}' in {ElapsedMs}ms. Added: {AddedCount} examples", 
+                vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, examplesAddedCount);
 
-            // Don't save changes here - batch save will be done later
+            return newExamplesToAdd;
         }
         catch (Exception ex)
         {
@@ -302,15 +337,17 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             _logger.LogError(ex, "Failed to generate examples for '{Word}' after {ElapsedMs}ms. Error: {ErrorMessage}", 
                 vocabularyWord.Word, wordStopwatch.ElapsedMilliseconds, ex.Message);
             
-            // Add detailed error message to the result
             var errorMessage = ex.InnerException != null 
                 ? $"Failed to generate examples for '{vocabularyWord.Word}': {ex.Message} (Inner: {ex.InnerException.Message})"
                 : $"Failed to generate examples for '{vocabularyWord.Word}': {ex.Message}";
             
-            result.Errors.Add(errorMessage);
-            result.ErrorCount++;
+            lock (result)
+            {
+                result.Errors.Add(errorMessage);
+                result.ErrorCount++;
+            }
             
-            // Don't create fallback examples - let the user know the actual error
+            return new List<VocabularyExample>();
         }
     }
 
@@ -322,13 +359,13 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             throw new InvalidOperationException("OpenAI API key not configured");
         }
 
-        var timeoutSeconds = _configuration.GetValue<int>("ChatGPT:RequestTimeoutSeconds", 30);
+        var timeoutSeconds = _configuration.GetValue<int>("ChatGPT:RequestTimeoutSeconds", 120);
         var maxRetries = _configuration.GetValue<int>("ChatGPT:MaxRetries", 3);
         
         var client = new ChatClient("gpt-4o", apiKey);
         var prompt = CreatePromptForExamples(vocabularyWord, request);
         
-        _logger.LogDebug("Starting ChatGPT API call for '{Word}' with {MaxRetries} max retries and {TimeoutSeconds}s timeout", 
+        _logger.LogInformation("🚀 Starting ChatGPT API call for '{Word}' with {MaxRetries} max retries and {TimeoutSeconds}s timeout", 
             vocabularyWord, maxRetries, timeoutSeconds);
         
         Exception? lastException = null;
@@ -338,7 +375,7 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
             var attemptStopwatch = Stopwatch.StartNew();
             try
             {
-                _logger.LogDebug("ChatGPT API attempt {Attempt}/{MaxRetries} for '{Word}'", attempt, maxRetries, vocabularyWord);
+                _logger.LogInformation("⏳ ChatGPT API attempt {Attempt}/{MaxRetries} for '{Word}'...", attempt, maxRetries, vocabularyWord);
                 
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
                 
@@ -350,8 +387,9 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 var chatCompletion = await client.CompleteChatAsync(messages, cancellationToken: cts.Token);
                 attemptStopwatch.Stop();
                 
-                _logger.LogDebug("ChatGPT API success on attempt {Attempt} for '{Word}' in {ElapsedMs}ms", 
-                    attempt, vocabularyWord, attemptStopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("✅ ChatGPT API SUCCESS on attempt {Attempt} for '{Word}' in {ElapsedMs}ms ({ElapsedSec}s)", 
+                    attempt, vocabularyWord, attemptStopwatch.ElapsedMilliseconds, attemptStopwatch.ElapsedMilliseconds / 1000.0);
+                
                 var content = chatCompletion.Value.Content[0].Text;
                 
                 // Clean up the response to ensure valid JSON
@@ -361,97 +399,70 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
                 if (jsonStart >= 0 && jsonEnd > jsonStart)
                 {
                     var jsonContent = content.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                    return JsonSerializer.Deserialize<List<ChatGPTExampleResponse>>(jsonContent) ?? new List<ChatGPTExampleResponse>();
+                    var examples = JsonSerializer.Deserialize<List<ChatGPTExampleResponse>>(jsonContent) ?? new List<ChatGPTExampleResponse>();
+                    _logger.LogInformation("📝 Parsed {Count} examples for '{Word}'", examples.Count, vocabularyWord);
+                    return examples;
                 }
                 
                 throw new InvalidOperationException("Invalid JSON response from ChatGPT");
+            }
+            catch (OperationCanceledException ex)
+            {
+                attemptStopwatch.Stop();
+                lastException = ex;
+                
+                _logger.LogWarning("⏰ TIMEOUT: ChatGPT API attempt {Attempt}/{MaxRetries} for '{Word}' after {ElapsedMs}ms ({ElapsedSec}s). Timeout was {TimeoutSeconds}s", 
+                    attempt, maxRetries, vocabularyWord, attemptStopwatch.ElapsedMilliseconds, attemptStopwatch.ElapsedMilliseconds / 1000.0, timeoutSeconds);
+                
+                if (attempt < maxRetries)
+                {
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1));
+                    _logger.LogInformation("🔄 Retrying ChatGPT API for '{Word}' after {DelaySeconds}s delay...", vocabularyWord, delay.TotalSeconds);
+                    await Task.Delay(delay);
+                }
             }
             catch (Exception ex)
             {
                 attemptStopwatch.Stop();
                 lastException = ex;
                 
-                _logger.LogWarning("ChatGPT API attempt {Attempt}/{MaxRetries} failed for '{Word}' after {ElapsedMs}ms. Error: {ErrorMessage}", 
-                    attempt, maxRetries, vocabularyWord, attemptStopwatch.ElapsedMilliseconds, ex.Message);
+                _logger.LogWarning("❌ ChatGPT API attempt {Attempt}/{MaxRetries} FAILED for '{Word}' after {ElapsedMs}ms ({ElapsedSec}s). Error: {ErrorType} - {ErrorMessage}", 
+                    attempt, maxRetries, vocabularyWord, attemptStopwatch.ElapsedMilliseconds, attemptStopwatch.ElapsedMilliseconds / 1000.0, 
+                    ex.GetType().Name, ex.Message);
                 
                 if (attempt < maxRetries)
                 {
-                    // Exponential backoff: wait 1s, 2s, 4s...
-                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1));
-                    _logger.LogDebug("Retrying ChatGPT API call for '{Word}' after {DelaySeconds}s delay", vocabularyWord, delay.TotalSeconds);
+                    // Exponential backoff: wait 2s, 4s, 8s...
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    _logger.LogInformation("🔄 Retrying ChatGPT API for '{Word}' after {DelaySeconds}s delay...", vocabularyWord, delay.TotalSeconds);
                     await Task.Delay(delay);
                 }
             }
         }
         
-        _logger.LogError("ChatGPT API failed for '{Word}' after all {MaxRetries} attempts. Final error: {ErrorMessage}", 
-            vocabularyWord, maxRetries, lastException?.Message);
+        _logger.LogError("💥 ChatGPT API FAILED for '{Word}' after ALL {MaxRetries} attempts. Final error: {ErrorType} - {ErrorMessage}", 
+            vocabularyWord, maxRetries, lastException?.GetType().Name, lastException?.Message);
         
-        throw new InvalidOperationException($"ChatGPT failed after {maxRetries} attempts: {lastException?.Message}");
+        throw new InvalidOperationException($"ChatGPT failed after {maxRetries} attempts: {lastException?.Message}", lastException);
     }
 
     private string CreatePromptForExamples(string vocabularyWord, ImportExamplesFromWordsCommand request)
     {
-        var grammarInstruction = request.IncludeGrammar 
-            ? "For each English sentence that uses a specific vocabulary word, analyze and explain the grammar used in detail in Vietnamese.\r\n\r\nFocus on:\r\n- The grammatical role of the vocabulary word (e.g., noun, verb, object, etc.)\r\n- Sentence structure \r\n- Any useful grammatical pattern used\r\n\r\nExplain in one detail sentence suitable for English learners. Output only the analysis.\r\n\r\nVocabulary word: \"computer\"\r\nSentence: \"I use my computer to write emails every morning.\"\r\n→ Grammar: Describe these sentences in detail in Vietnamese"
-            : "Grammar explanations are optional.";
-        
-        var contextInstruction = request.IncludeContext 
-            ? "Give examples in different contexts (daily life, common usage in life, in meetings, in work, in IT, in software development)."
-            : "Use common everyday contexts.";
-        
-        // Build difficulty levels instruction
         var difficultyLevels = request.DifficultyLevels ?? new List<DifficultyLevel> { DifficultyLevel.Easy };
-        var difficultyCount = difficultyLevels.Count;
         var examplesPerLevel = request.ExampleCount;
-        var totalExamples = examplesPerLevel * difficultyCount;
-        
-        var difficultyInstructions = new List<string>();
-        foreach (var level in difficultyLevels)
-        {
-            var instruction = level switch
-            {
-                DifficultyLevel.Easy => $"- Level 1 (Easy - {examplesPerLevel} examples): Create simple, easy-to-understand examples suitable for beginners.",
-                DifficultyLevel.Medium => $"- Level 2 (Medium - {examplesPerLevel} examples): Create an example by combining 2 understandable sentences diverse sentence structures.",
-                DifficultyLevel.Hard => $"- Level 3 (Hard - {examplesPerLevel} examples): Create an example by combining 3 understandable sentences diverse sentence structures.",
-                _ => $"- Level 1 (Easy - {examplesPerLevel} examples): Keep examples at beginner to intermediate level."
-            };
-            difficultyInstructions.Add(instruction);
-        }
-        
-        var difficultyInstruction = string.Join("\n", difficultyInstructions);
+        var totalExamples = examplesPerLevel * difficultyLevels.Count;
 
-        return $@"Create {totalExamples} practical example sentences using the vocabulary word '{vocabularyWord}' with {difficultyCount} difficulty level(s).
+        return $@"Create {totalExamples} example sentences using '{vocabularyWord}' in various contexts.
 
-        {contextInstruction}
-        
-        Difficulty levels to create ({examplesPerLevel} examples for each level):
-        {difficultyInstruction}
-        
-        {grammarInstruction}
+Return ONLY valid JSON array:
+[{{""Sentence"":""sentence with '{vocabularyWord}'"",""Phonetic"":""/fəˈnetɪk/"",""Translation"":""Vietnamese"",""Grammar"":""Vietnamese grammar explanation""}}]
 
-        Return ONLY a valid JSON array with this exact format:
-        [
-          {{
-            ""Sentence"": ""English sentence using '{vocabularyWord}'"",
-            ""Phonetic"": ""IPA phonetic transcription of the entire sentence (e.g., /aɪ juːz maɪ kəmˈpjuːtər/)"",
-            ""Translation"": ""Natural Vietnamese translation"", 
-            ""Grammar"": ""Describe these sentences in detail in Vietnamese""
-          }}
-        ]
-        
-        Requirements:
-        - Each sentence must use the word '{vocabularyWord}' naturally
-        - Provide accurate IPA (International Phonetic Alphabet) transcription for each sentence
-        - Include word stress markers (ˈ for primary stress, ˌ for secondary stress) in phonetic transcription
-        - Use standard American English pronunciation for phonetics
-        - Sentences should be practical and commonly used
-        - Vietnamese translations must be natural and accurate
-        - Create exactly {totalExamples} unique examples ({examplesPerLevel} examples × {difficultyCount} levels)
-        - Distribute examples evenly across all requested difficulty levels
-        - Focus on demonstrating different uses of '{vocabularyWord}'
-        - Avoid repetitive sentence structures
-        - Mix difficulty levels in the output array
-        ";
+Requirements:
+- {examplesPerLevel} simple examples
+- {examplesPerLevel} medium examples (2 clauses)
+- {examplesPerLevel} complex examples (3+ clauses)
+- Include IPA phonetics with stress markers
+- Natural Vietnamese translations
+- Grammar explanations in Vietnamese";
     }
 }
