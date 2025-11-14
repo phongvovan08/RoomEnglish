@@ -99,35 +99,45 @@ public class TranslateVietnameseMeaningCommandHandler : IRequestHandler<Translat
 
             result.TotalProcessed = wordsToTranslate.Count;
 
-            // Process each word
-            foreach (var word in wordsToTranslate)
+            // Process words in batches to optimize ChatGPT calls
+            var batchStopwatch = Stopwatch.StartNew();
+            
+            _logger.LogInformation("🚀 Translating {Count} words in one ChatGPT call...", wordsToTranslate.Count);
+            
+            try
             {
-                var wordStopwatch = Stopwatch.StartNew();
+                var translations = await TranslateMultipleToVietnamese(wordsToTranslate);
                 
-                try
+                // Apply translations to words
+                for (int i = 0; i < wordsToTranslate.Count; i++)
                 {
-                    _logger.LogInformation("Translating Vietnamese meaning for word: {Word} (ID: {Id})", 
-                        word.Word, word.Id);
-
-                    var translation = await TranslateToVietnamese(word.Definition, word.Word);
-                    
-                    word.VietnameseMeaning = translation;
-                    result.SuccessCount++;
-                    
-                    wordStopwatch.Stop();
-                    _logger.LogInformation("Successfully translated '{Word}' in {ElapsedMs}ms: {Translation}", 
-                        word.Word, wordStopwatch.ElapsedMilliseconds, translation);
+                    var word = wordsToTranslate[i];
+                    if (i < translations.Count && !string.IsNullOrEmpty(translations[i]))
+                    {
+                        word.VietnameseMeaning = translations[i];
+                        result.SuccessCount++;
+                        _logger.LogDebug("✅ Translated '{Word}': {Translation}", word.Word, translations[i]);
+                    }
+                    else
+                    {
+                        result.ErrorCount++;
+                        result.Errors.Add($"No translation received for '{word.Word}'");
+                        _logger.LogWarning("⚠️ Missing translation for '{Word}'", word.Word);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    wordStopwatch.Stop();
-                    result.ErrorCount++;
-                    var errorMsg = $"Failed to translate '{word.Word}': {ex.Message}";
-                    result.Errors.Add(errorMsg);
-                    
-                    _logger.LogError(ex, "Translation failed for '{Word}' after {ElapsedMs}ms", 
-                        word.Word, wordStopwatch.ElapsedMilliseconds);
-                }
+                
+                batchStopwatch.Stop();
+                _logger.LogInformation("✅ Batch translation completed in {ElapsedMs}ms ({ElapsedSec}s)", 
+                    batchStopwatch.ElapsedMilliseconds, batchStopwatch.ElapsedMilliseconds / 1000.0);
+            }
+            catch (Exception ex)
+            {
+                batchStopwatch.Stop();
+                result.ErrorCount += wordsToTranslate.Count;
+                result.Errors.Add($"Batch translation failed: {ex.Message}");
+                
+                _logger.LogError(ex, "❌ Batch translation failed after {ElapsedMs}ms", 
+                    batchStopwatch.ElapsedMilliseconds);
             }
 
             // Save all changes
@@ -161,7 +171,7 @@ public class TranslateVietnameseMeaningCommandHandler : IRequestHandler<Translat
         }
     }
 
-    private async Task<string> TranslateToVietnamese(string definition, string word)
+    private async Task<List<string>> TranslateMultipleToVietnamese(List<Domain.Entities.VocabularyWord> words)
     {
         var apiKey = _configuration["OpenAI:ApiKey"];
         if (string.IsNullOrEmpty(apiKey))
@@ -169,30 +179,45 @@ public class TranslateVietnameseMeaningCommandHandler : IRequestHandler<Translat
             throw new InvalidOperationException("OpenAI API key not configured");
         }
 
-        var timeoutSeconds = _configuration.GetValue<int>("ChatGPT:RequestTimeoutSeconds", 30);
-        var maxRetries = _configuration.GetValue<int>("ChatGPT:MaxRetries", 3);
+        var timeoutSeconds = _configuration.GetValue<int>("ChatGPT:RequestTimeoutSeconds", 180);
+        var maxRetries = _configuration.GetValue<int>("ChatGPT:MaxRetries", 2);
         
         var client = new ChatClient("gpt-4o", apiKey);
         
-        var prompt = $@"Translate the following English definition to Vietnamese. 
-The definition is for the English word: ""{word}""
+        // Build numbered list of words with definitions
+        var wordsList = new System.Text.StringBuilder();
+        for (int i = 0; i < words.Count; i++)
+        {
+            wordsList.AppendLine($"{i + 1}. Word: {words[i].Word}");
+            wordsList.AppendLine($"   Definition: {words[i].Definition}");
+            wordsList.AppendLine();
+        }
+        
+        var prompt = $@"Translate the following English definitions to Vietnamese. Return ONLY a JSON array of translations.
 
-Definition: {definition}
+{wordsList}
+
+Return format:
+[""Vietnamese translation 1"",""Vietnamese translation 2"",...]
 
 Requirements:
-- Provide a natural, clear Vietnamese translation
-- Keep the meaning accurate and concise
-- Use proper Vietnamese grammar
-- Return ONLY the Vietnamese translation, no extra text or explanation
-
-Vietnamese translation:";
+- Natural, clear Vietnamese translations
+- Accurate and concise
+- Proper Vietnamese grammar
+- Return ONLY the JSON array, no extra text";
 
         Exception? lastException = null;
         
+        _logger.LogInformation("📤 Sending {Count} definitions to ChatGPT for translation...", words.Count);
+        
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
+            var attemptStopwatch = Stopwatch.StartNew();
+            
             try
             {
+                _logger.LogInformation("⏳ Translation attempt {Attempt}/{MaxRetries}...", attempt, maxRetries);
+                
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
                 
                 var messages = new List<ChatMessage>
@@ -201,25 +226,46 @@ Vietnamese translation:";
                 };
                 
                 var chatCompletion = await client.CompleteChatAsync(messages, cancellationToken: cts.Token);
-                var translation = chatCompletion.Value.Content[0].Text.Trim();
+                attemptStopwatch.Stop();
                 
-                return translation;
+                var content = chatCompletion.Value.Content[0].Text;
+                
+                _logger.LogInformation("✅ ChatGPT responded in {ElapsedMs}ms ({ElapsedSec}s)", 
+                    attemptStopwatch.ElapsedMilliseconds, attemptStopwatch.ElapsedMilliseconds / 1000.0);
+                
+                // Parse JSON array
+                var jsonStart = content.IndexOf('[');
+                var jsonEnd = content.LastIndexOf(']');
+                
+                if (jsonStart >= 0 && jsonEnd > jsonStart)
+                {
+                    var jsonContent = content.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    var translations = System.Text.Json.JsonSerializer.Deserialize<List<string>>(jsonContent) 
+                        ?? new List<string>();
+                    
+                    _logger.LogInformation("📝 Parsed {Count} translations", translations.Count);
+                    return translations;
+                }
+                
+                throw new InvalidOperationException("Invalid JSON response from ChatGPT");
             }
             catch (Exception ex)
             {
+                attemptStopwatch.Stop();
                 lastException = ex;
                 
-                _logger.LogWarning("ChatGPT translation attempt {Attempt}/{MaxRetries} failed for '{Word}': {Error}", 
-                    attempt, maxRetries, word, ex.Message);
+                _logger.LogWarning("⚠️ Translation attempt {Attempt}/{MaxRetries} failed after {ElapsedMs}ms: {Error}", 
+                    attempt, maxRetries, attemptStopwatch.ElapsedMilliseconds, ex.Message);
                 
                 if (attempt < maxRetries)
                 {
-                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt - 1));
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    _logger.LogInformation("🔄 Retrying after {DelaySeconds}s delay...", delay.TotalSeconds);
                     await Task.Delay(delay);
                 }
             }
         }
         
-        throw new InvalidOperationException($"ChatGPT translation failed after {maxRetries} attempts: {lastException?.Message}");
+        throw new InvalidOperationException($"ChatGPT translation failed after {maxRetries} attempts: {lastException?.Message}", lastException);
     }
 }
