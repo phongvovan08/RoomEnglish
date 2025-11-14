@@ -151,62 +151,6 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                     }).FirstOrDefault()
             })
             .PaginatedListAsync(request.PageNumber, request.PageSize);
-
-        // Background translation for words missing Vietnamese meaning
-        // Default: true in Production, false in Development to save tokens
-        var shouldAutoTranslate = request.AutoTranslate ?? _environment.IsProduction();
-        
-        if (shouldAutoTranslate)
-        {
-            if (!_environment.IsProduction())
-            {
-                _logger.LogInformation("⚠️ Auto-translate requested but skipped: Not in Production environment (Current: {Environment})", 
-                    _environment.EnvironmentName);
-            }
-            else
-            {
-                _ = Task.Run(async () => 
-                {
-                    try
-                    {
-                        // Create new scope for background task to avoid ObjectDisposedException
-                        using var scope = _serviceScopeFactory.CreateScope();
-                        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-                        var logger = scope.ServiceProvider.GetRequiredService<ILogger<GetVocabularyWordsQueryHandler>>();
-
-                        var wordsNeedingTranslation = result.Items
-                            .Where(w => string.IsNullOrEmpty(w.VietnameseMeaning) && !string.IsNullOrEmpty(w.Definition))
-                            .Take(10) // Limit to 10 words per request to avoid overwhelming ChatGPT
-                            .ToList();
-
-                        if (wordsNeedingTranslation.Any())
-                        {
-                            logger.LogInformation("🌐 [Production] Auto-translating {Count} words with missing Vietnamese meanings", 
-                                wordsNeedingTranslation.Count);
-
-                            foreach (var word in wordsNeedingTranslation)
-                            {
-                                var translateCommand = new TranslateVietnameseMeaningCommand
-                                {
-                                    WordId = word.Id,
-                                    TranslateAll = false
-                                };
-
-                                await sender.Send(translateCommand);
-                            }
-
-                            logger.LogInformation("✅ [Production] Background translation completed for {Count} words", 
-                                wordsNeedingTranslation.Count);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "⚠️ Background translation failed but query succeeded");
-                    }
-                });
-            }
-        }
-
         return result;
     }
 
