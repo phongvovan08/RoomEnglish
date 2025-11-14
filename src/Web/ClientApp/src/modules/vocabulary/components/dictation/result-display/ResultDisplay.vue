@@ -5,6 +5,7 @@
     <div class="sentence-section" v-if="sentence">
       <div class="sentence-card">
         <p class="sentence-content">{{ sentence }}</p>
+        <p class="phonetic-content" v-if="phonetic">{{ phonetic }}</p>
         <p class="translation-content">{{ translation }}</p>
         <p class="grammar-text">{{ grammar }}</p>
       </div>
@@ -42,6 +43,7 @@ import type { DictationResult } from '../../../types/vocabulary.types'
 interface Props {
   result: DictationResult
   sentence?: string
+  phonetic?: string
   translation?: string
   grammar?: string
 }
@@ -224,6 +226,15 @@ onUnmounted(() => {
   line-height: 1.6;
   font-weight: 500;
   text-align: center;
+}
+
+.phonetic-content {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 1rem;
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .info-sections {

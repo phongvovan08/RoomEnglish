@@ -3,6 +3,7 @@ namespace RoomEnglish.Domain.Entities;
 public class VocabularyExample : BaseAuditableEntity
 {
     public string Sentence { get; set; } = string.Empty;
+    public string? Phonetic { get; set; } // IPA phonetic transcription
     public string Translation { get; set; } = string.Empty; // Vietnamese translation
     public string? Grammar { get; set; } = string.Empty; // Grammar explanation for the example
     public string? AudioUrl { get; set; } // URL to example audio file

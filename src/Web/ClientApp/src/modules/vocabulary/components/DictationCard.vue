@@ -13,6 +13,10 @@
             <span class="word-meaning">{{ word.meaning }}</span>
             <span v-if="word.vietnameseMeaning" class="word-vietnamese">{{ word.vietnameseMeaning }}</span>
           </div>
+          <div class="example-phonetic-line" v-if="example?.phonetic">
+            <span class="example-phonetic-label">IPA:</span>
+            <span class="example-phonetic-text">{{ example.phonetic }}</span>
+          </div>
         </div>
       </div>
 
@@ -141,6 +145,7 @@
         v-if="showResult && dictationResult"
         :result="dictationResult"
         :sentence="example?.sentence"
+        :phonetic="example?.phonetic"
         :translation="example?.translation"
         :grammar="example?.grammar"
         @replay="playCorrectAudio"
@@ -809,6 +814,26 @@ watch(() => props.example, (newExample) => {
   font-style: italic;
 }
 
+.example-phonetic-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.example-phonetic-label {
+  color: #adb5bd;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.example-phonetic-text {
+  color: rgba(116, 192, 252, 0.8);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -910,7 +935,7 @@ watch(() => props.example, (newExample) => {
   border-radius: 15px;
   padding: 1rem;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   resize: vertical;
   transition: all 0.3s ease;
   font-family: inherit;

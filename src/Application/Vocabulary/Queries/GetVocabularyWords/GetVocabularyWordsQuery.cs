@@ -125,6 +125,7 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                     {
                         Id = e.Id,
                         Sentence = e.Sentence,
+                        Phonetic = e.Phonetic,
                         Translation = e.Translation,
                         Grammar = e.Grammar,
                         AudioUrl = e.AudioUrl,

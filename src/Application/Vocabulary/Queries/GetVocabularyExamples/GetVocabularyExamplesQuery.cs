@@ -61,6 +61,7 @@ public class GetVocabularyExamplesQueryHandler : IRequestHandler<GetVocabularyEx
             {
                 Id = x.Id,
                 Sentence = x.Sentence,
+                Phonetic = x.Phonetic,
                 Translation = x.Translation,
                 Grammar = x.Grammar,
                 AudioUrl = x.AudioUrl,

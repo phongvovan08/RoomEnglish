@@ -37,6 +37,7 @@ export interface VocabularyWord {
 export interface VocabularyExample {
   id: number
   sentence: string
+  phonetic?: string
   translation: string
   grammar?: string
   audioUrl?: string
