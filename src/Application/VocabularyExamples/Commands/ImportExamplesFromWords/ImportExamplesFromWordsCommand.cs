@@ -175,32 +175,29 @@ public class ImportExamplesFromWordsCommandHandler : IRequestHandler<ImportExamp
         }
     }
 
-    private async Task ProcessVocabularyWordsInBatches(List<VocabularyWord> vocabularyWords, ImportExamplesWordsResult result, ImportExamplesFromWordsCommand request, CancellationToken cancellationToken)
+    private async Task ProcessVocabularyWordsInBatches(
+    List<VocabularyWord> vocabularyWords,
+    ImportExamplesWordsResult result,
+    ImportExamplesFromWordsCommand request,
+    CancellationToken cancellationToken)
     {
-        // Get batch size from configuration or use default
-        int coreCount = Environment.ProcessorCount;
-        int maxConcurrentRequests = coreCount * 5; // Ví dụ API chậm
         var batchSize = _configuration.GetValue<int>("ChatGPT:ConcurrentRequests", 10);
-        var semaphore = new SemaphoreSlim(batchSize, maxConcurrentRequests);
-        
-        _logger.LogInformation("Starting parallel processing with batch size: {BatchSize} for {WordCount} words", 
+
+        _logger.LogInformation("Starting parallel processing with max {MaxDegree} concurrent tasks for {WordCount} words",
             batchSize, vocabularyWords.Count);
 
-        var tasks = vocabularyWords.Select(async word =>
-        {
-            await semaphore.WaitAsync(cancellationToken);
-            try
+        await Parallel.ForEachAsync(
+            vocabularyWords,
+            new ParallelOptions
             {
-                await ProcessVocabularyWord(word, result, request, cancellationToken);
-            }
-            finally
+                MaxDegreeOfParallelism = batchSize,
+                CancellationToken = cancellationToken
+            },
+            async (word, ct) =>
             {
-                semaphore.Release();
-            }
-        });
-        
-        await Task.WhenAll(tasks);
-        
+                await ProcessVocabularyWord(word, result, request, ct);
+            });
+
         _logger.LogInformation("Parallel processing completed for all {WordCount} words", vocabularyWords.Count);
     }
 
