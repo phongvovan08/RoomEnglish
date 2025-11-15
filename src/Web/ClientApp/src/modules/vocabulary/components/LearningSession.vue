@@ -824,6 +824,58 @@ onMounted(async () => {
       restoreInfo.value = ''
     }
   }
+  
+  // Auto-switch to dictation mode if sessionType is 'dictation' from URL
+  if (props.sessionType === 'dictation' && !shouldRestore) {
+    console.log('🎯 Auto-switching to dictation mode from URL')
+    // Wait for words to load
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    if (sessionWords.value.length > 0) {
+      // Find first word with examples
+      const firstWordWithExamples = sessionWords.value.find(w => w.examples && w.examples.length > 0)
+      
+      if (firstWordWithExamples) {
+        const wordIndex = sessionWords.value.findIndex(w => w.id === firstWordWithExamples.id)
+        currentIndex.value = wordIndex
+        
+        // Wait for word to update
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        // Load progress
+        await getUserProgress()
+        updateAllWordsCompletionCount()
+        
+        // Find completed examples for this word
+        if (userProgressData.value && firstWordWithExamples.examples) {
+          const exampleProgressList = userProgressData.value.exampleProgress
+          completedExamples.value = firstWordWithExamples.examples
+            .map((example, index) => {
+              const isCompleted = exampleProgressList.some(
+                p => p.exampleId === example.id && p.isCompleted
+              )
+              return isCompleted ? index : -1
+            })
+            .filter(index => index !== -1)
+        }
+        
+        // Find first incomplete example
+        let startIndex = 0
+        for (let i = 0; i < firstWordWithExamples.examples.length; i++) {
+          if (!completedExamples.value.includes(i)) {
+            startIndex = i
+            break
+          }
+        }
+        
+        currentExampleIndex.value = startIndex
+        selectedGroupIndex.value = null // No group selection
+        currentSessionType.value = 'dictation'
+        
+        console.log(`✅ Auto-started dictation at word "${firstWordWithExamples.word}", example ${startIndex}`)
+      }
+    }
+  }
 })
 
 onUnmounted(() => {

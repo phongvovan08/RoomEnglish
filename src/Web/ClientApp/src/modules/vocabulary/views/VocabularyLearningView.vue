@@ -206,12 +206,32 @@ const getCategoryProgress = (categoryId: number): number => {
   return categoryProgress ? categoryProgress.completionPercentage : 0
 }
 
+// Watch route name to sync sessionType when URL changes (e.g., browser back/forward)
+watch(() => route.name, (newRouteName) => {
+  console.log('[VocabularyLearningView] Route name changed to:', newRouteName)
+  
+  if (isNavigatingBack.value) {
+    console.log('[VocabularyLearningView] ✋ Skipping sessionType update - navigating back')
+    return
+  }
+  
+  // Sync sessionType with route name to ensure UI matches URL
+  if (newRouteName === 'VocabularyLearningExamples' && sessionType.value !== 'dictation') {
+    console.log('[VocabularyLearningView] 📝 Syncing to dictation mode (route changed to examples)')
+    sessionType.value = 'dictation'
+  } else if (newRouteName === 'VocabularyLearningWords' && sessionType.value !== 'vocabulary') {
+    console.log('[VocabularyLearningView] 📚 Syncing to vocabulary mode (route changed to words)')
+    sessionType.value = 'vocabulary'
+  }
+})
+
 // Watch sessionType to update URL when switching to dictation/examples
 watch(sessionType, (newType, oldType) => {
   console.log('[VocabularyLearningView] sessionType watch triggered:', oldType, '→', newType)
   console.log('[VocabularyLearningView] isNavigatingBack:', isNavigatingBack.value)
   console.log('[VocabularyLearningView] selectedCategory:', selectedCategory.value?.id)
   console.log('[VocabularyLearningView] Current route:', route.name)
+  console.log('[VocabularyLearningView] Current query:', route.query)
 
   // Don't interfere if we're navigating back
   if (isNavigatingBack.value) {
@@ -219,24 +239,27 @@ watch(sessionType, (newType, oldType) => {
     return
   }
 
-  if (selectedCategory.value && newType === 'dictation') {
-    console.log('[VocabularyLearningView] 📝 Switching to examples URL')
-    // Update URL to examples route
+  // Get categoryId from current URL query (preserve existing query)
+  const currentCategoryId = route.query.categoryId
+
+  if (currentCategoryId && newType === 'dictation') {
+    console.log('[VocabularyLearningView] 📝 Switching to examples URL with categoryId:', currentCategoryId)
+    // Update URL to examples route, preserving current categoryId
     router.replace({
       name: 'VocabularyLearningExamples',
       query: {
-        categoryId: selectedCategory.value.id
+        categoryId: currentCategoryId
       }
     }).then(() => {
       console.log('[VocabularyLearningView] ✅ URL changed to examples')
     })
-  } else if (selectedCategory.value && newType === 'vocabulary') {
-    console.log('[VocabularyLearningView] 📚 Switching to words URL')
-    // Update URL back to words route
+  } else if (currentCategoryId && newType === 'vocabulary') {
+    console.log('[VocabularyLearningView] 📚 Switching to words URL with categoryId:', currentCategoryId)
+    // Update URL back to words route, preserving current categoryId
     router.replace({
       name: 'VocabularyLearningWords',
       query: {
-        categoryId: selectedCategory.value.id
+        categoryId: currentCategoryId
       }
     }).then(() => {
       console.log('[VocabularyLearningView] ✅ URL changed to words')
@@ -264,6 +287,15 @@ onMounted(async () => {
       selectedCategory.value = category
       isCompleted.value = false
       sessionResult.value = null
+      
+      // Check if we should start in dictation/examples mode based on route name
+      if (route.name === 'VocabularyLearningExamples') {
+        console.log('[VocabularyLearningView] 📝 Starting in examples mode (from URL)')
+        sessionType.value = 'dictation'
+      } else if (route.name === 'VocabularyLearningWords') {
+        console.log('[VocabularyLearningView] 📚 Starting in words mode (from URL)')
+        sessionType.value = 'vocabulary'
+      }
     }
     isAutoSelecting.value = false
   }
