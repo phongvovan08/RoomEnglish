@@ -1,4 +1,4 @@
-name: Deploy to Azure Web App
+name: CD - Deploy to Azure Web App
 
 # IMPORTANT: Before running this workflow, you MUST add the secret:
 # GitHub Repository → Settings → Secrets and variables → Actions
