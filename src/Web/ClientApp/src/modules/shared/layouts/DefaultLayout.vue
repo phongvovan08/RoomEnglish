@@ -24,7 +24,7 @@ import NotificationToast from '@/components/ui/NotificationToast.vue'
 }
 
 .main-content {
-  padding-top: 90px;
+  padding-top: 60px;
   padding-left: 15px;
   padding-right: 15px;
   padding-bottom: 15px;
@@ -34,7 +34,7 @@ import NotificationToast from '@/components/ui/NotificationToast.vue'
 
 @media (max-width: 768px) {
   .main-content {
-    padding-top: 80px;
+    padding-top: 40px;
   }
 }
 </style>
