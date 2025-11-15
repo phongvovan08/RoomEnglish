@@ -26,25 +26,23 @@
     <div v-else class="card-container">
       <!-- Word Display -->
       <div class="word-section">
+        <!-- Line 1: Word + Phonetic + Part of Speech + Vietnamese Meaning -->
         <div class="word-display-inline">
           <h1 class="main-word">{{ word.word }}</h1>
           <span class="phonetic" v-if="word.phonetic">{{ word.phonetic }}</span>
           <span class="part-of-speech">{{ word.partOfSpeech }}</span>
+          <span class="divider" v-if="word.meaning">|</span>
+          <span class="vietnamese-meaning-inline" v-if="word.meaning">{{ word.meaning }}</span>
         </div>
         
-        <!-- Audio Controls -->
-        <div class="audio-controls">
+        <!-- Line 2: Audio Button -->
+        <div class="word-controls-line">
           <GlobalSpeechButton
             :text="word.word"
             :instance-id="WORD_AUDIO_ID"
             :show-text="true"
             button-class="audio-btn large"
           />
-        </div>
-
-        <!-- Vietnamese Meaning (Primary) -->
-        <div class="vietnamese-meaning-primary" v-if="word.meaning">
-          <div class="meaning-value">{{ word.meaning }}</div>
         </div>
       </div>
 
@@ -185,9 +183,9 @@ const getHintText = (): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .main-word {
@@ -215,35 +213,25 @@ const getHintText = (): string => {
   border-radius: 15px;
 }
 
-.audio-controls {
+.divider {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin: 0 0.25rem;
+}
+
+.vietnamese-meaning-inline {
+  color: #74c0fc;
+  font-size: 1.1rem;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.word-controls-line {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
   justify-content: center;
-}
-
-.vietnamese-meaning-primary {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: rgba(231, 94, 141, 0.15);
-  border-radius: 15px;
-  text-align: center;
-}
-
-.meaning-label {
-  color: #e75e8d;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 0.5rem;
-}
-
-.meaning-value {
-  color: white;
-  font-size: 1.3rem;
-  font-weight: 600;
-  line-height: 1.4;
+  gap: 1rem;
 }
 
 .audio-btn {

@@ -55,26 +55,35 @@
 
       <!-- Dictation Mode -->
       <div v-else-if="currentSessionType === 'dictation'" class="dictation-container">
-        <ExampleSidebar 
-          v-if="currentWord && currentWord.examples"
-          :examples="currentWord.examples"
-          :group-index="0"
-          :current-index="currentExampleIndex"
-          :completed-examples="completedExamples"
-          :group-start-index="0"
-          :word="currentWord"
-          :submitting-example-index="submittingExampleIndex ?? undefined"
-          @select-example="jumpToExampleDirect"
-        />
+        <!-- Loading State when data not ready -->
+        <div v-if="!currentWord || !currentExample" class="loading-state">
+          <div class="cyber-spinner"></div>
+          <p>Loading examples...</p>
+        </div>
         
-        <DictationCard 
-          :example="currentExample"
-          :word="currentWord"
-          :show-back-to-grid="true"
-          @submit="handleDictationSubmit"
-          @next="nextWord"
-          @back-to-grid="backToVocabulary"
-        />
+        <!-- Dictation Content -->
+        <template v-else>
+          <ExampleSidebar 
+            v-if="currentWord && currentWord.examples"
+            :examples="currentWord.examples"
+            :group-index="0"
+            :current-index="currentExampleIndex"
+            :completed-examples="completedExamples"
+            :group-start-index="0"
+            :word="currentWord"
+            :submitting-example-index="submittingExampleIndex ?? undefined"
+            @select-example="jumpToExampleDirect"
+          />
+          
+          <DictationCard 
+            :example="currentExample"
+            :word="currentWord"
+            :show-back-to-grid="true"
+            @submit="handleDictationSubmit"
+            @next="nextWord"
+            @back-to-grid="backToVocabulary"
+          />
+        </template>
       </div>
 
       <!-- Mixed Mode -->
@@ -249,6 +258,23 @@ const {
   correctCount,
   totalAttempts,
   elapsedTime
+})
+
+// Watch props.sessionType to sync currentSessionType when parent updates it
+watch(() => props.sessionType, (newType) => {
+  console.log('[LearningSession] Props sessionType changed to:', newType)
+  console.log('[LearningSession] Current currentSessionType:', currentSessionType.value)
+  
+  if (currentSessionType.value !== newType) {
+    console.log('[LearningSession] Syncing currentSessionType to:', newType)
+    currentSessionType.value = newType
+    
+    // Reset example-related state when switching back to vocabulary
+    if (newType === 'vocabulary') {
+      selectedGroupIndex.value = null
+      currentExampleIndex.value = 0
+    }
+  }
 })
 
 // Update completedExampleCount for all words based on current progress
@@ -641,6 +667,9 @@ const backToVocabulary = () => {
   currentSessionType.value = originalSessionType.value
   currentExampleIndex.value = 0
   selectedGroupIndex.value = null
+  
+  // Emit to parent to update URL
+  emit('update:sessionType', 'vocabulary')
 }
 
 // Get examples for current group
@@ -828,6 +857,7 @@ onMounted(async () => {
   // Auto-switch to dictation mode if sessionType is 'dictation' from URL
   if (props.sessionType === 'dictation' && !shouldRestore) {
     console.log('🎯 Auto-switching to dictation mode from URL')
+    
     // Wait for words to load
     await new Promise(resolve => setTimeout(resolve, 100))
     
@@ -1067,6 +1097,7 @@ onUnmounted(() => {
   text-align: center;
   padding: 4rem;
   color: white;
+  grid-column: 1 / -1; /* Span all columns in grid */
 }
 
 .cyber-spinner {
