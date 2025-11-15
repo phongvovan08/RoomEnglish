@@ -711,7 +711,6 @@ watch(isAuthenticated, (newValue, oldValue) => {
   left: 0;
   right: 0;
   background-color: var(--primary-bg);
-  border-top: 1px solid var(--border-color);
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
