@@ -55,7 +55,7 @@
       </div>
 
       <!-- Input Section (textarea only, no buttons) -->
-      <div v-if="!showResult" class="input-section">
+      <div v-if="!showResult" ref="inputSection" class="input-section">
         <div class="input-container">
           <div class="input-header">
             <label for="dictation-input">Type what you hear:</label>
@@ -219,6 +219,7 @@ const listenButton = ref<InstanceType<typeof GlobalSpeechButton> | null>(null)
 const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 const hasSubmitted = ref(false) // Track if user has submitted
 const wordComparisonRef = ref<InstanceType<typeof WordComparison> | null>(null)
+const inputSection = ref<HTMLElement | null>(null)
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -476,10 +477,18 @@ watch(() => props.example, (newExample) => {
     
     console.log('🔄 userInput after reset:', userInput.value)
     
-    // Just auto-focus, no auto-play
+    // Auto-focus and auto-scroll on mobile
     setTimeout(() => {
       if (inputTextarea.value && !showResult.value) {
         inputTextarea.value.focus()
+      }
+      
+      // Auto-scroll to input section on mobile
+      if (inputSection.value && window.innerWidth <= 1024) {
+        inputSection.value.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        })
       }
     }, 100)
   }

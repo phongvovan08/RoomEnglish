@@ -25,7 +25,7 @@
     <!-- Actual Content -->
     <div v-else class="card-container">
       <!-- Word Display -->
-      <div class="word-section">
+      <div ref="wordSection" class="word-section">
         <!-- Line 1: Word + Phonetic + Part of Speech + Vietnamese Meaning -->
         <div class="word-display-inline">
           <h1 class="main-word">{{ word.word }}</h1>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, readonly } from 'vue'
+import { ref, computed, onMounted, readonly, watch } from 'vue'
 import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
 import type { VocabularyWord } from '../types/vocabulary.types'
 
@@ -113,6 +113,19 @@ const emit = defineEmits<{
 }>()
 
 const showHintModal = ref(false)
+const wordSection = ref<HTMLElement | null>(null)
+
+// Auto-scroll to word section on mobile when word changes
+watch(() => props.word, (newWord) => {
+  if (newWord && wordSection.value && window.innerWidth <= 1024) {
+    setTimeout(() => {
+      wordSection.value?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start'
+      })
+    }, 100)
+  }
+})
 
 const handleNext = () => {
   console.log('Next button clicked!')
