@@ -202,14 +202,14 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .word-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 10px;
   border: 2px solid;
   transition: all 0.3s ease;
@@ -318,7 +318,7 @@ defineExpose({
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  padding-top: 1rem;
+  padding-top: 0.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -326,7 +326,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 500;

@@ -109,18 +109,18 @@ const formatTime = (seconds: number): string => {
 
 <style scoped>
 .input-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .input-container {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .input-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .input-header label {

@@ -90,7 +90,7 @@
               :placeholder="isRecording ? 'Listening...' : 'Start typing or click microphone for voice input'"
               :disabled="isRecording"
               class="dictation-input"
-              rows="3"
+              rows="2"
               @keydown.enter.exact="handleEnterKey"
             ></textarea>
             
@@ -750,8 +750,8 @@ watch(() => props.example, (newExample) => {
   background: linear-gradient(135deg, rgba(22, 33, 62, 0.9), rgba(15, 52, 96, 0.7));
   border: 1px solid rgba(116, 192, 252, 0.3);
   border-radius: 15px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
   animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -858,7 +858,7 @@ watch(() => props.example, (newExample) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .input-header label {
@@ -935,7 +935,7 @@ watch(() => props.example, (newExample) => {
   border-radius: 15px;
   padding: 1rem;
   color: white;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   resize: vertical;
   transition: all 0.3s ease;
   font-family: inherit;
