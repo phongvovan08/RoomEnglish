@@ -568,11 +568,34 @@ For issues or questions:
 
 ---
 
-**Last Updated:** November 9, 2025  
-**Version:** 2.1.0  
+**Last Updated:** November 15, 2025  
+**Version:** 2.2.0  
 **Status:** ✅ Production Ready
 
-## 🆕 Recent Updates (v2.1.0)
+## 🆕 Recent Updates (v2.2.0)
+
+### **November 15, 2025**
+
+#### **🔗 URL Routing & Navigation (NEW)**
+- ✅ **Direct URL Access** - Navigate directly to `/learning/examples?categoryId=1`
+- ✅ **Browser Navigation** - Back/Forward buttons work correctly with URL sync
+- ✅ **Deep Linking** - Share URLs to specific learning modes (words/examples)
+- ✅ **Bidirectional Sync** - URL and UI state always in sync
+- ✅ **Auto-Start Dictation** - Direct URL to examples starts at first incomplete example
+- ✅ **Smart Navigation** - Back button switches between word list and examples correctly
+
+#### **🎨 Loading States & UX (NEW)**
+- ✅ **Professional Loading UI** - "Preparing your learning session..." with spinner
+- ✅ **Skeleton Screens** - Shimmer animation for sidebar and card skeletons
+- ✅ **Consistent Loading** - Same loading UI for `/learning/words`, `/learning/examples`, `/learning/review`
+- ✅ **No Empty Forms** - Always show loading state when data not ready
+- ✅ **Grid-Aware Loading** - Loading text above skeleton grid, not inside columns
+
+#### **📐 Layout Improvements (NEW)**
+- ✅ **Compact Word Display** - Word info on 2 lines instead of 4
+- ✅ **Format**: "word /phonetic/ PartOfSpeech | Meaning" on line 1, button on line 2
+- ✅ **Centered Layout** - All word information centered with proper spacing
+- ✅ **Visual Divider** - Pipe separator between English and Vietnamese meaning
 
 ### **November 2025**
 - ✅ **Review Feature** - Daily review with 20 studied examples
