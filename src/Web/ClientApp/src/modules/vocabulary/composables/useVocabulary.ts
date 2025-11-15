@@ -70,7 +70,6 @@ export const useVocabulary = () => {
       error.value = null
 
       const token = getAuthToken()
-      console.log('GetWords - Token value:', token)
 
       const params = new URLSearchParams()
       if (query.categoryId) params.append('CategoryId', query.categoryId.toString())
