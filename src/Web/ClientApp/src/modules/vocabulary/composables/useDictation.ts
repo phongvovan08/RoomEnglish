@@ -208,6 +208,7 @@ export const useDictation = () => {
       return text
         .toLowerCase()
         .trim()
+        .replace(/['']/g, "'")  // Normalize both apostrophe types to single quote
         .replace(/[.,!?;:]/g, '')
         .replace(/\s+/g, ' ')
     }
