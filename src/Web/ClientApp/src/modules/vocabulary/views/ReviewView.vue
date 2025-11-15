@@ -21,9 +21,31 @@
     <!-- Progress Bar -->
     <SessionProgress :progress="progress" />
 
-    <div v-if="loading" class="loading-state">
-      <Icon icon="mdi:loading" class="animate-spin w-12 h-12" />
-      <p>Loading review examples...</p>
+    <div v-if="loading" class="loading-wrapper">
+      <!-- Loading Text -->
+      <div class="skeleton-loading-text">
+        <div class="cyber-spinner-small"></div>
+        <p>Preparing your learning session...</p>
+      </div>
+      
+      <!-- Skeleton Grid -->
+      <div class="review-content">
+        <!-- Sidebar Skeleton -->
+        <div class="sidebar-skeleton">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-items">
+            <div class="skeleton-item" v-for="i in 5" :key="i"></div>
+          </div>
+        </div>
+        
+        <!-- Card Skeleton -->
+        <div class="card-skeleton">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-audio"></div>
+          <div class="skeleton-input"></div>
+          <div class="skeleton-buttons"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="error" class="error-state">
@@ -335,11 +357,123 @@ onMounted(() => {
   grid-template-columns: 320px 1fr;
   gap: 2rem;
   padding: 2rem;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
-/* Review Sidebar */
+/* Skeleton Loading Styles */
+.loading-wrapper {
+  padding: 2rem;
+}
+
+.skeleton-loading-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0 0 1rem 0;
+  color: #74c0fc;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.cyber-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(116, 192, 252, 0.3);
+  border-top: 3px solid #74c0fc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.sidebar-skeleton,
+.card-skeleton {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-skeleton {
+  height: 500px;
+}
+
+.skeleton-title {
+  height: 30px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.skeleton-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeleton-item {
+  height: 50px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 10px;
+}
+
+.card-skeleton {
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.skeleton-header {
+  height: 80px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+.skeleton-audio {
+  height: 100px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+.skeleton-input {
+  flex: 1;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+.skeleton-buttons {
+  height: 60px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .review-sidebar {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 15px;
