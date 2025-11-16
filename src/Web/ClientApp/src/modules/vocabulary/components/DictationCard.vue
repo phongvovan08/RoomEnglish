@@ -13,10 +13,6 @@
             <span class="word-meaning">{{ word.meaning }}</span>
             <span v-if="word.vietnameseMeaning" class="word-vietnamese">{{ word.vietnameseMeaning }}</span>
           </div>
-          <div class="example-phonetic-line" v-if="example?.phonetic">
-            <span class="example-phonetic-label">IPA:</span>
-            <span class="example-phonetic-text">{{ example.phonetic }}</span>
-          </div>
         </div>
       </div>
 
@@ -99,6 +95,13 @@
               <div class="pulse"></div>
               <span>Listening...</span>
             </div>
+          </div>
+          
+          <!-- IPA Display below input -->
+          <div class="example-phonetic-hint" v-if="example?.phonetic">
+            <Icon icon="mdi:music-note" class="phonetic-icon" />
+            <span class="phonetic-label">IPA:</span>
+            <span class="phonetic-text">{{ example.phonetic }}</span>
           </div>
         </div>
       </div>
@@ -841,6 +844,41 @@ watch(() => props.example, (newExample) => {
   color: rgba(116, 192, 252, 0.8);
   font-size: 0.9rem;
   font-style: italic;
+}
+
+/* IPA Hint below input */
+.example-phonetic-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  background: rgba(116, 192, 252, 0.1);
+  border-left: 3px solid rgba(116, 192, 252, 0.5);
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.phonetic-icon {
+  color: rgba(116, 192, 252, 0.7);
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.phonetic-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.phonetic-text {
+  color: #74c0fc;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 500;
+  flex: 1;
 }
 
 @keyframes fadeIn {
