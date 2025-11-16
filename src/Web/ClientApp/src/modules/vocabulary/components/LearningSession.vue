@@ -471,8 +471,13 @@ const handleDictationSubmit = async (result: any) => {
     updateAllWordsCompletionCount()
 
     // Save next position to database (so when user returns, they continue from next example)
-    if (currentWord.value && selectedGroupIndex.value !== null) {
-      const groupStartIndex = selectedGroupIndex.value * 10
+    if (currentWord.value) {
+      // Calculate group index from current example index
+      const currentGroupIndex = selectedGroupIndex.value !== null 
+        ? selectedGroupIndex.value 
+        : Math.floor(currentExampleIndex.value / 10)
+      
+      const groupStartIndex = currentGroupIndex * 10
       const groupEndIndex = Math.min(groupStartIndex + 10, currentWord.value.examples.length)
       const nextExampleIndex = currentExampleIndex.value + 1
 
@@ -480,14 +485,14 @@ const handleDictationSubmit = async (result: any) => {
       if (nextExampleIndex < groupEndIndex) {
         await saveLearningPosition(
           currentWord.value.id,
-          selectedGroupIndex.value,
+          currentGroupIndex,
           nextExampleIndex
         )
-        console.log(`Saved next position: word ${currentWord.value.id}, group ${selectedGroupIndex.value}, example ${nextExampleIndex}`)
+        console.log(`✅ Saved next position: word ${currentWord.value.id}, group ${currentGroupIndex}, example ${nextExampleIndex}`)
       } else {
         // Group is about to be completed, clear the position
         await clearLearningPosition(currentWord.value.id)
-        console.log(`Last example in group completed, cleared position for word ${currentWord.value.id}`)
+        console.log(`✅ Last example in group completed, cleared position for word ${currentWord.value.id}`)
       }
     }
   } finally {
@@ -515,6 +520,8 @@ const nextWord = async () => {
     if (currentExampleIndex.value < totalExamplesInWord - 1) {
       console.log('Moving to next example')
       currentExampleIndex.value++
+      // Update group index for position tracking
+      selectedGroupIndex.value = Math.floor(currentExampleIndex.value / 10)
       return
     } else {
       console.log('Finished all examples')
@@ -557,6 +564,8 @@ const nextWord = async () => {
   if (currentSessionType.value === 'dictation' && word?.examples && currentExampleIndex.value < word.examples.length - 1) {
     console.log('Moving to next example of current word (dictation mode)')
     currentExampleIndex.value++
+    // Update group index for position tracking
+    selectedGroupIndex.value = Math.floor(currentExampleIndex.value / 10)
   } else {
     // Move to next word
     console.log('Moving to next word...')
@@ -921,7 +930,8 @@ onMounted(async () => {
         }
         
         currentExampleIndex.value = startIndex
-        selectedGroupIndex.value = null // No group selection
+        // Calculate group index for position saving
+        selectedGroupIndex.value = Math.floor(startIndex / 10)
         currentSessionType.value = 'dictation'
         
         console.log(`✅ Auto-started dictation at word "${firstWordWithExamples.word}", example ${startIndex}`)
