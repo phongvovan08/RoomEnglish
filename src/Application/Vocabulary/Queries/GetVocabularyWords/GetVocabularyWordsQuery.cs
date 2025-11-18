@@ -120,7 +120,8 @@ public class GetVocabularyWordsQueryHandler : IRequestHandler<GetVocabularyWords
                     : 0,
                 Examples = x.Examples
                     .Where(e => e.IsActive)
-                    .OrderBy(e => e.DisplayOrder)
+                    .OrderBy(e => e.DifficultyLevel)
+                    .ThenBy(e => e.DisplayOrder)
                     .Select(e => new VocabularyExampleDto
                     {
                         Id = e.Id,
