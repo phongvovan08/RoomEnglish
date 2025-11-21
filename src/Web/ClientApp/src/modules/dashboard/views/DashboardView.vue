@@ -69,53 +69,8 @@
           </div>
         </div>
 
-        <div class="game-item hover-glow">
-          <div class="thumb">
-            <router-link :to="Routes.TodoLists.children.Create.path">
-              <Icon icon="mdi:plus-circle" class="game-thumb-icon" />
-            </router-link>
-          </div>
-          <div class="down-content">
-            <h4>{{ $t('dashboard.createTodoList') }}</h4>
-            <span>Quick Action</span>
-            <ul>
-              <li><i class="fa fa-star"></i> 4.8</li>
-              <li><i class="fa fa-download"></i> 2.3M</li>
-            </ul>
-          </div>
-        </div>
+        
 
-        <div class="game-item hover-glow">
-          <div class="thumb">
-            <router-link :to="Routes.TodoItems.children.Create.path">
-              <Icon icon="mdi:checkbox-marked-circle" class="game-thumb-icon" />
-            </router-link>
-          </div>
-          <div class="down-content">
-            <h4>{{ $t('dashboard.createTodoItem') }}</h4>
-            <span>Quick Action</span>
-            <ul>
-              <li><i class="fa fa-star"></i> 4.9</li>
-              <li><i class="fa fa-download"></i> 1.8M</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="game-item hover-glow">
-          <div class="thumb">
-            <router-link :to="Routes.TodoLists.children.List.path">
-              <Icon icon="mdi:view-list" class="game-thumb-icon" />
-            </router-link>
-          </div>
-          <div class="down-content">
-            <h4>View All Lists</h4>
-            <span>Browse</span>
-            <ul>
-              <li><i class="fa fa-star"></i> 4.7</li>
-              <li><i class="fa fa-download"></i> 1.2M</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -517,6 +472,12 @@ onMounted(async () => {
 /* Game Items */
 .game-item {
   animation: fadeInUp 0.6s ease-out both;
+  max-width: 100%;
+}
+
+/* Force 4-column grid layout */
+.most-popular .cyborg-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .game-item .thumb {
@@ -587,6 +548,12 @@ onMounted(async () => {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .most-popular .cyborg-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .main-banner {
     padding: 40px 30px;
@@ -602,8 +569,12 @@ onMounted(async () => {
     height: 150px;
   }
   
-  .cyborg-grid-2,
-  .cyborg-grid-4 {
+  .cyborg-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .cyborg-grid-4,
+  .most-popular .cyborg-grid-4 {
     grid-template-columns: 1fr;
   }
   
