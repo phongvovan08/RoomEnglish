@@ -136,7 +136,7 @@
             @click="closeMobileMenu"
           >
             <Icon :icon="item.icon" class="w-5 h-5 mr-3" />
-            {{ $t(item.label) }}
+            {{ getMenuLabel(item.label) }}
           </router-link>
           
           <!-- Mobile Submenu -->
@@ -149,7 +149,7 @@
               @click="closeMobileMenu"
             >
               <Icon :icon="child.icon" class="w-4 h-4 mr-3" />
-              {{ $t(child.label) }}
+              {{ getMenuLabel(child.label) }}
             </router-link>
           </div>
         </li>
@@ -215,7 +215,7 @@ const mobileMenuOpen = ref(false)
 const isSticky = ref(false)
 const isMobile = ref(false)
 
-const { locale } = useI18n()
+const { locale, t: $t } = useI18n()
 const route = useRoute()
 
 // Authentication
@@ -326,6 +326,14 @@ const menuItems = computed(() => {
 // Methods
 const isActiveRoute = (path: string) => {
   return route.path.startsWith(path) && path !== '/'
+}
+
+const getMenuLabel = (label: string) => {
+  // If label starts with 'menu.' it's a translation key, otherwise display directly
+  if (label.startsWith('menu.')) {
+    return $t(label)
+  }
+  return label
 }
 
 const handleSearch = () => {

@@ -205,6 +205,7 @@
         display: flex;
         flex-direction: column;
         gap: 60px;
+        padding: 2rem 1rem;
     }
 
     /* Main Banner */
