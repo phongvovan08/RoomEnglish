@@ -274,6 +274,13 @@ const menuItems = computed(() => {
         },
       ],
     },
+    {
+      name: 'informationProject',
+      label: 'Information project',
+      path: Routes.InformationProject.path,
+      icon: 'mdi:information',
+      hasChildren: false,
+    },
   ]
 
   // Only add Management menu if user has Administrator role

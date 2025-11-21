@@ -196,5 +196,11 @@ export const Routes = {
     name: "Posts",
     path: "/posts",
   },
+  
+  // Information Project
+  InformationProject: {
+    name: "InformationProject",
+    path: "/information-project",
+  },
 };
 

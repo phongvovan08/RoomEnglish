@@ -222,6 +222,14 @@ const router = createRouter({
     
     // Legacy posts routes
     ...postsRoutes,
+    
+    // Information Project route
+    {
+      path: Routes.InformationProject.path,
+      name: Routes.InformationProject.name,
+      component: () => import("../modules/shared/views/InformationProject.vue"),
+      meta: { public: true },
+    },
   ],
 });
 
