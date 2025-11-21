@@ -1,21 +1,5 @@
 <template>
   <div class="dictation-card">
-    <!-- Start Popup Overlay -->
-    <div v-if="showStartPopup" class="start-popup-overlay" @click="handleStartClick">
-      <div class="start-popup" @click.stop>
-        <div class="popup-icon">
-          <Icon icon="mdi:play-circle" class="play-icon" />
-        </div>
-        <h2 class="popup-title">Ready to Practice?</h2>
-        <p class="popup-description">Click the button below to start listening to the example</p>
-        <button class="start-button" @click="handleStartClick">
-          <Icon icon="mdi:volume-high" />
-          <span>Start Listening</span>
-        </button>
-        <p class="popup-hint">After starting, you can press <kbd>Ctrl</kbd> to replay audio anytime</p>
-      </div>
-    </div>
-    
     <div class="card-container">
       <!-- Word Context Header -->
       <div class="word-context-header" v-if="word && !showResult">
@@ -187,6 +171,7 @@ import { Icon } from '@iconify/vue'
 import { useDictation } from '../composables/useDictation'
 import { useSpeechSynthesis } from '@/composables/useSpeechSynthesis'
 import { useSpeechSettings } from '@/composables/useSpeechSettings'
+import { useToast } from '@/composables/useToast'
 import GlobalSpeechButton from '@/components/GlobalSpeechButton.vue'
 import type { VocabularyExample, VocabularyWord, DictationResult } from '../types/vocabulary.types'
 import ResultDisplay from './dictation/result-display/ResultDisplay.vue'
@@ -245,7 +230,31 @@ const inputTextarea = ref<HTMLTextAreaElement | null>(null)
 const hasSubmitted = ref(false) // Track if user has submitted
 const wordComparisonRef = ref<InstanceType<typeof WordComparison> | null>(null)
 const inputSection = ref<HTMLElement | null>(null)
-const showStartPopup = ref(true) // Show start popup on first load
+const getUserActivation = () => {
+  if (typeof navigator === 'undefined') return null
+  return (navigator as any).userActivation ?? null
+}
+const hasBrowserActivation = () => {
+  const activation = getUserActivation()
+  return activation ? activation.isActive || activation.hasBeenActive : false
+}
+const isAudioUnlocked = ref(hasBrowserActivation())
+const pendingCtrlPlayback = ref(false)
+const hasShownActivationTip = ref(false)
+const MODIFIER_KEYS = new Set([
+  'Shift',
+  'Control',
+  'Alt',
+  'AltGraph',
+  'Meta',
+  'CapsLock',
+  'NumLock',
+  'ScrollLock',
+  'Fn',
+  'FnLock'
+])
+const { showInfo } = useToast()
+
 
 // Timer
 let timer: ReturnType<typeof setInterval> | null = null
@@ -292,43 +301,6 @@ const playCorrectAudio = async () => {
   if (props.example?.sentence) {
     await playAudio()
   }
-}
-
-// Handle start popup click
-const handleStartClick = () => {
-  console.log('🎯 Start button clicked!')
-  showStartPopup.value = false
-  
-  // Play audio immediately after closing popup (this is a user gesture!)
-  setTimeout(async () => {
-    await playAudio()
-    
-    // Focus input after audio finishes
-    // Poll to check when audio stops
-    let checkCount = 0
-    const maxChecks = 50 // Max 10 seconds (50 * 200ms)
-    
-    const checkAudioFinished = setInterval(() => {
-      checkCount++
-      console.log(`🔍 Checking audio status (${checkCount}):`, isDictationAudioPlaying.value)
-      
-      if (!isDictationAudioPlaying.value || checkCount >= maxChecks) {
-        clearInterval(checkAudioFinished)
-        
-        if (!isDictationAudioPlaying.value) {
-          console.log('🎤 Audio finished! Focusing input...')
-          setTimeout(() => {
-            if (inputTextarea.value) {
-              inputTextarea.value.focus()
-              console.log('✅ Input focused!')
-            }
-          }, 100)
-        } else {
-          console.warn('⚠️ Max checks reached, audio might still be playing')
-        }
-      }
-    }, 200) // Check every 200ms
-  }, 100)
 }
 
 // No longer needed - using button click directly
@@ -446,8 +418,6 @@ const resetComponent = () => {
   elapsedTime.value = 0
   startTime.value = null
   hasSubmitted.value = false
-  // Don't show popup again after first example
-  // showStartPopup.value = false (keep it closed)
   stopTimer()
   reset()
 }
@@ -466,6 +436,27 @@ const handleKeyDown = (event: KeyboardEvent) => {
     // Only trigger if not in result view and has audio button
     if (!showResult.value && props.example?.sentence && listenButton.value) {
       event.preventDefault()
+
+      const canPlayAudio = () => {
+        if (hasBrowserActivation()) {
+          return true
+        }
+        return isAudioUnlocked.value
+      }
+
+      if (!canPlayAudio()) {
+        pendingCtrlPlayback.value = true
+
+        if (!hasShownActivationTip.value) {
+          hasShownActivationTip.value = true
+          showInfo(
+            'Enable audio playback',
+            'Click anywhere on the page or tap the Listen button once to unlock sound. After unlocking, press Ctrl to replay audio.'
+          )
+        }
+
+        return
+      }
       
       console.log('▶️ Playing audio via Ctrl shortcut')
       
@@ -477,6 +468,28 @@ const handleKeyDown = (event: KeyboardEvent) => {
       
       console.log('🎹 User input after play:', userInput.value)
     }
+  }
+}
+
+const unlockAudioPlayback = () => {
+  if (isAudioUnlocked.value) return
+
+  isAudioUnlocked.value = true
+
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('pointerdown', unlockAudioPlayback, true)
+    document.removeEventListener('keydown', handleActivationKeyDown, true)
+  }
+
+  if (pendingCtrlPlayback.value) {
+    pendingCtrlPlayback.value = false
+    playAudio()
+  }
+}
+
+const handleActivationKeyDown = (event: KeyboardEvent) => {
+  if (!MODIFIER_KEYS.has(event.key)) {
+    unlockAudioPlayback()
   }
 }
 
@@ -499,6 +512,10 @@ onMounted(() => {
   
   // Add keyboard event listener
   window.addEventListener('keydown', handleKeyDown)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('pointerdown', unlockAudioPlayback, true)
+    document.addEventListener('keydown', handleActivationKeyDown, true)
+  }
 })
 
 // Watch dictationResult for debugging
@@ -557,6 +574,10 @@ onUnmounted(() => {
   stopRecording()
   // Remove keyboard event listener
   window.removeEventListener('keydown', handleKeyDown)
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('pointerdown', unlockAudioPlayback, true)
+    document.removeEventListener('keydown', handleActivationKeyDown, true)
+  }
 })
 
 // Watch for example changes ONLY
@@ -570,13 +591,8 @@ watch(() => props.example, (newExample) => {
     
     console.log('🔄 userInput after reset:', userInput.value)
     
-    // Auto-focus and auto-scroll on mobile
+    // Auto-scroll to input section on mobile
     setTimeout(() => {
-      if (inputTextarea.value && !showResult.value) {
-        inputTextarea.value.focus()
-      }
-      
-      // Auto-scroll to input section on mobile
       if (inputSection.value && window.innerWidth <= 1024) {
         inputSection.value.scrollIntoView({ 
           behavior: 'smooth', 
@@ -593,133 +609,6 @@ watch(() => props.example, (newExample) => {
   width: 97%;
   margin: 0;
   position: relative;
-}
-
-/* Start Popup Overlay */
-.start-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.3s ease;
-}
-
-.start-popup {
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(15, 52, 96, 0.95));
-  border: 2px solid rgba(116, 192, 252, 0.3);
-  border-radius: 24px;
-  padding: 3rem 2.5rem;
-  max-width: 500px;
-  text-align: center;
-  animation: slideUp 0.4s ease;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.popup-icon {
-  margin-bottom: 1.5rem;
-}
-
-.play-icon {
-  font-size: 5rem;
-  color: #74c0fc;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.05);
-  }
-}
-
-.popup-title {
-  color: transparent;
-  background: linear-gradient(135deg, #e75e8d, #74c0fc);
-  background-clip: text;
-  -webkit-background-clip: text;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  font-weight: bold;
-}
-
-.popup-description {
-  color: #b8b8b8;
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
-  line-height: 1.6;
-}
-
-.start-button {
-  background: linear-gradient(135deg, #e75e8d, #c44569);
-  color: white;
-  border: none;
-  padding: 1rem 2.5rem;
-  border-radius: 50px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(231, 94, 141, 0.4);
-}
-
-.start-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 25px rgba(231, 94, 141, 0.6);
-  background: linear-gradient(135deg, #ff6b9d, #e75e8d);
-}
-
-.start-button:active {
-  transform: translateY(-1px);
-}
-
-.popup-hint {
-  color: #74c0fc;
-  font-size: 0.9rem;
-  margin-top: 1.5rem;
-  padding: 0.75rem 1rem;
-  background: rgba(116, 192, 252, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(116, 192, 252, 0.2);
-}
-
-.popup-hint kbd {
-  background: rgba(116, 192, 252, 0.2);
-  border: 1px solid rgba(116, 192, 252, 0.4);
-  border-radius: 4px;
-  padding: 0.2rem 0.5rem;
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: #74c0fc;
 }
 
 .card-container {
