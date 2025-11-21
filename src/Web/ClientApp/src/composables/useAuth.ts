@@ -78,14 +78,16 @@ export function useAuth() {
 
       await AuthService.register(userData)
       
-  showSuccess('Registration Successful! 🎉', 'Please check your email to confirm your account.')
+      showSuccess('Registration Successful! 🎉', 'Please check your email to confirm your account.')
       
       // Redirect to login page
       router.push('/auth/login')
       
     } catch (error) {
       console.error('Registration error:', error)
-      showError('Registration Failed ❌', error instanceof Error ? error.message : 'Registration failed')
+      // Error message is already user-friendly from AuthService
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed'
+      showError('Registration Failed ❌', errorMessage)
       throw error
     } finally {
       isLoading.value = false

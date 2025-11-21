@@ -54,8 +54,92 @@ export class AuthService {
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || 'Registration failed')
+      let errorMessage = 'Registration failed'
+      let errorDetails: any = null
+
+      try {
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          errorDetails = await response.json()
+          
+          // Handle ASP.NET Core Identity API error format
+          if (errorDetails.errors) {
+            const errors = errorDetails.errors
+            const errorMessages: string[] = []
+            
+            // Map Identity error codes to user-friendly messages
+            if (errors.Password) {
+              errors.Password.forEach((code: string) => {
+                switch (code) {
+                  case 'PasswordTooShort':
+                    errorMessages.push('Password must be at least 6 characters long')
+                    break
+                  case 'PasswordRequiresDigit':
+                    errorMessages.push('Password must contain at least one digit (0-9)')
+                    break
+                  case 'PasswordRequiresLower':
+                    errorMessages.push('Password must contain at least one lowercase letter (a-z)')
+                    break
+                  case 'PasswordRequiresUpper':
+                    errorMessages.push('Password must contain at least one uppercase letter (A-Z)')
+                    break
+                  case 'PasswordRequiresNonAlphanumeric':
+                    errorMessages.push('Password must contain at least one special character (!@#$%^&*)')
+                    break
+                  default:
+                    errorMessages.push(`Password error: ${code}`)
+                }
+              })
+            }
+            
+            if (errors.Email) {
+              errors.Email.forEach((code: string) => {
+                if (code === 'DuplicateUserName') {
+                  errorMessages.push('This email is already in use. Please choose a different email')
+                } else {
+                  errorMessages.push(`Email error: ${code}`)
+                }
+              })
+            }
+            
+            if (errors.UserName) {
+              errors.UserName.forEach((code: string) => {
+                if (code === 'DuplicateUserName') {
+                  errorMessages.push('This username already exists')
+                } else {
+                  errorMessages.push(`Username error: ${code}`)
+                }
+              })
+            }
+            
+            // If no specific errors mapped, use generic error
+            if (errorMessages.length === 0) {
+              errorMessage = errorDetails.title || errorDetails.detail || 'Đăng ký thất bại'
+            } else {
+              errorMessage = errorMessages.join('. ')
+            }
+          } else if (errorDetails.detail) {
+            errorMessage = errorDetails.detail
+          } else if (errorDetails.title) {
+            errorMessage = errorDetails.title
+          }
+        } else {
+          const text = await response.text()
+          errorMessage = text || errorMessage
+        }
+      } catch (parseError) {
+        // If JSON parsing fails, use the text response
+        try {
+          const text = await response.text()
+          errorMessage = text || errorMessage
+        } catch {
+          // Keep default error message
+        }
+      }
+      
+      const error = new Error(errorMessage)
+      ;(error as any).details = errorDetails
+      throw error
     }
   }
 

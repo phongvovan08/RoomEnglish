@@ -55,6 +55,31 @@
             </button>
           </div>
           <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+          <div v-if="!errors.password && form.password" class="password-hint">
+            <p class="hint-title">Password Requirements:</p>
+            <ul class="hint-list">
+              <li :class="{ 'valid': form.password.length >= 6 }">
+                <Icon :icon="form.password.length >= 6 ? 'mdi:check-circle' : 'mdi:circle-outline'" />
+                At least 6 characters
+              </li>
+              <li :class="{ 'valid': /\d/.test(form.password) }">
+                <Icon :icon="/\d/.test(form.password) ? 'mdi:check-circle' : 'mdi:circle-outline'" />
+                At least one digit (0-9)
+              </li>
+              <li :class="{ 'valid': /[a-z]/.test(form.password) }">
+                <Icon :icon="/[a-z]/.test(form.password) ? 'mdi:check-circle' : 'mdi:circle-outline'" />
+                At least one lowercase letter (a-z)
+              </li>
+              <li :class="{ 'valid': /[A-Z]/.test(form.password) }">
+                <Icon :icon="/[A-Z]/.test(form.password) ? 'mdi:check-circle' : 'mdi:circle-outline'" />
+                At least one uppercase letter (A-Z)
+              </li>
+              <li :class="{ 'valid': /[^a-zA-Z\d]/.test(form.password) }">
+                <Icon :icon="/[^a-zA-Z\d]/.test(form.password) ? 'mdi:check-circle' : 'mdi:circle-outline'" />
+                At least one special character (!@#$%^&*)
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Confirm Password Field -->
@@ -193,9 +218,15 @@ const passwordStrength = computed(() => {
 })
 
 const isFormValid = computed(() => {
+  const hasValidPassword = form.password.length >= 6 &&
+    /\d/.test(form.password) &&
+    /[a-z]/.test(form.password) &&
+    /[A-Z]/.test(form.password) &&
+    /[^a-zA-Z\d]/.test(form.password)
+  
   return (
     form.email.includes('@') && 
-    form.password.length >= 6 &&
+    hasValidPassword &&
     form.password === form.confirmPassword &&
     form.acceptTerms
   )
@@ -230,9 +261,29 @@ const validateForm = () => {
   if (!form.password) {
     errors.password = 'Password is required'
     isValid = false
-  } else if (form.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters'
-    isValid = false
+  } else {
+    const passwordErrors: string[] = []
+    
+    if (form.password.length < 6) {
+      passwordErrors.push('Password must be at least 6 characters long')
+    }
+    if (!/\d/.test(form.password)) {
+      passwordErrors.push('Password must contain at least one digit (0-9)')
+    }
+    if (!/[a-z]/.test(form.password)) {
+      passwordErrors.push('Password must contain at least one lowercase letter (a-z)')
+    }
+    if (!/[A-Z]/.test(form.password)) {
+      passwordErrors.push('Password must contain at least one uppercase letter (A-Z)')
+    }
+    if (!/[^a-zA-Z\d]/.test(form.password)) {
+      passwordErrors.push('Password must contain at least one special character (!@#$%^&*)')
+    }
+    
+    if (passwordErrors.length > 0) {
+      errors.password = passwordErrors.join('. ')
+      isValid = false
+    }
   }
 
   // Confirm password validation
@@ -256,14 +307,50 @@ const validateForm = () => {
 const handleRegister = async () => {
   if (!validateForm()) return
 
+  // Clear previous errors
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = ''
+  })
+
   try {
     await register({
       email: form.email,
       password: form.password,
       confirmPassword: form.confirmPassword
     })
-  } catch (error) {
+    // Success - register() will handle redirect
+  } catch (error: any) {
     console.error('Registration failed:', error)
+    // Handle error in form fields
+    handleServerError(error.message || 'Registration failed')
+  }
+}
+
+const handleServerError = (errorMessage: string) => {
+  const lowerMessage = errorMessage.toLowerCase()
+  
+  // Check if error is related to password
+  if (lowerMessage.includes('password') ||
+      lowerMessage.includes('digit') ||
+      lowerMessage.includes('lower') ||
+      lowerMessage.includes('uppercase') ||
+      lowerMessage.includes('lowercase') ||
+      lowerMessage.includes('nonalphanumeric') ||
+      lowerMessage.includes('special character') ||
+      lowerMessage.includes('tooshort') ||
+      lowerMessage.includes('at least') ||
+      lowerMessage.includes('characters')) {
+    errors.password = errorMessage
+  } 
+  // Check if error is related to email
+  else if (lowerMessage.includes('email') || 
+           lowerMessage.includes('duplicate') ||
+           lowerMessage.includes('already in use')) {
+    errors.email = errorMessage
+  } 
+  // General error - show on password field as it's most common
+  else {
+    errors.password = errorMessage
   }
 }
 </script>
@@ -491,6 +578,54 @@ const handleRegister = async () => {
   color: #ef4444;
   font-size: 0.75rem;
   margin-top: 0.25rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.password-hint {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(116, 192, 252, 0.1);
+  border: 1px solid rgba(116, 192, 252, 0.2);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.hint-title {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hint-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hint-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.hint-list li.valid {
+  color: #10b981;
+}
+
+.hint-list li .iconify {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .spinner {
